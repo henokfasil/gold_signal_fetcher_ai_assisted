@@ -6,12 +6,15 @@ Gold Signal Fetcher - AI-Assisted Version (ML + Claude Combo)
 
 ## Quick Status (2026-06-21)
 
-**System: Under Development**
+**System: Ready for Deployment**
 - ✅ Repository created: `gold_signal_fetcher_ai_assisted`
 - ✅ ML components built (feature engineer, XGBoost predictor)
 - ✅ Claude analyst integrated (market analysis + decisions)
 - ✅ Combined decision engine (ML + Claude + SMC scoring)
-- ⏳ Next: Integrate SMC base components, deploy to VPS
+- ✅ Orchestrator pipeline complete (main_orchestrator.py)
+- ✅ Comparison dashboard built (Flask, port 8502)
+- ✅ VPS deployment guide created
+- ⏳ Next: Deploy to VPS, start 4-week parallel testing
 
 **Architecture:**
 ```
@@ -113,18 +116,21 @@ Then: IF Final_Confidence >= Tier_Threshold → EXECUTE
 
 ## Integration Plan (Week 1-4)
 
-### Week 1: Setup
-- [ ] Copy SMC base components from `Gold_Signal_Fetcher`
-- [ ] Integrate `claude_analyst.py` into signal pipeline
-- [ ] Integrate `ml_signal_generator.py` into signal pipeline
-- [ ] Create paper_trades_ai.csv for tracking
-- [ ] Deploy to VPS
+### Week 1: Setup ✅ COMPLETE
+- ✅ Copy SMC base components from `Gold_Signal_Fetcher`
+- ✅ Integrate `claude_analyst.py` into signal pipeline
+- ✅ Integrate `ml_signal_generator.py` into signal pipeline
+- ✅ Create paper_trades_ai.csv for tracking
+- ✅ Create orchestrator pipeline (main_orchestrator.py)
+- ✅ Build comparison dashboard (dashboard.py)
+- ✅ Write VPS deployment guide (VPS_DEPLOYMENT.md)
 
 ### Week 2-3: Live Testing
 - Run alongside System A (SMC-only) in parallel
 - Both systems paper trade independently
 - Track metrics: win rate, profit factor, Sharpe, drawdown
 - Monitor Claude decision quality (cost ~$0.05-0.10/day)
+- Access dashboard at http://72.60.133.179:8502
 
 ### Week 4: Analysis
 - Compare System A vs System C metrics
@@ -174,21 +180,25 @@ Then: IF Final_Confidence >= Tier_Threshold → EXECUTE
 
 ```
 gold_signal_fetcher_ai_assisted/
-├── main.py                          # Orchestrator (SMC + ML + Claude)
+├── main_orchestrator.py            # ✅ Full pipeline orchestrator
+├── dashboard.py                    # ✅ Real-time comparison dashboard
+├── VPS_DEPLOYMENT.md               # ✅ VPS setup guide
 ├── agent/
-│   ├── ml_feature_engineer.py      # Extract technical features
+│   ├── ml_feature_engineer.py      # Extract 16 technical features
 │   ├── ml_signal_generator.py      # XGBoost predictor
 │   ├── claude_analyst.py           # Claude decision engine
-│   ├── smc_gold_scanner.py         # (copy from base)
-│   ├── paper_trader.py             # (copy from base)
-│   └── notifier.py                 # (copy from base)
+│   ├── smc_gold_scanner.py         # SMC signal generation (copied)
+│   ├── paper_trader.py             # Trade execution & tracking (copied)
+│   ├── liquidity_manager.py        # Session/tier logic (copied)
+│   ├── notifier.py                 # Telegram notifications (copied)
+│   └── sessions.py                 # Session management (copied)
 ├── config/settings.py              # Configuration
 ├── data/
 │   └── paper_trades_ai.csv         # Results tracking
 ├── models/
 │   ├── xgboost_gold_model.pkl      # Trained XGBoost
 │   └── feature_cols.json           # Feature names
-├── requirements.txt                # Dependencies (added xgboost, scikit-learn)
+├── requirements.txt                # Dependencies (xgboost, scikit-learn, flask, anthropic)
 ├── .env.example                    # Environment template
 └── CLAUDE.md                        # This file
 ```
