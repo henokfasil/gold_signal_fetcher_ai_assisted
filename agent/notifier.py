@@ -180,3 +180,36 @@ class Notifier:
             self.send(msg)
         except Exception as e:
             logger.error(f"send_daily_report error: {e}")
+
+    def send_metrics(self, system_a_metrics: dict, system_c_metrics: dict):
+        """Send System A vs System C comparison metrics."""
+        try:
+            msg = (
+                f"📊 <b>System A vs System C Comparison</b>\n"
+                f"⚙️ <b>System A (SMC-Only):</b>\n"
+                f"Status: {system_a_metrics['status']}\n"
+                f"Signals: {system_a_metrics['signals']}\n"
+            )
+            if system_a_metrics['signals'] > 0:
+                msg += (
+                    f"Win Rate: {system_a_metrics['win_rate']}\n"
+                    f"Wins/Losses: {system_a_metrics['wins']}/{system_a_metrics['losses']}\n"
+                    f"Total P&L: ${system_a_metrics['total_pnl']}\n"
+                )
+
+            msg += (
+                f"\n🧠 <b>System C (ML + Claude):</b>\n"
+                f"Status: {system_c_metrics['status']}\n"
+                f"Signals: {system_c_metrics['signals']}\n"
+            )
+            if system_c_metrics['signals'] > 0:
+                msg += (
+                    f"Win Rate: {system_c_metrics['win_rate']}\n"
+                    f"Wins/Losses: {system_c_metrics['wins']}/{system_c_metrics['losses']}\n"
+                    f"Total P&L: ${system_c_metrics['total_pnl']}\n"
+                )
+
+            msg += f"\n📈 Dashboard: http://72.60.133.179:8502"
+            self.send(msg)
+        except Exception as e:
+            logger.error(f"send_metrics error: {e}")
