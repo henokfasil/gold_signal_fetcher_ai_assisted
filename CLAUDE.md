@@ -4,17 +4,20 @@ Gold Signal Fetcher - AI-Assisted Version (ML + Claude Combo)
 
 ---
 
-## Quick Status (2026-06-21)
+## Quick Status (2026-06-21) ✅ LIVE ON VPS
 
-**System: Ready for Deployment**
+**System: Deployed & Running**
 - ✅ Repository created: `gold_signal_fetcher_ai_assisted`
 - ✅ ML components built (feature engineer, XGBoost predictor)
 - ✅ Claude analyst integrated (market analysis + decisions)
 - ✅ Combined decision engine (ML + Claude + SMC scoring)
 - ✅ Orchestrator pipeline complete (main_orchestrator.py)
-- ✅ Comparison dashboard built (Flask, port 8502)
-- ✅ VPS deployment guide created
-- ⏳ Next: Deploy to VPS, start 4-week parallel testing
+- ✅ Comparison dashboard deployed (Flask, port 8502)
+- ✅ All files deployed to VPS
+- ✅ Cron jobs configured (every 5 min, Mon-Fri)
+- ✅ Firewall opened for external access
+- 🚀 **Status: Running in parallel with System A**
+- ⏳ Signals start: Monday June 23 (market opens)
 
 **Architecture:**
 ```
@@ -34,6 +37,31 @@ XAUUSD Price Data
         ↓
    Track P&L + Metrics
 ```
+
+---
+
+## Deployment Status (June 21, 2026)
+
+### ✅ Live on VPS (72.60.133.179)
+- **Main Orchestrator:** `/root/gold_signal_fetcher_ai_assisted/main_orchestrator.py`
+- **Dashboard:** http://72.60.133.179:8502 (Flask on port 8502)
+- **Cron Schedule:** Every 5 minutes, Monday-Friday only
+- **System A Log:** `/var/log/gold_scanner.log`
+- **System C Log:** `/var/log/gold_scanner_ai.log`
+- **Dashboard Log:** `/var/log/gold_dashboard_ai.log`
+
+### 🔧 Configuration
+- `.env` copied from System A (has METAAPI_TOKEN, TELEGRAM_TOKEN, ANTHROPIC_API_KEY)
+- Paper trades CSV: `/root/gold_signal_fetcher_ai_assisted/data/paper_trades_ai.csv`
+- ML model: `/root/gold_signal_fetcher_ai_assisted/models/xgboost_gold_model.pkl`
+
+### 📊 Dashboard Features
+- Side-by-side System A vs System C metrics
+- Real-time comparison: Win rate, Profit factor, P&L, Sharpe ratio
+- Green highlights for winning system in each metric
+- Auto-refreshes every 60 seconds
+- Shows "Not started" for System C (weekend - market closed)
+- Will show signals starting Monday when market opens
 
 ---
 
@@ -116,7 +144,7 @@ Then: IF Final_Confidence >= Tier_Threshold → EXECUTE
 
 ## Integration Plan (Week 1-4)
 
-### Week 1: Setup ✅ COMPLETE
+### Week 1: Setup ✅ COMPLETE (Deployed June 21)
 - ✅ Copy SMC base components from `Gold_Signal_Fetcher`
 - ✅ Integrate `claude_analyst.py` into signal pipeline
 - ✅ Integrate `ml_signal_generator.py` into signal pipeline
@@ -124,19 +152,23 @@ Then: IF Final_Confidence >= Tier_Threshold → EXECUTE
 - ✅ Create orchestrator pipeline (main_orchestrator.py)
 - ✅ Build comparison dashboard (dashboard.py)
 - ✅ Write VPS deployment guide (VPS_DEPLOYMENT.md)
+- ✅ Deploy System C to VPS
+- ✅ Configure cron jobs (both systems)
+- ✅ Open firewall port 8502
+- ✅ Dashboard accessible: http://72.60.133.179:8502
 
-### Week 2-3: Live Testing
-- Run alongside System A (SMC-only) in parallel
-- Both systems paper trade independently
+### Week 2-3: Live Testing (June 23 - July 7)
+- ✅ Both systems running in parallel (Mon-Fri)
+- Paper trading independently on real market signals
 - Track metrics: win rate, profit factor, Sharpe, drawdown
-- Monitor Claude decision quality (cost ~$0.05-0.10/day)
-- Access dashboard at http://72.60.133.179:8502
+- Monitor Claude decision quality (cost ~$0.84/day)
+- Real-time comparison on dashboard
 
-### Week 4: Analysis
-- Compare System A vs System C metrics
-- If System C wins: integrate into production
-- If System A wins: keep SMC-only, save Claude API costs
-- Document findings
+### Week 4: Analysis & Decision (July 8-14)
+- Analyze 4-week performance data
+- If System C wins (58%+ win rate): integrate into production
+- If System A wins: keep SMC-only, save Claude costs
+- Document findings in final report
 
 ---
 

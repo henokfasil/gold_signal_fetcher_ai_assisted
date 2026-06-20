@@ -20,26 +20,28 @@ SYSTEM_C_CSV = Path("/root/gold_signal_fetcher_ai_assisted/data/paper_trades_ai.
 
 def calculate_metrics(csv_path):
     """Calculate trading metrics from paper trades CSV."""
+    default_metrics = {
+        'status': 'Not started',
+        'signals': 0,
+        'wins': 0,
+        'losses': 0,
+        'win_rate': '0.0%',
+        'profit_factor': '0.00',
+        'total_pnl': '$0.00',
+        'avg_win': '$0.00',
+        'avg_loss': '$0.00',
+        'sharpe': '0.00',
+        'max_dd': '0.0%'
+    }
+
     try:
         if not csv_path.exists():
-            return {
-                'status': 'Not started',
-                'signals': 0,
-                'wins': 0,
-                'losses': 0,
-                'win_rate': 0,
-                'profit_factor': 0,
-                'total_pnl': 0,
-                'avg_win': 0,
-                'avg_loss': 0,
-                'sharpe': 0,
-                'max_dd': 0
-            }
+            return default_metrics
 
         df = pd.read_csv(csv_path)
 
         if df.empty:
-            return {'status': 'No trades yet', 'signals': 0}
+            return default_metrics
 
         wins = df[df['pnl'] > 0]
         losses = df[df['pnl'] < 0]
@@ -82,7 +84,7 @@ def calculate_metrics(csv_path):
             'max_dd': f"{max_dd:.1f}%"
         }
     except Exception as e:
-        return {'status': f'Error: {str(e)}', 'signals': 0}
+        return {**default_metrics, 'status': f'Error: {str(e)}'}
 
 
 def get_winner_class(c_val, a_val):
