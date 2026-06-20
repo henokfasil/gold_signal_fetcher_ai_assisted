@@ -85,11 +85,40 @@ def calculate_metrics(csv_path):
         return {'status': f'Error: {str(e)}', 'signals': 0}
 
 
+def get_winner_class(c_val, a_val):
+    """Compare values and return CSS class if C wins."""
+    try:
+        c_num = float(str(c_val).rstrip('%').replace('$', ''))
+        a_num = float(str(a_val).rstrip('%').replace('$', ''))
+        return 'winner' if c_num > a_num else ''
+    except:
+        return ''
+
+
 @app.route('/')
 def dashboard():
     """Render comparison dashboard."""
     system_a = calculate_metrics(SYSTEM_A_CSV)
     system_c = calculate_metrics(SYSTEM_C_CSV)
+
+    # Build comparison rows
+    comparison_rows = f'''
+                <div class="row">
+                    <div class="row-label">Win Rate</div>
+                    <div class="row-value">{system_a['win_rate']}</div>
+                    <div class="row-value {get_winner_class(system_c['win_rate'], system_a['win_rate'])}">{system_c['win_rate']}</div>
+                </div>
+                <div class="row">
+                    <div class="row-label">Profit Factor</div>
+                    <div class="row-value">{system_a['profit_factor']}</div>
+                    <div class="row-value {get_winner_class(system_c['profit_factor'], system_a['profit_factor'])}">{system_c['profit_factor']}</div>
+                </div>
+                <div class="row">
+                    <div class="row-label">Total P&L</div>
+                    <div class="row-value">{system_a['total_pnl']}</div>
+                    <div class="row-value {get_winner_class(system_c['total_pnl'], system_a['total_pnl'])}">{system_c['total_pnl']}</div>
+                </div>
+    '''
 
     html = """
     <!DOCTYPE html>
@@ -319,21 +348,7 @@ def dashboard():
                     <div class="row-label">System A</div>
                     <div class="row-label">System C</div>
                 </div>
-                <div class="row">
-                    <div class="row-label">Win Rate</div>
-                    <div class="row-value">""" + str(system_a['win_rate']) + """</div>
-                    <div class="row-value" style="""" + ('background: rgba(16, 185, 129, 0.1);' if float(str(system_c['win_rate']).rstrip('%')) > float(str(system_a['win_rate']).rstrip('%')) else '') + """\">""" + str(system_c['win_rate']) + """</div>
-                </div>
-                <div class="row">
-                    <div class="row-label">Profit Factor</div>
-                    <div class="row-value">""" + str(system_a['profit_factor']) + """</div>
-                    <div class="row-value" style="""" + ('background: rgba(16, 185, 129, 0.1);' if float(str(system_c['profit_factor'])) > float(str(system_a['profit_factor'])) else '') + """\">""" + str(system_c['profit_factor']) + """</div>
-                </div>
-                <div class="row">
-                    <div class="row-label">Total P&L</div>
-                    <div class="row-value">""" + str(system_a['total_pnl']) + """</div>
-                    <div class="row-value" style="""" + ('background: rgba(16, 185, 129, 0.1);' if float(str(system_c['total_pnl']).replace('$', '')) > float(str(system_a['total_pnl']).replace('$', '')) else '') + """\">""" + str(system_c['total_pnl']) + """</div>
-                </div>
+                """ + comparison_rows + """
             </div>
         </div>
 
