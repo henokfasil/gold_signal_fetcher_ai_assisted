@@ -43,29 +43,47 @@ def calculate_metrics(csv_path):
         if df.empty:
             return default_metrics
 
-        wins = df[df['pnl'] > 0]
-        losses = df[df['pnl'] < 0]
+        # Handle both System A (profit_pct, result) and System C (pnl) formats
+        pnl_col = None
+        if 'pnl' in df.columns:
+            pnl_col = 'pnl'
+        elif 'profit_pct' in df.columns:
+            pnl_col = 'profit_pct'
+        else:
+            return {**default_metrics, 'status': 'Invalid CSV format'}
+
+        # Filter out blocked/non-executed signals
+        if 'status' in df.columns:
+            df = df[df['status'] != 'BLOCKED']
+        if 'result' in df.columns:
+            df = df[df['result'] != 'BLOCKED']
+
+        if df.empty:
+            return default_metrics
+
+        wins = df[df[pnl_col] > 0]
+        losses = df[df[pnl_col] < 0]
 
         win_count = len(wins)
         loss_count = len(losses)
         total = len(df)
 
         win_rate = (win_count / total * 100) if total > 0 else 0
-        total_pnl = df['pnl'].sum()
-        avg_win = wins['pnl'].mean() if len(wins) > 0 else 0
-        avg_loss = losses['pnl'].mean() if len(losses) > 0 else 0
+        total_pnl = df[pnl_col].sum()
+        avg_win = wins[pnl_col].mean() if len(wins) > 0 else 0
+        avg_loss = losses[pnl_col].mean() if len(losses) > 0 else 0
 
         # Profit factor
-        total_wins = wins['pnl'].sum() if len(wins) > 0 else 0
-        total_losses = abs(losses['pnl'].sum()) if len(losses) > 0 else 1
+        total_wins = wins[pnl_col].sum() if len(wins) > 0 else 0
+        total_losses = abs(losses[pnl_col].sum()) if len(losses) > 0 else 1
         profit_factor = total_wins / total_losses if total_losses > 0 else 0
 
         # Sharpe ratio (simplified)
-        returns = df['pnl'].pct_change().dropna()
-        sharpe = (returns.mean() / returns.std() * 252) if len(returns) > 0 else 0
+        returns = df[pnl_col].pct_change().dropna()
+        sharpe = (returns.mean() / returns.std() * 252) if len(returns) > 0 and returns.std() > 0 else 0
 
         # Max drawdown
-        cumsum = df['pnl'].cumsum()
+        cumsum = df[pnl_col].cumsum()
         running_max = cumsum.expanding().max()
         dd = (cumsum - running_max) / running_max
         max_dd = dd.min() * 100 if len(dd) > 0 else 0
