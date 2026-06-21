@@ -4,20 +4,20 @@ Gold Signal Fetcher - AI-Assisted Version (ML + Claude Combo)
 
 ---
 
-## Quick Status (2026-06-21) ✅ LIVE ON VPS
+## Quick Status (2026-06-21) 🚀 PRODUCTION READY
 
-**System: Deployed & Running**
-- ✅ Repository created: `gold_signal_fetcher_ai_assisted`
-- ✅ ML components built (feature engineer, XGBoost predictor)
-- ✅ Claude analyst integrated (market analysis + decisions)
-- ✅ Combined decision engine (ML + Claude + SMC scoring)
-- ✅ Orchestrator pipeline complete (main_orchestrator.py)
-- ✅ Comparison dashboard deployed (Flask, port 8502)
-- ✅ All files deployed to VPS
-- ✅ Cron jobs configured (every 5 min, Mon-Fri)
-- ✅ Firewall opened for external access
+**System C: Fully Deployed & Ready**
+- ✅ Repository: https://github.com/henokfasil/gold_signal_fetcher_ai_assisted
+- ✅ ML components: Feature engineer + XGBoost predictor (16 indicators)
+- ✅ Claude analyst: Market context + decision engine (Opus 4.8)
+- ✅ Orchestrator: SMC → ML → Claude → Trade pipeline
+- ✅ Dashboard: Live comparison (port 8502)
+- ✅ VPS deployed: `/root/gold_signal_fetcher_ai_assisted`
+- ✅ Cron jobs: Every 5 min (Mon-Fri only)
+- ✅ Telegram: Real-time signals + daily metrics (20:00 Rome)
+- ✅ GitHub: Synced and ready
 - 🚀 **Status: Running in parallel with System A**
-- ⏳ Signals start: Monday June 23 (market opens)
+- 📅 **Start: Monday June 23, 2026**
 
 **Architecture:**
 ```
@@ -40,28 +40,36 @@ XAUUSD Price Data
 
 ---
 
-## Deployment Status (June 21, 2026)
+## Deployment Status (June 21, 2026) ✅ PRODUCTION
 
-### ✅ Live on VPS (72.60.133.179)
+### 🌐 Live on VPS (72.60.133.179)
+- **IP:** 72.60.133.179
 - **Main Orchestrator:** `/root/gold_signal_fetcher_ai_assisted/main_orchestrator.py`
-- **Dashboard:** http://72.60.133.179:8502 (Flask on port 8502)
-- **Cron Schedule:** Every 5 minutes, Monday-Friday only
+- **Dashboard:** http://72.60.133.179:8502 (Flask, port 8502)
+- **Cron Schedule:** Every 5 minutes (Mon-Fri only)
 - **System A Log:** `/var/log/gold_scanner.log`
 - **System C Log:** `/var/log/gold_scanner_ai.log`
 - **Dashboard Log:** `/var/log/gold_dashboard_ai.log`
+- **Metrics Log:** `/var/log/gold_metrics.log`
 
 ### 🔧 Configuration
-- `.env` copied from System A (has METAAPI_TOKEN, TELEGRAM_TOKEN, ANTHROPIC_API_KEY)
+- `.env`: Shared with System A (METAAPI, TELEGRAM, ANTHROPIC_API_KEY)
 - Paper trades CSV: `/root/gold_signal_fetcher_ai_assisted/data/paper_trades_ai.csv`
 - ML model: `/root/gold_signal_fetcher_ai_assisted/models/xgboost_gold_model.pkl`
+- Daily metrics cron: `0 18 * * 1-5` (18:00 UTC = 20:00 Rome time)
 
 ### 📊 Dashboard Features
 - Side-by-side System A vs System C metrics
-- Real-time comparison: Win rate, Profit factor, P&L, Sharpe ratio
+- Real-time comparison: Win rate, Profit factor, P&L, Sharpe ratio, Max Drawdown
 - Green highlights for winning system in each metric
 - Auto-refreshes every 60 seconds
-- Shows "Not started" for System C (weekend - market closed)
-- Will show signals starting Monday when market opens
+- Live updates as signals execute
+
+### 📱 Telegram Integration
+- **Signal Notifications:** Real-time when signals fire
+- **Daily Metrics:** 20:00 Rome time (Mon-Fri)
+- **Shared Bot:** Both systems use same Telegram credentials
+- **Message Format:** Metrics + P&L + win rate comparison
 
 ---
 
@@ -156,13 +164,16 @@ Then: IF Final_Confidence >= Tier_Threshold → EXECUTE
 - ✅ Configure cron jobs (both systems)
 - ✅ Open firewall port 8502
 - ✅ Dashboard accessible: http://72.60.133.179:8502
+- ✅ Telegram notifications: Real-time signals + daily metrics
+- ✅ GitHub synced: https://github.com/henokfasil/gold_signal_fetcher_ai_assisted
 
 ### Week 2-3: Live Testing (June 23 - July 7)
-- ✅ Both systems running in parallel (Mon-Fri)
+- 🚀 Both systems running in parallel (Mon-Fri)
 - Paper trading independently on real market signals
 - Track metrics: win rate, profit factor, Sharpe, drawdown
 - Monitor Claude decision quality (cost ~$0.84/day)
 - Real-time comparison on dashboard
+- Daily metrics via Telegram (20:00 Rome time)
 
 ### Week 4: Analysis & Decision (July 8-14)
 - Analyze 4-week performance data
