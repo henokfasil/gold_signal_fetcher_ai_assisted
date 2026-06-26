@@ -14,7 +14,8 @@ Full pipeline:
 import logging
 import sys
 import os
-import asyncio
+import csv
+from pathlib import Path
 from dotenv import load_dotenv
 from datetime import datetime
 
@@ -27,18 +28,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Import all components
+# Import core components
 try:
     from agent.smc_gold_scanner import run_gold_scanner
-    from agent.ml_signal_generator import MLSignalFilter
-    from agent.claude_analyst import AITradingDecider
-    from agent.paper_trader import update_gold_trades, get_open_trades, place_paper_trade
+    from agent.paper_trader import update_gold_trades, get_open_trades
     from agent.liquidity_manager import get_session_description, is_market_closed
     from agent.notifier import Notifier
-    logger.info("[ORCHESTRATOR] All imports successful")
+    logger.info("[ORCHESTRATOR] Core imports successful")
 except ImportError as e:
     logger.error(f"[ORCHESTRATOR] Import error: {e}")
     sys.exit(1)
+
+# Optional AI imports (graceful degradation)
+try:
+    from agent.ml_signal_generator import MLSignalFilter
+    from agent.claude_analyst import AITradingDecider
+    HAS_AI = True
+    logger.info("[ORCHESTRATOR] AI components loaded")
+except Exception as e:
+    HAS_AI = False
+    logger.warning(f"[ORCHESTRATOR] AI components unavailable ({e}), running in SMC-only mode")
 
 
 class AIAssistedOrchestrator:
@@ -46,8 +55,13 @@ class AIAssistedOrchestrator:
 
     def __init__(self):
         """Initialize orchestrator with all components."""
-        self.ml_filter = MLSignalFilter()
-        self.ai_decider = AITradingDecider()
+        if HAS_AI:
+            self.ml_filter = MLSignalFilter()
+            self.ai_decider = AITradingDecider()
+        else:
+            self.ml_filter = None
+            self.ai_decider = None
+
         self.notifier = Notifier(
             token=os.environ.get("TELEGRAM_TOKEN"),
             chat_id=os.environ.get("TELEGRAM_CHAT_ID"),
@@ -56,9 +70,9 @@ class AIAssistedOrchestrator:
         self.metaapi_token = os.environ.get("METAAPI_TOKEN")
         self.metaapi_account_id = os.environ.get("METAAPI_ACCOUNT_ID")
 
-    async def run_scan(self):
+    def run_scan(self):
         """Execute full AI-assisted scan cycle."""
-        logger.info("[ORCHESTRATOR] Starting AI-assisted scan cycle")
+        logger.info("[ORCHESTRATOR] Starting scan cycle (AI " + ("enabled" if HAS_AI else "disabled") + ")")
 
         # Check market status
         session_info = get_session_description()
@@ -84,6 +98,13 @@ class AIAssistedOrchestrator:
         try:
             signal = run_gold_scanner(self.metaapi_token, self.metaapi_account_id)
             if signal:
+                # Derive direction from market structure
+                smc_data = signal.get('mtf', {}).get('smc', {})
+                struct_4h = smc_data.get('struct_4h', 'unknown')
+                signal['direction'] = 'BUY' if struct_4h == 'bullish' else 'SELL'
+                signal['pair'] = signal.get('symbol', 'XAUUSD')
+                signal['entry'] = signal.get('price')
+                signal['take_profits'] = [signal.get('take_profit')]
                 logger.info(f"[ORCHESTRATOR] SMC signal: {signal['direction']} @ {signal.get('entry')} | Score: {signal.get('score')}")
             else:
                 logger.info("[ORCHESTRATOR] No SMC signal this cycle")
@@ -95,14 +116,19 @@ class AIAssistedOrchestrator:
             logger.info("[ORCHESTRATOR] Scan complete - no signal")
             return
 
-        # Step 3: Apply ML filter + Claude analysis
+        # Step 3: Apply AI layer if available, otherwise just execute
+        if not HAS_AI:
+            logger.info("[ORCHESTRATOR] AI unavailable - executing SMC signal directly")
+            self._execute_trade_simple(signal)
+            return
+
         try:
-            decision = await self._apply_ai_layer(signal, session_info)
+            decision = self._apply_ai_layer(signal, session_info)
             logger.info(f"[ORCHESTRATOR] AI Decision: {decision['final_reason']}")
 
             if not decision['should_trade']:
                 logger.info("[ORCHESTRATOR] Signal filtered by AI - skipping execution")
-                self.notifier.trade_instruction(
+                self.notifier.send(
                     f"🤖 AI filtered signal\n\n"
                     f"SMC Score: {decision['smc_score']:.0f}%\n"
                     f"ML Confidence: {decision['ml_confidence']:.0f}%\n"
@@ -113,13 +139,13 @@ class AIAssistedOrchestrator:
                 return
 
             # Step 4: Execute trade
-            await self._execute_trade(signal, decision)
+            self._execute_trade(signal, decision)
 
         except Exception as e:
             logger.error(f"[ORCHESTRATOR] AI layer error: {e}")
             self.notifier.bot_error(f"AI layer failed: {e}")
 
-    async def _apply_ai_layer(self, signal, session_info) -> dict:
+    def _apply_ai_layer(self, signal, session_info) -> dict:
         """Apply ML + Claude analysis to signal."""
         logger.info("[AI-LAYER] Analyzing signal with ML + Claude")
 
@@ -152,42 +178,80 @@ class AIAssistedOrchestrator:
 
         return decision
 
-    async def _execute_trade(self, signal, decision):
+    def _execute_trade_simple(self, signal):
+        """Execute trade without AI approval (fallback mode)."""
+        logger.info(f"[EXECUTOR] Executing SMC-only trade: {signal['direction']} {signal['pair']}")
+        self.notifier.send(
+            f"📊 *SMC Signal Executed*\n\n"
+            f"Direction: {signal['direction']} {signal['pair']}\n"
+            f"Entry: {signal.get('entry', 'market')}\n"
+            f"SL: {signal.get('stop_loss', 'N/A')}\n"
+            f"TPs: {signal.get('take_profits', [])}\n"
+            f"Score: {signal.get('score', 'N/A')}%\n\n"
+            f"⚠️ AI layer unavailable - executing on SMC confidence only"
+        )
+
+    def _log_trade_to_csv(self, signal, decision):
+        """Log executed trade to paper_trades_ai.csv."""
+        csv_path = Path("/root/gold_signal_fetcher_ai_assisted/data/paper_trades_ai.csv")
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+
+        trade_row = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'pair': signal.get('pair', 'XAUUSD'),
+            'direction': signal.get('direction', 'UNKNOWN'),
+            'entry': float(signal.get('entry', 0)) if signal.get('entry') else 0,
+            'stop_loss': float(signal.get('stop_loss', 0)) if signal.get('stop_loss') else 0,
+            'take_profits': str(signal.get('take_profits', [])),
+            'pnl': 0,
+            'signal_source': 'system_c_ai',
+            'ml_confidence': float(decision.get('ml_confidence', 0)),
+            'claude_confidence': float(decision.get('claude_confidence', 0)),
+            'combined_confidence': float(decision.get('combined_confidence', 0)),
+        }
+
+        try:
+            file_exists = csv_path.exists()
+            with open(csv_path, 'a', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=trade_row.keys())
+                if not file_exists:
+                    writer.writeheader()
+                writer.writerow(trade_row)
+            logger.info(f"[CSV] Trade logged: {signal['pair']} {signal['direction']}")
+        except Exception as e:
+            logger.error(f"[CSV] Failed to log trade: {e}")
+
+    def _execute_trade(self, signal, decision):
         """Execute the trade after AI approval."""
         logger.info(f"[EXECUTOR] Executing trade: {signal['direction']} {signal['pair']}")
 
         try:
-            # Place the trade
-            results = await place_paper_trade(signal, self.metaapi_token, self.metaapi_account_id)
+            # Log to CSV first
+            self._log_trade_to_csv(signal, decision)
 
-            if results:
-                logger.info(f"[EXECUTOR] Trade executed: {len(results)} position(s) opened")
-
-                # Notify user with AI reasoning
-                msg = (
-                    f"🤖 *AI Signal Executed*\n\n"
-                    f"Direction: {signal['direction']} {signal['pair']}\n"
-                    f"Entry: {signal.get('entry', 'market')}\n"
-                    f"SL: {signal.get('stop_loss', 'N/A')}\n"
-                    f"TPs: {signal.get('take_profits', [])}\n\n"
-                    f"*AI Analysis:*\n"
-                    f"SMC: {decision['smc_score']:.0f}% | "
-                    f"ML: {decision['ml_confidence']:.0f}% | "
-                    f"Claude: {decision['claude_confidence']:.0f}%\n"
-                    f"Combined: {decision['combined_confidence']:.0f}%\n\n"
-                    f"Claude: {decision['claude_reasoning']}"
-                )
-                self.notifier.trade_instruction(msg)
-            else:
-                logger.error("[EXECUTOR] Trade failed")
-                self.notifier.bot_error("Trade execution failed")
+            # Notify user with AI reasoning
+            msg = (
+                f"🤖 *AI Signal Executed*\n\n"
+                f"Direction: {signal['direction']} {signal['pair']}\n"
+                f"Entry: {signal.get('entry', 'market')}\n"
+                f"SL: {signal.get('stop_loss', 'N/A')}\n"
+                f"TPs: {signal.get('take_profits', [])}\n\n"
+                f"*AI Analysis:*\n"
+                f"SMC: {decision['smc_score']:.0f}% | "
+                f"ML: {decision['ml_confidence']:.0f}% | "
+                f"Claude: {decision['claude_confidence']:.0f}%\n"
+                f"Combined: {decision['combined_confidence']:.0f}%\n\n"
+                f"Claude: {decision['claude_reasoning']}"
+            )
+            self.notifier.send(msg)
+            logger.info(f"[EXECUTOR] Trade notification sent")
 
         except Exception as e:
             logger.error(f"[EXECUTOR] Error: {e}")
-            self.notifier.bot_error(f"Trade execution error: {e}")
+            self.notifier.send(f"⚠️ Trade execution error: {e}")
 
 
-async def main():
+def main():
     """Main entry point."""
     logger.info("=" * 70)
     logger.info("Gold Signal Fetcher - AI-Assisted (System C)")
@@ -196,10 +260,10 @@ async def main():
     logger.info("")
 
     orchestrator = AIAssistedOrchestrator()
-    await orchestrator.run_scan()
+    orchestrator.run_scan()
 
     logger.info("=" * 70)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
