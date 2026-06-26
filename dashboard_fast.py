@@ -3,6 +3,7 @@ Enhanced Fast Dashboard with Charts & Full Trade Details
 """
 
 import os
+import re
 import pandas as pd
 from datetime import datetime
 from flask import Flask
@@ -78,17 +79,30 @@ def get_recent_trades_html(csv_path):
         for _, row in df.tail(10).iterrows():
             pair = row.get('pair', row.get('symbol', 'XAUUSD'))
             direction = row.get('direction', '?')
-            entry = row.get('entry', row.get('entry_price', '?'))
-            sl = row.get('stop_loss', row.get('sl', '?'))
-            tp = row.get('take_profits', row.get('take_profit', '?'))
+            entry = str(row.get('entry', row.get('entry_price', '?')))
+            sl = str(row.get('stop_loss', row.get('sl', '?')))
+            tp = str(row.get('take_profits', row.get('take_profit', '?')))
             pnl = float(row[pnl_col])
             color = '#10b981' if pnl > 0 else '#ef4444' if pnl < 0 else '#666'
             outcome = 'WIN' if pnl > 0 else 'LOSS' if pnl < 0 else 'OPEN'
             timestamp = row.get('timestamp', '')[:10]
 
-            # Format TP (handle list representation)
-            if isinstance(tp, str):
-                tp = tp.split('[')[-1].split(']')[0] if '[' in str(tp) else tp
+            # Clean up TP (remove numpy string representation)
+            if 'np.float64' in tp or 'np.float32' in tp or '[' in tp:
+                # Extract number from strings like "np.float64(4220.84)" or "[np.float64(4220.84)]"
+                # Look for pattern: (number) inside parentheses
+                match = re.search(r'\((\d+\.?\d*)\)', tp)
+                if match:
+                    tp = match.group(1)
+                else:
+                    # Fallback: just get any number with decimal
+                    match = re.search(r'(\d{4,}\.\d+)', tp)
+                    tp = match.group(1) if match else 'N/A'
+
+            # Clean up entry and SL too
+            entry = entry.replace('?', 'N/A')
+            sl = sl.replace('?', 'N/A')
+            tp = tp.replace('?', 'N/A')
 
             html += f'<tr><td>{pair}</td><td>{direction}</td><td>{entry}</td><td>{sl}</td><td>{tp}</td><td style="color:{color}">{outcome}</td><td style="color:{color}">{pnl:.2f}</td><td>{timestamp}</td></tr>'
 
