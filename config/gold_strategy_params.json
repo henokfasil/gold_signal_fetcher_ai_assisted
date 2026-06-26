@@ -1,0 +1,135 @@
+{
+  "strategy_name": "Gold ETH-Strategy-Adapted",
+  "description": "XAUUSD trading strategy adapted from profitable ETH System A+C",
+  "version": "2.0",
+
+  "timeframes": {
+    "bias": "1W",
+    "structure": "1D",
+    "confirmation": "4H",
+    "entry": "1H",
+    "scan_interval_seconds": 300
+  },
+
+  "smc_parameters": {
+    "swing_detection": {
+      "lookback_candles": 40,
+      "min_swing_high_bars": 3,
+      "min_swing_low_bars": 3
+    },
+    "order_block": {
+      "min_size_candles": 3,
+      "max_size_candles": 8,
+      "mitigated_threshold_pct": 0.5
+    },
+    "fair_value_gap": {
+      "min_gap_points": 2.0,
+      "max_lookback": 50
+    },
+    "entry_buffer_pct": 0.05,
+    "bias_proximity_pct": 0.3
+  },
+
+  "signal_scoring": {
+    "weekly_bias_aligned": 2,
+    "daily_structure_aligned": 2,
+    "4h_bos_confirmed": 2,
+    "entry_order_block": 2,
+    "fvg_present": 1,
+    "zone_discount_premium": 1,
+    "max_score": 10,
+    "fire_threshold": 5
+  },
+
+  "risk_gates": {
+    "daily_loss_cap_pct": -3.0,
+    "weekly_loss_cap_pct": -6.0,
+    "max_open_trades": 15,
+    "min_risk_reward_ratio": 2.0,
+    "sl_cooldown_minutes": 40,
+    "news_block_hours": 2,
+    "block_hours": {
+      "market_closed": [21, 22]
+    },
+    "news_events": [
+      "FOMC_decision",
+      "CPI_release",
+      "NFP_release",
+      "Fed_speaker",
+      "geopolitical_event"
+    ]
+  },
+
+  "position_sizing": {
+    "base_size_usd": 5000,
+    "position_splits": 3,
+    "split_tp_ratios": [0.33, 0.67, 1.0],
+    "adaptive_sizing": true,
+    "kelly_fraction_cap": 0.25,
+    "win_rate_adjustments": {
+      "below_40pct": 0.5,
+      "40_to_60pct": 1.0,
+      "above_60pct": 1.5
+    }
+  },
+
+  "ml_parameters": {
+    "feature_count": 21,
+    "confidence_threshold": 35,
+    "model_path": "/root/gold_signal_fetcher_ai_assisted/models/xgboost_gold_model_v2.pkl",
+    "features": [
+      "rsi_14",
+      "macd",
+      "macd_signal",
+      "macd_diff",
+      "adx_14",
+      "atr_14",
+      "bb_width",
+      "bb_position",
+      "close_above_bb_upper",
+      "close_above_bb_lower",
+      "close_above_ma20",
+      "close_above_ma50",
+      "price_momentum",
+      "volatility",
+      "volume_spike",
+      "usd_strength",
+      "real_rates_momentum",
+      "risk_sentiment",
+      "session_hour_encoded",
+      "day_of_week_encoded"
+    ]
+  },
+
+  "claude_parameters": {
+    "model": "claude-opus-4-8",
+    "baseline_confidence_min": 50,
+    "baseline_confidence_max": 70,
+    "min_confidence_floor": 40,
+    "max_tokens": 500
+  },
+
+  "composite_decision": {
+    "ml_weight": 0.35,
+    "claude_weight": 0.35,
+    "smc_weight": 0.30,
+    "fire_thresholds": {
+      "peak": 50,
+      "high": 52,
+      "secondary": 58,
+      "closed": 100
+    },
+    "expected_signals_per_day": 7
+  },
+
+  "performance_targets": {
+    "win_rate_pct": 50,
+    "profit_factor": 2.0,
+    "avg_rr_ratio": 2.0,
+    "weekly_return_pct": 2.0,
+    "max_drawdown_pct": 3.0,
+    "sharpe_ratio": 1.5
+  },
+
+  "notes": "Based on ETH strategy achieving 50% WR + 2.0 R:R = +16.77% in 7 days. Gold slower moving, so thresholds and position sizing adjusted accordingly."
+}

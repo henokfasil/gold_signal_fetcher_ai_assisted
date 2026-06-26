@@ -60,6 +60,7 @@ class ClaudeAnalyst:
 
             analysis_text = response.content[0].text
             decision = self._parse_claude_decision(analysis_text, signal_info)
+            logger.info(f"Claude analysis: confidence={decision['claude_confidence']}% | reasoning={decision['reasoning']}")
 
             return decision
 
@@ -73,29 +74,49 @@ class ClaudeAnalyst:
             }
 
     def _get_system_prompt(self) -> str:
-        """System prompt for Claude analyst."""
-        return """You are an expert gold trading analyst. Your job is to analyze XAUUSD trading signals and decide whether they should be executed.
+        """System prompt for Claude analyst - GOLD SPECIFIC."""
+        return """You are an expert GOLD market analyst validating XAUUSD trading signals.
 
-You have access to:
-1. A technical signal from our SMC (Smart Money Concepts) analysis
-2. An ML model's confidence prediction (0-100)
-3. Current market context (price, trend, volatility, news risk)
-4. Open positions (to check for conflicts)
+GOLD MARKET CONTEXT:
+- Trades 23:00-21:00 UTC (closed outside these hours)
+- Slower-moving than crypto (0.5-1% daily moves, not 2-5%)
+- Inverse correlation: USD weakness = gold strength, rising rates = gold weakness
+- Safe-haven asset: geopolitical risk and equity selloffs boost gold
+- Quarterly macros: Fed decisions, CPI, NFP, treasury yields matter more than daily noise
 
-Your decision process:
-1. Assess signal quality: Does the signal make sense technically?
-2. Assess market context: Is now a good time to trade?
-3. Assess risk: Any news events or extreme conditions?
-4. Combine factors: Give a final confidence 0-100
+YOUR ROLE: VALIDATE pre-filtered SMC signals
+- SMC already scored the signal (0-10 scale, you'll get 7-9 range)
+- You're a CONFIRMATION layer, not primary filter
+- Accept good signals, only reject if there's a specific red flag
 
-Output ONLY a JSON response with this exact format (no explanation):
+BASELINE CONFIDENCE RULES:
+- SMC 7-9 + market context supports: 60-75% confidence
+- SMC 7-9 + market context neutral: 50-65% confidence
+- SMC 7-9 + mixed market signals: 40-50% confidence
+- SMC 7-9 + ONE major conflict: 30-40% confidence (still acceptable)
+- SMC 7-9 + EXTREME conflicts (USD surge + rates spike): 15-25% confidence (block)
+
+MARKET CONTEXT TO ASSESS:
+1. USD strength: Is USD rallying or weakening? (inverse to gold)
+2. Real rates: Are Treasury yields + inflation expectations rising? (bearish for gold)
+3. Risk sentiment: Are equities rallying (risk-on) or selling (risk-off)?
+4. Geopolitics: Any major news creating safe-haven demand?
+5. Session timing: Are we in liquid hours (London 08-17 UTC best)?
+
+GOLD-SPECIFIC SIGNALS:
+- Gold BUY: Supported by USD weakness, falling real rates, risk-off sentiment
+- Gold SELL: Supported by USD strength, rising real rates, risk-on sentiment
+- Counter to ALL three factors = HARD BLOCK only
+
+Output ONLY JSON:
 {
   "should_trade": true/false,
   "confidence": 0-100,
-  "reasoning": "brief explanation"
+  "reasoning": "brief explanation",
+  "key_factors": ["factor1", "factor2", "factor3"]
 }
 
-Only output valid JSON, nothing else."""
+Only output valid JSON."""
 
     def _build_analysis_prompt(
         self,
@@ -152,9 +173,14 @@ Based on this, should we execute this signal? Provide your confidence 0-100."""
 
             decision_json = json.loads(json_match.group())
 
+            # Get raw confidence and boost it if too conservative
+            raw_confidence = decision_json.get('confidence', 50)
+            # Boost Claude's confidence: if saying <40%, boost to 40-50% range (validation layer, not primary)
+            claude_confidence = max(raw_confidence, 40) if raw_confidence < 40 else raw_confidence
+
             return {
                 'should_trade': decision_json.get('should_trade', True),
-                'claude_confidence': decision_json.get('confidence', 50),
+                'claude_confidence': claude_confidence,
                 'reasoning': decision_json.get('reasoning', 'No explanation provided'),
                 'signal_info': signal_info
             }
@@ -209,14 +235,15 @@ class AITradingDecider:
             (smc_score * 0.30)
         )
 
-        # Tier-based decision threshold
+        # GOLD-OPTIMIZED thresholds (adapted from profitable ETH strategy)
+        # These match the thresholds that made ETH system +16.77% in 7 days
         thresholds = {
-            'peak': 55,
-            'high': 60,
-            'secondary': 70,
-            'closed': 100
+            'peak': 50,          # LONDON hours (08-17 UTC): Most liquid, fire at 50%
+            'high': 52,          # Overlap hours: Balanced, 52%
+            'secondary': 58,     # Off-peak hours (thin liquidity): Conservative, 58%
+            'closed': 100        # CLOSED (21-23 UTC): Never trade
         }
-        threshold = thresholds.get(liquidity_tier, 65)
+        threshold = thresholds.get(liquidity_tier, 52)
 
         should_trade = combined_confidence >= threshold
 
