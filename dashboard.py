@@ -29,7 +29,7 @@ def load_trades(csv_path):
 
 
 def calculate_metrics(csv_path):
-    """Calculate metrics from trades."""
+    """Calculate metrics from trades (handles both System A and C schemas)."""
     df = load_trades(csv_path)
 
     if df.empty:
@@ -47,24 +47,33 @@ def calculate_metrics(csv_path):
             'total_pnl': '$0.00'
         }
 
-    # Determine PNL column
-    pnl_col = 'pnl' if 'pnl' in df.columns else 'profit_pct'
-
-    # Convert to numeric
-    df[pnl_col] = pd.to_numeric(df[pnl_col], errors='coerce').fillna(0)
+    # Detect schema
+    is_system_c = 'pnl' in df.columns and 'pair' in df.columns
 
     total_trades = len(df)
-    wins = len(df[df[pnl_col] > 0])
-    losses = len(df[df[pnl_col] < 0])
-    win_rate = (wins / total_trades * 100) if total_trades > 0 else 0
 
-    total_pnl = df[pnl_col].sum()
+    if is_system_c:
+        # System C: use 'pnl' column directly
+        df['pnl'] = pd.to_numeric(df['pnl'], errors='coerce').fillna(0)
+        wins = len(df[df['pnl'] > 0])
+        losses = len(df[df['pnl'] < 0])
+        total_pnl = df['pnl'].sum()
+        wins_sum = df[df['pnl'] > 0]['pnl'].sum() if wins > 0 else 0
+        losses_sum = abs(df[df['pnl'] < 0]['pnl'].sum()) if losses > 0 else 1
+    else:
+        # System A: use 'profit_pct' and check 'result' column
+        df['profit_pct'] = pd.to_numeric(df['profit_pct'], errors='coerce').fillna(0)
+        df['result'] = df['result'].fillna('')
+        closed = df[df['result'].isin(['WIN', 'LOSS', 'EXPIRED'])]
+        wins = len(closed[closed['result'] == 'WIN'])
+        losses = len(closed[closed['result'] == 'LOSS'])
+        total_pnl = closed['profit_pct'].sum() if not closed.empty else 0
+        wins_sum = closed[closed['result'] == 'WIN']['profit_pct'].sum() if wins > 0 else 0
+        losses_sum = abs(closed[closed['result'] == 'LOSS']['profit_pct'].sum()) if losses > 0 else 1
+
+    win_rate = ((wins + losses) > 0 and (wins / (wins + losses) * 100)) or 0
     current_capital = STARTING_CAPITAL + total_pnl
-    return_pct = (total_pnl / STARTING_CAPITAL * 100)
-
-    # Profit factor
-    wins_sum = df[df[pnl_col] > 0][pnl_col].sum() if wins > 0 else 0
-    losses_sum = abs(df[df[pnl_col] < 0][pnl_col].sum()) if losses > 0 else 1
+    return_pct = (total_pnl / STARTING_CAPITAL * 100) if STARTING_CAPITAL > 0 else 0
     profit_factor = wins_sum / losses_sum if losses_sum > 0 else 0
 
     return {
@@ -83,35 +92,88 @@ def calculate_metrics(csv_path):
 
 
 def get_recent_trades(csv_path, limit=10):
-    """Get recent closed trades."""
+    """Get recent trades handling both System A and System C schemas."""
     df = load_trades(csv_path)
     if df.empty:
         return []
 
-    # Determine PNL column
-    pnl_col = 'pnl' if 'pnl' in df.columns else 'profit_pct'
-
-    # Filter for closed trades (where pnl is not 0 or 'pending')
-    df[pnl_col] = pd.to_numeric(df[pnl_col], errors='coerce')
-    closed = df[df[pnl_col] != 0].tail(limit)
+    # Detect schema (System A or System C)
+    is_system_c = 'pnl' in df.columns and 'pair' in df.columns
+    is_system_a = 'signal_id' in df.columns and 'symbol' in df.columns
 
     trades = []
-    for _, row in closed.iterrows():
-        pair = row.get('pair', row.get('symbol', 'XAUUSD'))
-        direction = row.get('direction', 'N/A')
-        pnl = float(row[pnl_col])
-        outcome = 'WIN' if pnl > 0 else 'LOSS'
-        entry = row.get('entry', 'N/A')
+    recent = df.tail(limit).copy()
 
-        trades.append({
-            'pair': pair,
-            'direction': direction,
-            'outcome': outcome,
-            'entry': entry,
-            'pnl_pct': f'{pnl:.2f}%' if pnl_col == 'profit_pct' else f'{(pnl/10000*100):.2f}%',
-            'pnl_usd': f'${pnl:.2f}',
-            'timestamp': row.get('timestamp', '')
-        })
+    for _, row in recent.iterrows():
+        try:
+            if is_system_c:
+                # System C schema
+                pair = row.get('pair', 'XAUUSD')
+                direction = str(row.get('direction', 'N/A')).upper()
+                entry = row.get('entry', 'N/A')
+                pnl = float(row.get('pnl', 0))
+
+                outcome = 'OPEN' if pnl == 0 else ('WIN' if pnl > 0 else 'LOSS')
+                pnl_pct = '-' if pnl == 0 else f'{pnl:.2f}%'
+                pnl_usd = '-' if pnl == 0 else f'${pnl:.2f}'
+                timestamp = row.get('timestamp', '')
+
+            else:
+                # System A schema
+                pair = row.get('symbol', 'XAUUSD')
+
+                # Handle NaN direction column (pandas reads empty as 'nan' float)
+                import pandas as pd
+                direction_val = row.get('direction', '')
+                direction_str = str(direction_val).strip().upper()
+                if direction_str in ['NAN', ''] or pd.isna(direction_val):
+                    # Infer from entry vs take_profit
+                    try:
+                        entry_val = float(row.get('entry_price', 0))
+                        tp_val = float(row.get('take_profit', 0))
+                        direction = 'BUY' if tp_val > entry_val else 'SELL'
+                    except:
+                        direction = 'UNKNOWN'
+                else:
+                    direction = direction_str
+
+                entry = row.get('entry_price', 'N/A')
+
+                # Handle NaN result column
+                result_val = row.get('result', '')
+                result_str = str(result_val).strip().upper()
+                if result_str in ['NAN', '']:
+                    result = 'OPEN'
+                else:
+                    result = result_str
+
+                # Parse profit_pct safely - check for NaN
+                try:
+                    pnl_pct_raw = row.get('profit_pct', 0)
+                    if pd.isna(pnl_pct_raw):
+                        pnl_pct_val = 0
+                    else:
+                        pnl_pct_val = float(pnl_pct_raw)
+                except:
+                    pnl_pct_val = 0
+
+                outcome = result if result in ['WIN', 'LOSS', 'EXPIRED'] else 'OPEN'
+                pnl_pct = '-' if pnl_pct_val == 0 or result == 'OPEN' else f'{pnl_pct_val:.2f}%'
+                pnl_usd = '-' if pnl_pct_val == 0 or result == 'OPEN' else f'${(pnl_pct_val/100*10000):.2f}'
+                timestamp = row.get('timestamp', '')
+
+            trades.append({
+                'pair': pair,
+                'direction': direction,
+                'outcome': outcome,
+                'entry': entry,
+                'pnl_pct': pnl_pct,
+                'pnl_usd': pnl_usd,
+                'timestamp': timestamp
+            })
+        except Exception as e:
+            logger.warning(f"Error parsing trade: {e}")
+            continue
 
     return trades
 
@@ -125,12 +187,17 @@ def build_trade_rows_html(csv_path):
 
     rows = ''
     for trade in trades:
-        color = '#10b981' if trade['outcome'] == 'WIN' else '#ef4444'
+        if trade['outcome'] == 'WIN':
+            color = '#10b981'  # Green
+        elif trade['outcome'] == 'LOSS':
+            color = '#ef4444'  # Red
+        else:  # OPEN
+            color = '#f59e0b'  # Amber
         rows += f'''
         <tr>
             <td>{trade['pair']}</td>
             <td>{trade['direction']}</td>
-            <td style="color:{color}">{trade['outcome']}</td>
+            <td style="color:{color}; font-weight:bold;">{trade['outcome']}</td>
             <td>{trade['entry']}</td>
             <td>-</td>
             <td style="color:{color}">{trade['pnl_pct']}</td>
@@ -157,6 +224,7 @@ def dashboard():
         <title>Gold Signal Fetcher - Dashboard</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta http-equiv="refresh" content="10">
         <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -335,8 +403,8 @@ def dashboard():
                         <div><div class="capital-label">Current Capital</div><div class="capital-value">''' + metrics_a['current_capital'] + '''</div></div>
                     </div>
                     <div class="capital-row">
-                        <div><div class="capital-label">Total Profit</div><div class="capital-value ''' + ('positive' if float(metrics_a['total_profit'].replace('$','')) >= 0 else 'negative') + '''"''' + metrics_a['total_profit'] + '''</div></div>
-                        <div><div class="capital-label">Return %</div><div class="capital-value ''' + ('positive' if float(metrics_a['return_pct'].replace('%','')) >= 0 else 'negative') + '''"''' + metrics_a['return_pct'] + '''</div></div>
+                        <div><div class="capital-label">Total Profit</div><div class="capital-value ''' + ('positive' if float(metrics_a['total_profit'].replace('$','').replace(',','')) >= 0 else 'negative') + '''"''' + metrics_a['total_profit'] + '''</div></div>
+                        <div><div class="capital-label">Return %</div><div class="capital-value ''' + ('positive' if float(metrics_a['return_pct'].replace('%','').replace(',','')) >= 0 else 'negative') + '''"''' + metrics_a['return_pct'] + '''</div></div>
                     </div>
                 </div>
 
@@ -347,8 +415,8 @@ def dashboard():
                         <div><div class="capital-label">Current Capital</div><div class="capital-value">''' + metrics_c['current_capital'] + '''</div></div>
                     </div>
                     <div class="capital-row">
-                        <div><div class="capital-label">Total Profit</div><div class="capital-value ''' + ('positive' if float(metrics_c['total_profit'].replace('$','')) >= 0 else 'negative') + '''"''' + metrics_c['total_profit'] + '''</div></div>
-                        <div><div class="capital-label">Return %</div><div class="capital-value ''' + ('positive' if float(metrics_c['return_pct'].replace('%','')) >= 0 else 'negative') + '''"''' + metrics_c['return_pct'] + '''</div></div>
+                        <div><div class="capital-label">Total Profit</div><div class="capital-value ''' + ('positive' if float(metrics_c['total_profit'].replace('$','').replace(',','')) >= 0 else 'negative') + '''"''' + metrics_c['total_profit'] + '''</div></div>
+                        <div><div class="capital-label">Return %</div><div class="capital-value ''' + ('positive' if float(metrics_c['return_pct'].replace('%','').replace(',','')) >= 0 else 'negative') + '''"''' + metrics_c['return_pct'] + '''</div></div>
                     </div>
                 </div>
             </div>

@@ -45,8 +45,64 @@ def _save_csv(df: pd.DataFrame):
         logger.error(f"Failed to save CSV: {e}")
 
 
+def _is_duplicate_signal(df: pd.DataFrame, signal: dict, max_age_minutes: int = 30) -> bool:
+    """Check if identical signal already exists in last N minutes (deduplication)."""
+    if df.empty:
+        return False
+
+    entry_price = float(signal.get("price", 0))
+    stop_loss = float(signal.get("stop_loss", 0))
+    take_profit = float(signal.get("take_profit", 0))
+    direction = signal.get("direction", "")
+
+    # Find recent OPEN signals with same direction, entry, SL, TP
+    now = datetime.utcnow()
+    recent_mask = (
+        (df["status"] == "OPEN") &
+        (df["direction"] == direction) &
+        (df["symbol"].str.contains("XAUUSD", na=False))
+    )
+
+    if recent_mask.empty:
+        return False
+
+    recent = df[recent_mask].copy()
+
+    for _, row in recent.iterrows():
+        try:
+            ts = datetime.fromisoformat(row["timestamp"].replace("Z", "+00:00"))
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+
+            age_min = (now - ts).total_seconds() / 60
+            if age_min > max_age_minutes:
+                continue  # Too old, not a duplicate
+
+            row_entry = float(row["entry_price"])
+            row_sl = float(row["stop_loss"])
+            row_tp = float(row["take_profit"])
+
+            # Check if signal matches within price tolerance (0.1%)
+            tol = 0.001
+            if (abs(entry_price - row_entry) < entry_price * tol and
+                abs(stop_loss - row_sl) < entry_price * tol and
+                abs(take_profit - row_tp) < entry_price * tol):
+                logger.warning(f"Duplicate signal detected: {direction} @ {entry_price:.2f} (age: {age_min:.0f}min)")
+                return True
+        except (ValueError, TypeError):
+            continue
+
+    return False
+
+
 def log_signal(signal: dict, analysis: dict, trend_filter_result: str, blocked_reason: str = "") -> str:
     df = _load_csv()
+
+    # **NEW: Check for duplicate signals (prevent logging same signal every 5min)**
+    if not blocked_reason and _is_duplicate_signal(df, signal, max_age_minutes=30):
+        logger.info(f"Skipped duplicate signal: {signal.get('direction')} @ {signal.get('price')}")
+        return None  # Return None to indicate signal was skipped
+
     signal_id = str(uuid.uuid4())[:8].upper()
     status = "BLOCKED" if blocked_reason else "OPEN"
 
@@ -106,13 +162,13 @@ def _calculate_profit_pct(status: str, entry_price: float, stop_loss: float,
 
 
 def update_open_trades(exchange) -> int:
-    """Check all OPEN crypto trades using ccxt OHLC candles."""
+    """Check all OPEN XAUUSD trades using OHLC candles (fallback for non-async)."""
     df = _load_csv()
-    open_mask = df["status"] == "OPEN"
+    open_mask = (df["status"] == "OPEN") & (df["symbol"].str.contains("XAUUSD", na=False))
     open_trades = df[open_mask].copy()
 
     if open_trades.empty:
-        logger.info("No open trades to update.")
+        logger.info("No open XAUUSD trades to update.")
         return 0
 
     updated = 0
@@ -121,6 +177,7 @@ def update_open_trades(exchange) -> int:
     for idx, row in open_trades.iterrows():
         try:
             symbol = row["symbol"]
+            signal_id = row["signal_id"]
             entry_price = float(row["entry_price"])
             stop_loss = float(row["stop_loss"])
             take_profit = float(row["take_profit"])
@@ -128,55 +185,52 @@ def update_open_trades(exchange) -> int:
             if entry_time.tzinfo is None:
                 entry_time = entry_time.replace(tzinfo=timezone.utc)
 
-            if (now_utc - entry_time) >= timedelta(hours=settings.TRADE_EXPIRY_HOURS):
-                try:
-                    ticker = exchange.fetch_ticker(symbol)
-                    current_price = float(ticker["last"])
-                except Exception:
-                    current_price = entry_price
+            # **NEW: Check expiry (48h default)**
+            trade_age_hours = (now_utc - entry_time).total_seconds() / 3600
+            if trade_age_hours >= settings.TRADE_EXPIRY_HOURS:
                 df.at[idx, "status"] = "EXPIRED"
-                df.at[idx, "exit_price"] = str(current_price)
+                df.at[idx, "exit_price"] = str(entry_price)  # Default to entry if no price
                 df.at[idx, "exit_time"] = now_utc.isoformat()
                 df.at[idx, "result"] = "EXPIRED"
-                df.at[idx, "profit_pct"] = str(_calculate_profit_pct("EXPIRED", entry_price, stop_loss, take_profit, current_price))
-                df.at[idx, "exit_reason"] = "TIMEOUT_48H"
+                df.at[idx, "profit_pct"] = str(_calculate_profit_pct("EXPIRED", entry_price, stop_loss, take_profit, entry_price))
+                df.at[idx, "exit_reason"] = f"EXPIRED_AFTER_{settings.TRADE_EXPIRY_HOURS}H"
                 updated += 1
+                logger.info(f"Trade {signal_id}: EXPIRED after {trade_age_hours:.1f}h")
                 continue
 
-            since_ms = int(entry_time.timestamp() * 1000)
+            # **NEW: Try to get current price from exchange**
             try:
-                raw = exchange.fetch_ohlcv(symbol, "1h", since=since_ms, limit=200)
+                ticker = exchange.fetch_ticker(symbol)
+                current_price = float(ticker["last"])
             except Exception as e:
-                logger.warning(f"Could not fetch candles for {symbol}: {e}")
+                logger.warning(f"Could not fetch ticker for {symbol}: {e}, skipping update")
                 continue
 
-            if not raw:
-                continue
-
+            # **NEW: Simple logic — check if TP or SL hit (using current price)**
             hit = None
             exit_price_val = None
             exit_reason = None
 
-            for candle in raw:
-                ts_ms, o, h, l, c, v = candle
-                candle_time = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
-                if candle_time <= entry_time:
-                    continue
-                if l <= stop_loss and h >= take_profit:
-                    hit = "LOSS"
-                    exit_price_val = stop_loss
-                    exit_reason = "BOTH_HIT_CONSERVATIVE"
-                    break
-                elif l <= stop_loss:
+            if row["direction"].upper() == "BUY":
+                # For BUY: SL is below, TP is above
+                if current_price <= stop_loss:
                     hit = "LOSS"
                     exit_price_val = stop_loss
                     exit_reason = "STOP_LOSS_HIT"
-                    break
-                elif h >= take_profit:
+                elif current_price >= take_profit:
                     hit = "WIN"
                     exit_price_val = take_profit
                     exit_reason = "TAKE_PROFIT_HIT"
-                    break
+            else:
+                # For SELL: SL is above, TP is below
+                if current_price >= stop_loss:
+                    hit = "LOSS"
+                    exit_price_val = stop_loss
+                    exit_reason = "STOP_LOSS_HIT"
+                elif current_price <= take_profit:
+                    hit = "WIN"
+                    exit_price_val = take_profit
+                    exit_reason = "TAKE_PROFIT_HIT"
 
             if hit:
                 df.at[idx, "status"] = hit
@@ -186,14 +240,15 @@ def update_open_trades(exchange) -> int:
                 df.at[idx, "profit_pct"] = str(_calculate_profit_pct(hit, entry_price, stop_loss, take_profit, exit_price_val))
                 df.at[idx, "exit_reason"] = exit_reason
                 updated += 1
-                logger.info(f"Trade {row['signal_id']} {symbol}: {hit} via {exit_reason}")
+                logger.info(f"Trade {signal_id} {symbol}: {hit} @ {exit_price_val:.2f} via {exit_reason}")
 
         except Exception as e:
             logger.error(f"Error updating trade {row.get('signal_id', '?')}: {e}")
             continue
 
     _save_csv(df)
-    logger.info(f"Updated {updated} trades.")
+    if updated > 0:
+        logger.info(f"✅ Updated {updated} trades (closed/expired)")
     return updated
 
 

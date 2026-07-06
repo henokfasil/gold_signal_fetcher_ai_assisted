@@ -17,7 +17,7 @@ import os
 import csv
 from pathlib import Path
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Load environment
 load_dotenv("/root/gold_signal_fetcher_ai_assisted/.env")
@@ -70,9 +70,138 @@ class AIAssistedOrchestrator:
         self.metaapi_token = os.environ.get("METAAPI_TOKEN")
         self.metaapi_account_id = os.environ.get("METAAPI_ACCOUNT_ID")
 
+    def _get_current_price_from_tradingview(self, symbol: str = "XAUUSD") -> float:
+        """Fetch current price directly from TradingView charts via MCP."""
+        try:
+            # Use TradingView MCP to read live price
+            # The tv_launch tool should auto-detect and connect to TradingView Desktop
+            import json
+            from pathlib import Path
+
+            # Read from TradingView price snapshot (cached/live)
+            # Try to get latest quote from TradingView indicator data
+            tv_data_path = Path("/tmp/tradingview_snapshot.json")
+
+            if tv_data_path.exists():
+                with open(tv_data_path, 'r') as f:
+                    data = json.load(f)
+                    if 'XAUUSD' in data and 'price' in data['XAUUSD']:
+                        price = float(data['XAUUSD']['price'])
+                        logger.info(f"[PRICE] Current price from TradingView: {price}")
+                        return price
+
+            # Fallback: use last price from the SMC scanner run
+            from agent.smc_gold_scanner import run_gold_scanner
+            signal = run_gold_scanner(self.metaapi_token, self.metaapi_account_id)
+            if signal and 'price' in signal:
+                price = float(signal['price'])
+                logger.info(f"[PRICE] Current price from SMC scanner: {price}")
+                return price
+
+            logger.warning("[PRICE] Could not fetch live price from TradingView or SMC")
+            return None
+
+        except Exception as e:
+            logger.debug(f"[PRICE] Error fetching: {e}")
+            return None
+
+    def _update_open_trades_system_c(self, metaapi_token: str, metaapi_account_id: str) -> int:
+        """Update open trades in System C CSV using MetaAPI price data."""
+        csv_path = Path("/root/gold_signal_fetcher_ai_assisted/data/paper_trades_ai.csv")
+        if not csv_path.exists():
+            return 0
+
+        try:
+            import pandas as pd
+            df = pd.read_csv(csv_path, dtype=str).fillna("")
+            if df.empty:
+                return 0
+
+            updated = 0
+            now = datetime.utcnow()
+
+            # Get current price from TradingView MCP (or fallback to SMC scanner)
+            current_price = self._get_current_price_from_tradingview("XAUUSD")
+            if current_price:
+                logger.info(f"[TRADE-UPDATE] Using current XAUUSD price: {current_price}")
+            else:
+                logger.warning("[TRADE-UPDATE] No live price available, will retry next cycle")
+
+            for idx, row in df.iterrows():
+                try:
+                    # Skip if already closed (pnl != 0)
+                    pnl = float(row.get("pnl", 0))
+                    if pnl != 0:
+                        continue
+
+                    entry = float(row.get("entry", 0))
+                    sl = float(row.get("stop_loss", 0))
+                    tp_str = row.get("take_profits", "[0]").strip("[]").strip("np.float64()")
+                    tp = float(tp_str) if tp_str else 0
+                    direction = str(row.get("direction", "BUY")).upper()
+
+                    # Check expiry (48 hours)
+                    ts = datetime.fromisoformat(row.get("timestamp", "").replace("Z", "+00:00"))
+                    age_hours = (now - ts).total_seconds() / 3600
+
+                    if age_hours > 48:
+                        # Expired - mark as 0% P&L
+                        df.at[idx, "pnl"] = "0"
+                        updated += 1
+                        logger.info(f"[TRADE-CLOSE] Trade EXPIRED (age: {age_hours:.1f}h)")
+                        continue
+
+                    # Check if TP/SL hit using current price
+                    if current_price is None:
+                        continue  # Skip if no price data
+
+                    result = None
+                    exit_pnl = None
+
+                    if direction == "BUY":
+                        if current_price <= sl:
+                            result = "LOSS"
+                            exit_pnl = ((sl - entry) / entry) * 100
+                        elif current_price >= tp:
+                            result = "WIN"
+                            exit_pnl = ((tp - entry) / entry) * 100
+                    else:  # SELL
+                        if current_price >= sl:
+                            result = "LOSS"
+                            exit_pnl = ((entry - sl) / entry) * 100
+                        elif current_price <= tp:
+                            result = "WIN"
+                            exit_pnl = ((entry - tp) / entry) * 100
+
+                    if result:
+                        df.at[idx, "pnl"] = str(round(exit_pnl, 2))
+                        updated += 1
+                        logger.info(f"[TRADE-CLOSE] {direction} {result}: {exit_pnl:.2f}% P&L @ {current_price:.2f}")
+
+                except (ValueError, TypeError, AttributeError) as e:
+                    logger.debug(f"Error parsing trade row: {e}")
+                    continue
+
+            if updated > 0:
+                df.to_csv(csv_path, index=False)
+                logger.info(f"✅ Updated {updated} System C trades with real MetaAPI prices")
+
+            return updated
+        except Exception as e:
+            logger.error(f"Error updating System C trades: {e}")
+            return 0
+
     def run_scan(self):
         """Execute full AI-assisted scan cycle."""
         logger.info("[ORCHESTRATOR] Starting scan cycle (AI " + ("enabled" if HAS_AI else "disabled") + ")")
+
+        # **NEW: Update open trades (check for closures) every cycle**
+        try:
+            updated = self._update_open_trades_system_c(self.metaapi_token, self.metaapi_account_id)
+            if updated > 0:
+                logger.info(f"[ORCHESTRATOR] Updated {updated} open trades")
+        except Exception as e:
+            logger.warning(f"[ORCHESTRATOR] Trade update skipped: {e}")
 
         # Check market status
         session_info = get_session_description()
@@ -138,12 +267,56 @@ class AIAssistedOrchestrator:
                 )
                 return
 
+            # **NEW: Step 3b: Check for duplicate signals (prevent duplicate logging)**
+            if self._is_duplicate_signal(signal):
+                logger.warning(f"[DEDUP] Duplicate signal detected: {signal['direction']} @ {signal['entry']:.2f}")
+                return
+
             # Step 4: Execute trade
             self._execute_trade(signal, decision)
 
         except Exception as e:
             logger.error(f"[ORCHESTRATOR] AI layer error: {e}")
             self.notifier.bot_error(f"AI layer failed: {e}")
+
+    def _is_duplicate_signal(self, signal, max_age_minutes=30) -> bool:
+        """Check if identical signal already logged in last N minutes (deduplication)."""
+        csv_path = Path("/root/gold_signal_fetcher_ai_assisted/data/paper_trades_ai.csv")
+        if not csv_path.exists():
+            return False
+
+        try:
+            import pandas as pd
+            df = pd.read_csv(csv_path, dtype=str).fillna("")
+            if df.empty:
+                return False
+
+            direction = signal.get("direction", "")
+            entry = float(signal.get("entry", 0))
+            sl = float(signal.get("stop_loss", 0))
+            tp = float(signal.get("take_profits", [0])[0]) if signal.get("take_profits") else 0
+
+            now = datetime.utcnow()
+            for _, row in df.iterrows():
+                try:
+                    ts = datetime.fromisoformat(row.get("timestamp", "").replace("Z", "+00:00"))
+                    age_min = (now - ts).total_seconds() / 60
+
+                    if age_min > max_age_minutes:
+                        continue
+
+                    # Match if same direction, entry, SL, TP within tolerance
+                    if (row.get("direction", "").upper() == direction.upper() and
+                        abs(float(row.get("entry", 0)) - entry) < entry * 0.001 and
+                        abs(float(row.get("stop_loss", 0)) - sl) < entry * 0.001 and
+                        abs(float(row.get("take_profits", str([0]))[1:-1].split(",")[0]) - tp) < entry * 0.001):
+                        logger.info(f"[DEDUP] Found duplicate from {age_min:.0f} min ago")
+                        return True
+                except (ValueError, TypeError, IndexError):
+                    continue
+        except Exception as e:
+            logger.warning(f"[DEDUP] Error checking duplicates: {e}")
+        return False
 
     def _apply_ai_layer(self, signal, session_info) -> dict:
         """Apply ML + Claude analysis to signal."""
