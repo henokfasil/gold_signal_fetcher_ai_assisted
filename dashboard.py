@@ -50,6 +50,12 @@ def calculate_metrics(csv_path):
     # Detect schema
     is_system_c = 'pnl' in df.columns and 'pair' in df.columns
 
+    # BLOCKED signals were never trades — exclude from counts and tables
+    if 'status' in df.columns:
+        df = df[df['status'].astype(str).str.upper() != 'BLOCKED']
+    if 'trend_filter_result' in df.columns:
+        df = df[~df['trend_filter_result'].astype(str).str.startswith('BLOCKED')]
+
     total_trades = len(df)
 
     if is_system_c:
@@ -100,6 +106,12 @@ def get_recent_trades(csv_path, limit=10):
     # Detect schema (System A or System C)
     is_system_c = 'pnl' in df.columns and 'pair' in df.columns
     is_system_a = 'signal_id' in df.columns and 'symbol' in df.columns
+
+    # BLOCKED signals were never trades — don't render them as OPEN positions
+    if 'status' in df.columns:
+        df = df[df['status'].astype(str).str.upper() != 'BLOCKED']
+    if 'trend_filter_result' in df.columns:
+        df = df[~df['trend_filter_result'].astype(str).str.startswith('BLOCKED')]
 
     trades = []
     recent = df.tail(limit).copy()
