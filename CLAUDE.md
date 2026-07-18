@@ -190,6 +190,19 @@ acceptable for initial research if the export license permits this use and the
 symbol/provider remain `OANDA:XAUUSD`; do not mix it silently with futures or
 another broker feed. Example:
 
+The default account-free research source is Dukascopy XAUUSD. It is explicitly
+recorded as a different broker feed from runtime `OANDA:XAUUSD`; cross-feed
+stability must be measured. Download resumably (bid, ask and midpoint) with:
+
+```bash
+python -m research.download_dukascopy_xauusd \
+  data/raw/dukascopy_xauusd_15m_2020_2026.csv \
+  --start 2020-01-01 --end 2026-07-18
+```
+
+Then build candidates from its midpoint OHLC while retaining bid/ask columns
+for later execution-cost research:
+
 ```bash
 python -m research.build_historical_dataset \
   data/raw/oanda_xauusd_15m.csv \
