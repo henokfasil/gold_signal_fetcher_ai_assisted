@@ -6,7 +6,8 @@ The only active deployment is `187.55.229.4` in
 ## Runtime
 
 - Dashboard: `gold-signal-fetcher.service`, port `8502`.
-- TradingView desktop/MCP: optional interactive legacy research only.
+- TradingView desktop/MCP: installed but disabled/stopped; optional interactive
+  legacy research only. Re-enable only for a deliberate maintenance session.
 - CDP and maintenance VNC, if enabled, remain localhost-only.
 - Paper scan: `ops/run_gold_scanner_ai.sh` at minutes 5/20/35/50.
 - Price source: Dukascopy public feed, exact XAUUSD bid/ask.

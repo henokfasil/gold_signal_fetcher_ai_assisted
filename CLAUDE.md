@@ -107,8 +107,9 @@ Canonical VPS facts as of 2026-07-19:
   violation aborts that scan before candidate analysis.
 - The former host `72.60.133.179` is not the canonical deployment and must
   remain inactive for System C.
-- TradingView Desktop and `tradingview-mcp` may remain installed for interactive
-  research, but they are not the automated paper data source.
+- TradingView Desktop and `tradingview-mcp` remain installed for optional
+  interactive research, but their display/session units are disabled and
+  stopped to save CPU/RAM. They are not the automated paper data source.
 - Before this revision, the migrated VPS had local changes using Yahoo Finance
   `GC=F`. That is a gold-futures proxy rather than broker XAUUSD, and its 4H and
   15M interval adaptation was incomplete. The selected live paper-research
