@@ -113,6 +113,13 @@ localhost and must be accessed only through an SSH tunnel; it is not enabled at
 boot and should be stopped after login/layout maintenance. TradingView login
 state lives in `/home/tvfetcher`, outside the repository.
 
+The scheduled live research collector does not require an authenticated
+TradingView account: the MCP successfully provides the required 200 bars for
+all five timeframes from the exact `OANDA:XAUUSD` chart in an anonymous
+session. Premium authentication is therefore deferred to separate historical
+research, where deeper history may matter; it is not a dependency of forward
+paper trading. The MCP itself currently caps extraction at 500 bars.
+
 ## Claude policy
 
 Claude receives structured signal, technical, ML and macro data. It must use
