@@ -18,6 +18,7 @@ from agent.smc_gold_scanner import (
 from dashboard import get_feed_health
 from main_orchestrator import AIAssistedOrchestrator, ForwardFeatureJournal, ForwardOutcomeJournal
 from research.build_historical_dataset import label_candidate, load_ohlcv
+from research.simulate_portfolio import simulate
 
 
 class FakeClaude:
@@ -32,6 +33,19 @@ class FakeClaude:
 
 
 class ResearchPipelineTests(unittest.TestCase):
+    def test_portfolio_simulator_enforces_setup_cooldown(self):
+        rows = pd.DataFrame([
+            {"timestamp": "2026-01-02T10:00:00Z", "exit_time": "2026-01-02T11:00:00Z",
+             "direction": "BUY", "entry": 100, "rr_ratio": 2, "label_profitable": 1,
+             "label_status": "TP", "net_return_pct": 1},
+            {"timestamp": "2026-01-02T10:15:00Z", "exit_time": "2026-01-02T11:15:00Z",
+             "direction": "BUY", "entry": 100.05, "rr_ratio": 2, "label_profitable": 1,
+             "label_status": "TP", "net_return_pct": 1},
+        ])
+        events, report = simulate(rows, cooldown_hours=4)
+        self.assertEqual(report["opened"], 1)
+        self.assertEqual(events.iloc[1]["reason"], "SETUP_COOLDOWN")
+
     def test_historical_open_timestamp_becomes_visible_at_close(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "bars.csv"

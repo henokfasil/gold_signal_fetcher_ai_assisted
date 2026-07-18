@@ -153,6 +153,12 @@ weekly loss cap. Configuration lives in `config/gold_strategy_params.json` and
 environment overrides live in `.env`. Position sizing is paper notional only;
 no broker order method is present.
 
+Duplicate setup suppression uses a four-hour same-direction/nearby-entry
+cooldown. Daily and weekly caps are calculated from realized paper USD P&L as a
+percentage of the paper account—not by incorrectly summing instrument returns.
+The historical portfolio simulator in `research/simulate_portfolio.py` applies
+the same lifecycle, capacity and loss-cap ordering.
+
 ## Verification
 
 ```bash

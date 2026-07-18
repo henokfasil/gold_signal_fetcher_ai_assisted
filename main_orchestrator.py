@@ -75,7 +75,7 @@ class PaperLedger:
         frame = self.load()
         return frame[frame["status"] == "OPEN"].to_dict("records")
 
-    def is_duplicate(self, signal: dict, minutes: int = 30) -> bool:
+    def is_duplicate(self, signal: dict, minutes: int = 240) -> bool:
         frame = self.load()
         if frame.empty:
             return False
@@ -98,6 +98,18 @@ class PaperLedger:
             try:
                 if row["status"] in {"WIN", "LOSS", "EXPIRED"} and parse_utc(row["exit_time"]) >= since:
                     total += float(row["pnl_pct"] or 0)
+            except (ValueError, TypeError):
+                continue
+        return total
+
+    def realized_pnl_usd(self, since: datetime) -> float:
+        """Realized paper dollars, used for account-level loss caps."""
+        frame = self.load()
+        total = 0.0
+        for _, row in frame.iterrows():
+            try:
+                if row["status"] in {"WIN", "LOSS", "EXPIRED"} and parse_utc(row["exit_time"]) >= since:
+                    total += float(row["pnl_usd"] or 0)
             except (ValueError, TypeError):
                 continue
         return total
@@ -341,9 +353,11 @@ class AIAssistedOrchestrator:
             vetoes.append("MIN_RR_NOT_MET")
         today = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
         week = today - timedelta(days=today.weekday())
-        if self.ledger.realized_pnl(today) <= -abs(settings.DAILY_LOSS_CAP_PCT):
+        daily_account_pct = self.ledger.realized_pnl_usd(today) / settings.PAPER_ACCOUNT_SIZE * 100
+        weekly_account_pct = self.ledger.realized_pnl_usd(week) / settings.PAPER_ACCOUNT_SIZE * 100
+        if daily_account_pct <= -abs(settings.DAILY_LOSS_CAP_PCT):
             vetoes.append("DAILY_LOSS_CAP")
-        if self.ledger.realized_pnl(week) <= -abs(settings.WEEKLY_LOSS_CAP_PCT):
+        if weekly_account_pct <= -abs(settings.WEEKLY_LOSS_CAP_PCT):
             vetoes.append("WEEKLY_LOSS_CAP")
         return vetoes
 

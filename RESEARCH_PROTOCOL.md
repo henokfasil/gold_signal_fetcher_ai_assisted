@@ -85,3 +85,20 @@ The calibrated purged walk-forward XGBoost v3 result is `REJECT_MODEL`.
 No model artifact may be created or deployed from it. Hyperparameter search on
 the same years is prohibited until the event lifecycle, dependence weighting
 and directional research questions above are implemented.
+
+## Lifecycle portfolio diagnostic v4
+
+The pre-registered four-hour nearby-entry cooldown and runtime-aligned gates
+reduced 40,792 raw candidates to 2,695 opened development positions. With
+$10,000 starting paper capital and $5,000 fixed notional per position:
+
+- ending return: -0.41%;
+- profit factor: 0.999;
+- maximum drawdown: 34.55%;
+- maximum concurrent positions: 12;
+- BUY P&L: +$1,396.99;
+- SELL P&L: -$1,437.82.
+
+This is a rejection, not an edge. The near-flat ending return does not excuse
+the unacceptable path drawdown, and SELL offsets BUY. Results remain
+development-only because the period influenced the research design.
