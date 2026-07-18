@@ -39,8 +39,10 @@ def load_ohlcv(path: Path, timestamp_is: str = "open") -> pd.DataFrame:
     if "volume" not in frame:
         frame["volume"] = 0.0
     frame["timestamp"] = pd.to_datetime(frame[time_col], utc=True, errors="raise")
-    frame = frame[["timestamp", "open", "high", "low", "close", "volume"]].copy()
-    for column in ("open", "high", "low", "close", "volume"):
+    optional = [f"{side}_{field}" for side in ("bid", "ask")
+                for field in ("open", "high", "low", "close") if f"{side}_{field}" in frame]
+    frame = frame[["timestamp", "open", "high", "low", "close", "volume", *optional]].copy()
+    for column in ("open", "high", "low", "close", "volume", *optional):
         frame[column] = pd.to_numeric(frame[column], errors="raise")
     frame = frame.sort_values("timestamp").drop_duplicates("timestamp", keep="last")
     valid = ((frame[["open", "high", "low", "close"]] > 0).all(axis=1)
@@ -63,32 +65,47 @@ def resample_closed_bars(source: pd.DataFrame, rule: str) -> pd.DataFrame:
 
 
 def label_candidate(signal: dict, future: pd.DataFrame, expiry_hours: int,
-                    spread_points: float, slippage_points: float) -> dict:
+                    spread_points: float, slippage_points: float,
+                    decision_bar: pd.Series = None) -> dict:
     direction = signal["direction"]
     entry, stop, target = map(float, (signal["price"], signal["stop_loss"], signal["take_profit"]))
-    cost = float(spread_points) + 2.0 * float(slippage_points)
+    has_quotes = (decision_bar is not None and
+                  all(f"{side}_{field}" in future.columns for side in ("bid", "ask")
+                      for field in ("high", "low", "close")) and
+                  "ask_close" in decision_bar and "bid_close" in decision_bar)
+    if has_quotes:
+        executable_entry = float(decision_bar["ask_close"] if direction == "BUY"
+                                 else decision_bar["bid_close"])
+        cost = 2.0 * float(slippage_points)
+        side = "bid" if direction == "BUY" else "ask"
+    else:
+        executable_entry, cost, side = entry, float(spread_points) + 2.0 * float(slippage_points), None
     horizon = future.iloc[: max(1, expiry_hours * 4)]
     for timestamp, bar in horizon.iterrows():
-        hit_tp = bar["high"] >= target if direction == "BUY" else bar["low"] <= target
-        hit_sl = bar["low"] <= stop if direction == "BUY" else bar["high"] >= stop
+        high = bar[f"{side}_high"] if side else bar["high"]
+        low = bar[f"{side}_low"] if side else bar["low"]
+        hit_tp = high >= target if direction == "BUY" else low <= target
+        hit_sl = low <= stop if direction == "BUY" else high >= stop
         if hit_tp and hit_sl:
             return {"label_profitable": np.nan, "label_status": "AMBIGUOUS_SAME_BAR",
                     "exit_time": timestamp.isoformat(), "net_return_pct": np.nan}
         if hit_tp or hit_sl:
-            gross_points = (target - entry if direction == "BUY" else entry - target) if hit_tp else \
-                           (stop - entry if direction == "BUY" else entry - stop)
+            gross_points = (target - executable_entry if direction == "BUY" else executable_entry - target) if hit_tp else \
+                           (stop - executable_entry if direction == "BUY" else executable_entry - stop)
             net_points = gross_points - cost
             return {"label_profitable": int(net_points > 0),
                     "label_status": "TP" if hit_tp else "SL", "exit_time": timestamp.isoformat(),
-                    "net_return_pct": net_points / entry * 100}
+            "net_return_pct": net_points / executable_entry * 100,
+            "execution_label_source": "BID_ASK" if has_quotes else "MIDPOINT_COST_ASSUMPTION"}
     if horizon.empty:
         return {"label_profitable": np.nan, "label_status": "UNMATURED",
                 "exit_time": "", "net_return_pct": np.nan}
-    exit_price = float(horizon.iloc[-1]["close"])
-    gross_points = exit_price - entry if direction == "BUY" else entry - exit_price
+    exit_price = float(horizon.iloc[-1][f"{side}_close"] if side else horizon.iloc[-1]["close"])
+    gross_points = exit_price - executable_entry if direction == "BUY" else executable_entry - exit_price
     net_points = gross_points - cost
     return {"label_profitable": int(net_points > 0), "label_status": "EXPIRY",
-            "exit_time": horizon.index[-1].isoformat(), "net_return_pct": net_points / entry * 100}
+            "exit_time": horizon.index[-1].isoformat(), "net_return_pct": net_points / executable_entry * 100,
+            "execution_label_source": "BID_ASK" if has_quotes else "MIDPOINT_COST_ASSUMPTION"}
 
 
 def build(source: pd.DataFrame, scan_minutes: int = 15, expiry_hours: int = 48,
@@ -120,7 +137,10 @@ def build(source: pd.DataFrame, scan_minutes: int = 15, expiry_hours: int = 48,
         if vector is None:
             continue
         future = source.loc[source.index > as_of]
-        label = label_candidate(signal, future, expiry_hours, spread_points, slippage_points)
+        decision_bar = source.loc[as_of]
+        if isinstance(decision_bar, pd.DataFrame):
+            decision_bar = decision_bar.iloc[-1]
+        label = label_candidate(signal, future, expiry_hours, spread_points, slippage_points, decision_bar)
         row = {"timestamp": as_of.isoformat(), "pair": "OANDA:XAUUSD",
                "direction": signal["direction"], "entry": signal["price"],
                "stop_loss": signal["stop_loss"], "take_profit": signal["take_profit"],

@@ -49,6 +49,19 @@ class ResearchPipelineTests(unittest.TestCase):
         self.assertEqual(label["label_status"], "AMBIGUOUS_SAME_BAR")
         self.assertTrue(pd.isna(label["label_profitable"]))
 
+    def test_historical_buy_label_uses_ask_entry_and_bid_exit(self):
+        future = pd.DataFrame([{"open": 100, "high": 103, "low": 100, "close": 102,
+                                "bid_high": 102, "bid_low": 100, "bid_close": 101.8,
+                                "ask_high": 102.8, "ask_low": 100.8, "ask_close": 102.6}],
+                              index=pd.DatetimeIndex(["2026-01-02T10:15:00Z"]))
+        decision = pd.Series({"ask_close": 100.8, "bid_close": 100.0})
+        label = label_candidate({"direction": "BUY", "price": 100,
+                                 "stop_loss": 98, "take_profit": 102},
+                                future, 48, .83, .1, decision)
+        self.assertEqual(label["label_status"], "TP")
+        self.assertEqual(label["execution_label_source"], "BID_ASK")
+        self.assertAlmostEqual(label["net_return_pct"], (102 - 100.8 - .2) / 100.8 * 100)
+
     def test_forward_journal_preserves_exact_candidate_features(self):
         from agent.ml_feature_engineer_gold import GoldFeatureEngineer
         with tempfile.TemporaryDirectory() as directory:
