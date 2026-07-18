@@ -1,29 +1,101 @@
-"""
-Enhanced Dashboard: System A (SMC) vs System C (ML + Claude)
-Includes equity curves, trade tables, capital performance.
-"""
+"""Unified SMC + ML + Claude paper-research dashboard."""
 
-import logging
-import os
 import json
-import pandas as pd
-from datetime import datetime, timedelta, timezone
-from html import escape
-from flask import Flask, render_template_string
+import logging
+import math
+import os
+from datetime import datetime, timezone
 from pathlib import Path
-from config import settings
+
+import pandas as pd
+from flask import Flask, render_template_string
+
 from agent.liquidity_manager import is_market_closed
+from config import settings
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
-
-SYSTEM_A_CSV = settings.SYSTEM_A_CSV
-SYSTEM_C_CSV = settings.PAPER_TRADES_CSV
 STARTING_CAPITAL = settings.PAPER_ACCOUNT_SIZE
 
 
+def load_trades(csv_path):
+    path = Path(csv_path)
+    if not path.exists() or path.stat().st_size == 0:
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(path).fillna("")
+    except (OSError, pd.errors.ParserError):
+        return pd.DataFrame()
+
+
+def calculate_metrics(csv_path):
+    """Calculate unified paper-candidate and approved-trade metrics."""
+    frame = load_trades(csv_path)
+    empty = {
+        "status": "Collecting", "starting_capital": f"${STARTING_CAPITAL:,.2f}",
+        "current_capital": f"${STARTING_CAPITAL:,.2f}", "total_profit": "$0.00",
+        "return_pct": "0.00%", "signals": 0, "candidates": 0, "approved": 0,
+        "rejected": 0, "open": 0, "wins": 0, "losses": 0, "expired": 0,
+        "win_rate": "0.0%", "profit_factor": "0.00", "max_drawdown": "0.00%",
+        "buys": 0, "sells": 0, "total_pnl": "$0.00",
+    }
+    if frame.empty:
+        return empty
+
+    status = frame.get("status", pd.Series("", index=frame.index)).astype(str).str.upper()
+    decision = frame.get("decision", pd.Series("", index=frame.index)).astype(str).str.upper()
+    direction = frame.get("direction", pd.Series("", index=frame.index)).astype(str).str.upper()
+    pnl = pd.to_numeric(frame.get("pnl_usd", pd.Series(0, index=frame.index)), errors="coerce").fillna(0)
+    approved_mask = decision.eq("APPROVE") | status.isin(["OPEN", "WIN", "LOSS", "EXPIRED"])
+    closed_mask = status.isin(["WIN", "LOSS", "EXPIRED"])
+    resolved_mask = status.isin(["WIN", "LOSS"])
+    wins, losses = int(status.eq("WIN").sum()), int(status.eq("LOSS").sum())
+    gross_win = float(pnl[(pnl > 0) & closed_mask].sum())
+    gross_loss = abs(float(pnl[(pnl < 0) & closed_mask].sum()))
+    total_pnl = float(pnl[closed_mask].sum())
+    equity = STARTING_CAPITAL + pnl[closed_mask].cumsum()
+    if equity.empty:
+        max_dd = 0.0
+    else:
+        peaks = equity.cummax()
+        max_dd = float(((equity - peaks) / peaks * 100).min())
+
+    result = dict(empty)
+    result.update({
+        "status": "Paper research active", "current_capital": f"${STARTING_CAPITAL + total_pnl:,.2f}",
+        "total_profit": f"${total_pnl:,.2f}", "total_pnl": f"${total_pnl:,.2f}",
+        "return_pct": f"{total_pnl / STARTING_CAPITAL * 100:.2f}%",
+        "signals": int(approved_mask.sum()), "candidates": len(frame),
+        "approved": int(approved_mask.sum()), "rejected": int((decision.eq("REJECT") | status.eq("REJECTED")).sum()),
+        "open": int(status.eq("OPEN").sum()), "wins": wins, "losses": losses,
+        "expired": int(status.eq("EXPIRED").sum()),
+        "win_rate": f"{(wins / int(resolved_mask.sum()) * 100) if resolved_mask.any() else 0:.1f}%",
+        "profit_factor": "∞" if gross_loss == 0 and gross_win > 0 else f"{gross_win / gross_loss if gross_loss else 0:.2f}",
+        "max_drawdown": f"{max_dd:.2f}%", "buys": int(direction.eq("BUY").sum()),
+        "sells": int(direction.eq("SELL").sum()),
+    })
+    return result
+
+
+def get_recent_trades(csv_path, limit=20):
+    frame = load_trades(csv_path)
+    if frame.empty:
+        return []
+    records = []
+    for _, row in frame.tail(limit).iloc[::-1].iterrows():
+        records.append({
+            "time": str(row.get("timestamp", ""))[:19].replace("T", " "),
+            "direction": str(row.get("direction", "—")).upper(),
+            "status": str(row.get("status", "—")).upper(),
+            "entry": row.get("entry", "—"), "stop": row.get("stop_loss", "—"),
+            "target": row.get("take_profit", "—"), "rr": row.get("rr_ratio", "—"),
+            "smc": row.get("smc_score", "—"), "confidence": row.get("combined_confidence", "—"),
+            "pnl": row.get("pnl_usd", "—") or "—", "reason": str(row.get("decision_reason", ""))[:180],
+        })
+    return records
+
+
 def _tail_text(path, max_bytes=65536):
-    """Read only the tail of a log file; dashboard requests stay constant-cost."""
     path = Path(path)
     if not path.exists():
         return ""
@@ -33,622 +105,94 @@ def _tail_text(path, max_bytes=65536):
         return handle.read().decode("utf-8", errors="replace")
 
 
+def _validate_bars(bars):
+    if not isinstance(bars, list) or not bars:
+        return {"count": 0, "ordered": False, "unique": False, "ohlc": False, "latest": "—"}
+    times, valid_ohlc = [], True
+    for bar in bars:
+        try:
+            times.append(int(bar["time"]))
+            o, h, low, c = (float(bar[key]) for key in ("open", "high", "low", "close"))
+            valid_ohlc &= all(math.isfinite(v) and v > 0 for v in (o, h, low, c))
+            valid_ohlc &= h >= max(o, c, low) and low <= min(o, c, h)
+        except (KeyError, TypeError, ValueError):
+            valid_ohlc = False
+    latest = datetime.fromtimestamp(times[-1], timezone.utc).strftime("%m-%d %H:%M") if times else "—"
+    return {"count": len(bars), "ordered": times == sorted(times),
+            "unique": len(times) == len(set(times)), "ohlc": bool(valid_ohlc), "latest": latest}
+
+
 def get_feed_health(snapshot_path=None, log_path=None):
-    """Return feed/scanner health using existing files only—no network calls."""
+    """Validate the existing atomic snapshot; makes no network or MCP calls."""
     snapshot_path = Path(snapshot_path or settings.TRADINGVIEW_SNAPSHOT_PATH)
-    log_path = Path(log_path or settings.LOG_FILE)
     health = {
-        "status": "UNAVAILABLE", "status_class": "bad", "provider": "—",
-        "symbol": "—", "captured_at": "—", "age": "—", "timeframes": {},
-        "last_scan": "No completed scan found", "market": "CLOSED" if is_market_closed() else "OPEN",
+        "status": "UNAVAILABLE", "status_class": "bad", "provider": "—", "symbol": "—",
+        "captured_at": "—", "age": "—", "frames": {}, "integrity": "FAILED",
+        "price_consistency": "—", "last_scan": "No completed scan", "market": "CLOSED" if is_market_closed() else "OPEN",
         "paper_mode": "ENFORCED" if settings.PAPER_TRADING else "MISCONFIGURED",
+        "telegram": "CONFIGURED" if settings.TELEGRAM_BOT_TOKEN and settings.TELEGRAM_CHAT_ID else "NOT CONFIGURED",
     }
     try:
         payload = json.loads(snapshot_path.read_text())
-        captured = datetime.fromisoformat(payload["captured_at"].replace("Z", "+00:00"))
-        captured = captured.replace(tzinfo=timezone.utc) if captured.tzinfo is None else captured.astimezone(timezone.utc)
+        captured = datetime.fromisoformat(payload["captured_at"].replace("Z", "+00:00")).astimezone(timezone.utc)
         age_seconds = max(0, int((datetime.now(timezone.utc) - captured).total_seconds()))
-        frames = payload.get("timeframes", {})
+        frames = {name: _validate_bars(data.get("bars", [])) for name, data in payload.get("timeframes", {}).items()}
+        closes = [float(payload["timeframes"][name]["bars"][-1]["close"]) for name in frames if frames[name]["count"]]
+        divergence = ((max(closes) - min(closes)) / min(closes) * 100) if closes else float("inf")
+        integrity = all(frames.get(name, {}).get("count", 0) >= 200 and
+                        frames[name]["ordered"] and frames[name]["unique"] and frames[name]["ohlc"]
+                        for name in ("1W", "1D", "4H", "1H", "15M"))
+        fresh = age_seconds <= settings.DASHBOARD_FEED_MAX_AGE_SECONDS
+        exact = payload.get("symbol") == "OANDA:XAUUSD" and payload.get("provider") == "tradingview-mcp"
+        consistent = divergence <= 2.0
+        healthy = fresh and exact and integrity and consistent
         health.update({
+            "status": "HEALTHY" if healthy else "DEGRADED", "status_class": "good" if healthy else "warn",
             "provider": payload.get("provider", "—"), "symbol": payload.get("symbol", "—"),
             "captured_at": captured.strftime("%Y-%m-%d %H:%M:%S UTC"),
-            "age": f"{age_seconds // 60}m {age_seconds % 60}s",
-            "timeframes": {name: int(data.get("bar_count", len(data.get("bars", []))))
-                           for name, data in frames.items()},
+            "age": f"{age_seconds // 60}m {age_seconds % 60}s", "frames": frames,
+            "integrity": "PASS" if integrity else "FAIL", "price_consistency": f"{divergence:.3f}% spread",
         })
-        complete = all(health["timeframes"].get(name, 0) >= 200
-                       for name in ("1W", "1D", "4H", "1H", "15M"))
-        # Allow for the 15-minute schedule plus chart-settling time. The scanner
-        # itself retains the stricter SNAPSHOT_MAX_AGE_SECONDS gate.
-        fresh = age_seconds <= settings.DASHBOARD_FEED_MAX_AGE_SECONDS
-        exact = health["symbol"] == "OANDA:XAUUSD"
-        health["status"] = "HEALTHY" if fresh and complete and exact else "DEGRADED"
-        health["status_class"] = "good" if health["status"] == "HEALTHY" else "warn"
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
         pass
-
-    for line in reversed(_tail_text(log_path).splitlines()):
-        marker = "[ORCHESTRATOR] Result:"
-        if marker in line:
-            health["last_scan"] = line.split(marker, 1)[1].strip()
+    for line in reversed(_tail_text(log_path or settings.LOG_FILE).splitlines()):
+        if "[ORCHESTRATOR] Result:" in line:
+            health["last_scan"] = line.split("[ORCHESTRATOR] Result:", 1)[1].strip()
             break
     return health
 
 
-def build_feed_health_html(health):
-    tf = " ".join(
-        f'<span class="tf-chip">{escape(name)}: {count}</span>'
-        for name, count in health["timeframes"].items()
-    ) or '<span class="muted">No timeframe data</span>'
-    fields = [
-        ("Provider", health["provider"]), ("Exact symbol", health["symbol"]),
-        ("Snapshot age", health["age"]), ("Captured", health["captured_at"]),
-        ("Last scan result", health["last_scan"]), ("Market", health["market"]),
-        ("Paper mode", health["paper_mode"]), ("Schedule", "Every 15 minutes"),
-    ]
-    cards = "".join(
-        f'<div class="health-item"><div class="metric-label">{escape(label)}</div>'
-        f'<div class="health-value">{escape(str(value))}</div></div>'
-        for label, value in fields
-    )
-    return (
-        '<section class="health-panel"><div class="health-heading">'
-        '<h2>TradingView Data Feed Health</h2>'
-        f'<span class="status-pill {health["status_class"]}">{escape(health["status"])}</span>'
-        f'</div><div class="health-grid">{cards}</div>'
-        f'<div class="timeframes"><div class="metric-label">Validated bars</div>{tf}</div>'
-        '<p class="health-note">File-based monitoring only: this panel makes no TradingView or MCP calls.</p>'
-        '</section>'
-    )
+TEMPLATE = """
+<!doctype html><html><head><title>Gold Signal Research</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="60">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#e5edf7;font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1380px;margin:auto;padding:24px}.header{display:flex;justify-content:space-between;align-items:end;margin-bottom:22px}.header h1{margin:0;color:#38d38a;font-size:27px}.muted{color:#7f8da3}.panel{background:#151f30;border:1px solid #2a3a51;border-radius:10px;padding:18px;margin-bottom:20px}.feed{border-color:#1597e5}.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.panel h2{font-size:16px;margin:0;color:#58bfff}.pill{padding:6px 12px;border-radius:999px;font-weight:800;font-size:11px}.good{background:#38c968;color:#061b0d}.warn{background:#f5a623;color:#2d1900}.bad{background:#ef5350;color:#2d0505}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:#0e1726;border-radius:6px;padding:13px;min-height:70px}.label{text-transform:uppercase;color:#718198;font-size:10px;font-weight:700}.value{font-size:17px;font-weight:750;margin-top:7px}.quality{width:100%;border-collapse:collapse;margin-top:14px}.quality th,.quality td{padding:8px;border-bottom:1px solid #26364c;text-align:left}.ok{color:#42d987}.no{color:#ff6b6b}.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}.metric{background:#151f30;border-left:3px solid #38d38a;border-radius:7px;padding:14px}.metric .value{font-size:19px}.capital{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.table-wrap{overflow:auto}table.trades{width:100%;border-collapse:collapse;min-width:1100px}table.trades th,table.trades td{padding:10px;border-bottom:1px solid #26364c;text-align:left;font-size:12px}table.trades th{color:#718198;text-transform:uppercase;font-size:10px}.BUY{color:#42d987;font-weight:800}.SELL{color:#ff7474;font-weight:800}.OPEN{color:#4db8ff}.WIN{color:#42d987}.LOSS{color:#ff6b6b}.REJECTED{color:#9aa8bb}.note{margin-top:12px;font-size:11px;color:#718198}@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:repeat(2,1fr)}.capital{grid-template-columns:1fr}.header{display:block}.header .muted{margin-top:8px}}
+</style></head><body><div class="wrap">
+<div class="header"><div><h1>Gold Signal Fetcher</h1><div class="muted">Unified SMC + validated ML + Claude review · research paper trading</div></div><div class="muted">Updated {{ now }} UTC</div></div>
+<section class="panel feed"><div class="panel-head"><h2>TradingView Data Quality</h2><span class="pill {{ feed.status_class }}">{{ feed.status }}</span></div>
+<div class="grid">
+{% for label,value in [('Provider',feed.provider),('Exact symbol',feed.symbol),('Snapshot age',feed.age),('Captured',feed.captured_at),('OHLC integrity',feed.integrity),('Cross-TF close variance',feed.price_consistency),('Last scan',feed.last_scan),('Market',feed.market),('Paper mode',feed.paper_mode),('Telegram',feed.telegram),('Schedule','Every 15 minutes'),('Execution','No broker orders')] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
+</div><table class="quality"><thead><tr><th>Timeframe</th><th>Bars</th><th>Ordered</th><th>Unique</th><th>OHLC valid</th><th>Latest bar UTC</th></tr></thead><tbody>{% for name,q in feed.frames.items() %}<tr><td>{{ name }}</td><td>{{ q.count }}</td><td class="{{ 'ok' if q.ordered else 'no' }}">{{ 'PASS' if q.ordered else 'FAIL' }}</td><td class="{{ 'ok' if q.unique else 'no' }}">{{ 'PASS' if q.unique else 'FAIL' }}</td><td class="{{ 'ok' if q.ohlc else 'no' }}">{{ 'PASS' if q.ohlc else 'FAIL' }}</td><td>{{ q.latest }}</td></tr>{% endfor %}</tbody></table>
+<div class="note">File-only validation: page views do not call TradingView, MCP, Telegram, Claude, or the scanner.</div></section>
+
+<div class="capital"><div class="panel"><div class="label">Paper starting capital</div><div class="value">{{ m.starting_capital }}</div></div><div class="panel"><div class="label">Paper marked capital</div><div class="value">{{ m.current_capital }}</div></div><div class="panel"><div class="label">Realized paper P&amp;L</div><div class="value">{{ m.total_profit }} · {{ m.return_pct }}</div></div></div>
+<div class="metrics">
+{% for label,value in [('Candidates',m.candidates),('Approved',m.approved),('Rejected',m.rejected),('Open',m.open),('Wins / losses',m.wins|string+' / '+m.losses|string),('Expired',m.expired),('Win rate',m.win_rate),('Profit factor',m.profit_factor),('Max drawdown',m.max_drawdown),('BUY candidates',m.buys),('SELL candidates',m.sells),('Status',m.status)] %}<div class="metric"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
+</div>
+<section class="panel"><div class="panel-head"><h2>Recent Unified Candidates</h2><span class="muted">Newest first</span></div><div class="table-wrap"><table class="trades"><thead><tr><th>Time UTC</th><th>Side</th><th>Status</th><th>Entry</th><th>Stop</th><th>Target</th><th>R/R</th><th>SMC</th><th>Combined</th><th>P&amp;L $</th><th>Decision reason</th></tr></thead><tbody>{% if rows %}{% for r in rows %}<tr><td>{{ r.time }}</td><td class="{{ r.direction }}">{{ r.direction }}</td><td class="{{ r.status }}">{{ r.status }}</td><td>{{ r.entry }}</td><td>{{ r.stop }}</td><td>{{ r.target }}</td><td>{{ r.rr }}</td><td>{{ r.smc }}</td><td>{{ r.confidence }}</td><td>{{ r.pnl }}</td><td>{{ r.reason }}</td></tr>{% endfor %}{% else %}<tr><td colspan="11" class="muted">No candidates recorded yet. The market is currently closed.</td></tr>{% endif %}</tbody></table></div></section>
+<div class="note">Research system only. Engineering health and paper results do not establish profitability or suitability for live capital.</div>
+</div></body></html>
+"""
 
 
-def load_trades(csv_path):
-    """Load trades from CSV."""
-    if not csv_path.exists():
-        return pd.DataFrame()
-    try:
-        df = pd.read_csv(csv_path)
-        return df
-    except:
-        return pd.DataFrame()
-
-
-def calculate_metrics(csv_path):
-    """Calculate metrics from trades (handles both System A and C schemas)."""
-    df = load_trades(csv_path)
-
-    if df.empty:
-        return {
-            'status': 'Not started',
-            'starting_capital': '$10,000',
-            'current_capital': '$10,000',
-            'total_profit': '$0.00',
-            'return_pct': '0.0%',
-            'signals': 0,
-            'wins': 0,
-            'losses': 0,
-            'win_rate': '0.0%',
-            'profit_factor': '0.00',
-            'total_pnl': '$0.00'
-        }
-
-    # Detect schema
-    is_system_c = 'candidate_id' in df.columns and 'pair' in df.columns
-
-    # BLOCKED signals were never trades — exclude from counts and tables
-    if 'status' in df.columns:
-        df = df[df['status'].astype(str).str.upper() != 'BLOCKED']
-    if 'trend_filter_result' in df.columns:
-        df = df[~df['trend_filter_result'].astype(str).str.startswith('BLOCKED')]
-
-    total_trades = len(df)
-
-    if is_system_c:
-        # System C: count outcomes explicitly and use USD P&L for capital.
-        df['pnl_usd'] = pd.to_numeric(df['pnl_usd'], errors='coerce').fillna(0)
-        closed = df[df['status'].isin(['WIN', 'LOSS', 'EXPIRED'])]
-        wins = len(closed[closed['status'] == 'WIN'])
-        losses = len(closed[closed['status'] == 'LOSS'])
-        total_pnl = closed['pnl_usd'].sum()
-        wins_sum = closed[closed['pnl_usd'] > 0]['pnl_usd'].sum() if wins > 0 else 0
-        losses_sum = abs(closed[closed['pnl_usd'] < 0]['pnl_usd'].sum()) if losses > 0 else 1
-    else:
-        # System A: use 'profit_pct' and check 'result' column
-        df['profit_pct'] = pd.to_numeric(df['profit_pct'], errors='coerce').fillna(0)
-        df['result'] = df['result'].fillna('')
-        closed = df[df['result'].isin(['WIN', 'LOSS', 'EXPIRED'])]
-        wins = len(closed[closed['result'] == 'WIN'])
-        losses = len(closed[closed['result'] == 'LOSS'])
-        total_pnl = closed['profit_pct'].sum() if not closed.empty else 0
-        wins_sum = closed[closed['result'] == 'WIN']['profit_pct'].sum() if wins > 0 else 0
-        losses_sum = abs(closed[closed['result'] == 'LOSS']['profit_pct'].sum()) if losses > 0 else 1
-
-    win_rate = ((wins + losses) > 0 and (wins / (wins + losses) * 100)) or 0
-    current_capital = STARTING_CAPITAL + total_pnl
-    return_pct = (total_pnl / STARTING_CAPITAL * 100) if STARTING_CAPITAL > 0 else 0
-    profit_factor = wins_sum / losses_sum if losses_sum > 0 else 0
-
-    return {
-        'status': 'Running',
-        'starting_capital': f'${STARTING_CAPITAL:,.2f}',
-        'current_capital': f'${current_capital:,.2f}',
-        'total_profit': f'${total_pnl:,.2f}',
-        'return_pct': f'{return_pct:.2f}%',
-        'signals': total_trades,
-        'wins': wins,
-        'losses': losses,
-        'win_rate': f'{win_rate:.1f}%',
-        'profit_factor': f'{profit_factor:.2f}',
-        'total_pnl': f'${total_pnl:,.2f}'
-    }
-
-
-def get_recent_trades(csv_path, limit=10):
-    """Get recent trades handling both System A and System C schemas."""
-    df = load_trades(csv_path)
-    if df.empty:
-        return []
-
-    # Detect schema (System A or System C)
-    is_system_c = 'candidate_id' in df.columns and 'pair' in df.columns
-    is_system_a = 'signal_id' in df.columns and 'symbol' in df.columns
-
-    # BLOCKED signals were never trades — don't render them as OPEN positions
-    if 'status' in df.columns:
-        df = df[df['status'].astype(str).str.upper() != 'BLOCKED']
-    if 'trend_filter_result' in df.columns:
-        df = df[~df['trend_filter_result'].astype(str).str.startswith('BLOCKED')]
-
-    trades = []
-    recent = df.tail(limit).copy()
-
-    for _, row in recent.iterrows():
-        try:
-            if is_system_c:
-                # System C schema
-                pair = row.get('pair', 'XAUUSD')
-                direction = str(row.get('direction', 'N/A')).upper()
-                entry = row.get('entry', 'N/A')
-                status = str(row.get('status', 'REJECTED')).upper()
-                pct_value = pd.to_numeric(row.get('pnl_pct', ''), errors='coerce')
-                usd_value = pd.to_numeric(row.get('pnl_usd', ''), errors='coerce')
-                outcome = status
-                pnl_pct = '-' if pd.isna(pct_value) else f'{pct_value:.2f}%'
-                pnl_usd = '-' if pd.isna(usd_value) else f'${usd_value:.2f}'
-                timestamp = row.get('timestamp', '')
-
-            else:
-                # System A schema
-                pair = row.get('symbol', 'XAUUSD')
-
-                # Handle NaN direction column (pandas reads empty as 'nan' float)
-                import pandas as pd
-                direction_val = row.get('direction', '')
-                direction_str = str(direction_val).strip().upper()
-                if direction_str in ['NAN', ''] or pd.isna(direction_val):
-                    # Infer from entry vs take_profit
-                    try:
-                        entry_val = float(row.get('entry_price', 0))
-                        tp_val = float(row.get('take_profit', 0))
-                        direction = 'BUY' if tp_val > entry_val else 'SELL'
-                    except:
-                        direction = 'UNKNOWN'
-                else:
-                    direction = direction_str
-
-                entry = row.get('entry_price', 'N/A')
-
-                # Handle NaN result column
-                result_val = row.get('result', '')
-                result_str = str(result_val).strip().upper()
-                if result_str in ['NAN', '']:
-                    result = 'OPEN'
-                else:
-                    result = result_str
-
-                # Parse profit_pct safely - check for NaN
-                try:
-                    pnl_pct_raw = row.get('profit_pct', 0)
-                    if pd.isna(pnl_pct_raw):
-                        pnl_pct_val = 0
-                    else:
-                        pnl_pct_val = float(pnl_pct_raw)
-                except:
-                    pnl_pct_val = 0
-
-                outcome = result if result in ['WIN', 'LOSS', 'EXPIRED'] else 'OPEN'
-                pnl_pct = '-' if pnl_pct_val == 0 or result == 'OPEN' else f'{pnl_pct_val:.2f}%'
-                pnl_usd = '-' if pnl_pct_val == 0 or result == 'OPEN' else f'${(pnl_pct_val/100*10000):.2f}'
-                timestamp = row.get('timestamp', '')
-
-            trades.append({
-                'pair': pair,
-                'direction': direction,
-                'outcome': outcome,
-                'entry': entry,
-                'pnl_pct': pnl_pct,
-                'pnl_usd': pnl_usd,
-                'timestamp': timestamp
-            })
-        except Exception as e:
-            logger.warning(f"Error parsing trade: {e}")
-            continue
-
-    return trades
-
-
-def build_trade_rows_html(csv_path):
-    """Build HTML table rows for recent trades."""
-    trades = get_recent_trades(csv_path, limit=10)
-
-    if not trades:
-        return '<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;">No closed trades</td></tr>'
-
-    rows = ''
-    for trade in trades:
-        if trade['outcome'] == 'WIN':
-            color = '#10b981'  # Green
-        elif trade['outcome'] == 'LOSS':
-            color = '#ef4444'  # Red
-        else:  # OPEN
-            color = '#f59e0b'  # Amber
-        rows += f'''
-        <tr>
-            <td>{trade['pair']}</td>
-            <td>{trade['direction']}</td>
-            <td style="color:{color}; font-weight:bold;">{trade['outcome']}</td>
-            <td>{trade['entry']}</td>
-            <td>-</td>
-            <td style="color:{color}">{trade['pnl_pct']}</td>
-            <td style="color:{color}">{trade['pnl_usd']}</td>
-            <td>{trade['timestamp'][:10]}</td>
-        </tr>
-        '''
-    return rows
-
-
-@app.route('/')
+@app.route("/")
 def dashboard():
-    """Render enhanced comparison dashboard."""
-    metrics_a = calculate_metrics(SYSTEM_A_CSV)
-    metrics_c = calculate_metrics(SYSTEM_C_CSV)
-
-    trades_a = build_trade_rows_html(SYSTEM_A_CSV)
-    trades_c = build_trade_rows_html(SYSTEM_C_CSV)
-    feed_health = build_feed_health_html(get_feed_health())
-
-    html = '''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Gold Signal Fetcher - Dashboard</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta http-equiv="refresh" content="60">
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-        <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: #0f172a;
-                color: #e2e8f0;
-                padding: 20px;
-            }
-            .header {
-                text-align: center;
-                margin-bottom: 30px;
-            }
-            .header h1 {
-                font-size: 28px;
-                margin-bottom: 10px;
-                color: #10b981;
-            }
-            .header p {
-                color: #94a3b8;
-                font-size: 14px;
-            }
-            .container {
-                max-width: 1400px;
-                margin: 0 auto;
-            }
-
-            .capital-section {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 20px;
-                margin-bottom: 30px;
-            }
-            .health-panel {
-                background: #1e293b; border: 2px solid #0ea5e9; border-radius: 8px;
-                padding: 20px; margin-bottom: 30px;
-            }
-            .health-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
-            .health-heading h2 { color:#38bdf8; font-size:17px; }
-            .status-pill { padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700; }
-            .status-pill.good { color:#052e16; background:#22c55e; }
-            .status-pill.warn { color:#422006; background:#f59e0b; }
-            .status-pill.bad { color:#450a0a; background:#ef4444; }
-            .health-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; }
-            .health-item { background:rgba(0,0,0,.3); padding:12px; border-radius:4px; }
-            .health-value { margin-top:5px; font-size:14px; font-weight:600; overflow-wrap:anywhere; }
-            .timeframes { margin-top:15px; }
-            .tf-chip { display:inline-block; margin:7px 7px 0 0; padding:6px 9px; background:#0f172a; border:1px solid #334155; border-radius:4px; font-size:12px; }
-            .health-note, .muted { color:#64748b; font-size:11px; margin-top:12px; }
-            .capital-box {
-                background: #1e293b;
-                border: 2px solid #334155;
-                border-radius: 8px;
-                padding: 20px;
-            }
-            .capital-box.c { border-color: #10b981; }
-            .capital-title {
-                color: #10b981;
-                font-size: 14px;
-                margin-bottom: 15px;
-                text-transform: uppercase;
-                font-weight: 600;
-            }
-            .capital-row {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 20px;
-                margin-bottom: 15px;
-                padding: 10px;
-                background: rgba(0,0,0,0.2);
-                border-radius: 4px;
-            }
-            .capital-label {
-                color: #94a3b8;
-                font-size: 12px;
-                text-transform: uppercase;
-            }
-            .capital-value {
-                font-size: 18px;
-                font-weight: 600;
-                color: #f1f5f9;
-            }
-            .positive { color: #10b981; }
-            .negative { color: #ef4444; }
-
-            .metrics-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 20px;
-                margin-bottom: 30px;
-            }
-            .system {
-                background: #1e293b;
-                border: 2px solid #334155;
-                border-radius: 8px;
-                padding: 20px;
-            }
-            .system.c { border-color: #10b981; }
-            .system h2 {
-                color: #10b981;
-                font-size: 16px;
-                margin-bottom: 20px;
-            }
-
-            .metrics-grid-2 {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 15px;
-            }
-            .metric-box {
-                background: rgba(0,0,0,0.3);
-                padding: 15px;
-                border-radius: 4px;
-                border-left: 3px solid #10b981;
-            }
-            .metric-label {
-                color: #94a3b8;
-                font-size: 11px;
-                text-transform: uppercase;
-                margin-bottom: 5px;
-            }
-            .metric-value {
-                font-size: 20px;
-                font-weight: 600;
-            }
-
-            .trades-section {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 20px;
-                margin-bottom: 30px;
-            }
-            .trades-box {
-                background: #1e293b;
-                border: 2px solid #334155;
-                border-radius: 8px;
-                padding: 20px;
-            }
-            .trades-box.c { border-color: #10b981; }
-            .trades-box h3 {
-                color: #10b981;
-                font-size: 14px;
-                margin-bottom: 15px;
-                text-transform: uppercase;
-            }
-
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 12px;
-            }
-            thead {
-                background: rgba(0,0,0,0.3);
-                border-bottom: 1px solid #334155;
-            }
-            th {
-                padding: 10px;
-                text-align: left;
-                color: #94a3b8;
-                text-transform: uppercase;
-                font-weight: 600;
-            }
-            td {
-                padding: 10px;
-                border-bottom: 1px solid #1e293b;
-            }
-            tr:hover {
-                background: rgba(16,185,129,0.1);
-            }
-
-            .last-updated {
-                text-align: center;
-                color: #64748b;
-                font-size: 12px;
-                margin-top: 20px;
-            }
-            @media (max-width: 800px) {
-                .health-grid { grid-template-columns:1fr 1fr; }
-                .capital-section, .metrics-grid, .trades-section { grid-template-columns:1fr; }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>🏆 Gold Signal Fetcher - System Comparison</h1>
-            <p>System A (SMC-Only) vs System C (ML + Claude AI)</p>
-        </div>
-
-        <div class="container">
-            ''' + feed_health + '''
-            <!-- Capital Performance -->
-            <div class="capital-section">
-                <div class="capital-box">
-                    <div class="capital-title">💰 System A: SMC-Only</div>
-                    <div class="capital-row">
-                        <div><div class="capital-label">Starting Capital</div><div class="capital-value">''' + metrics_a['starting_capital'] + '''</div></div>
-                        <div><div class="capital-label">Current Capital</div><div class="capital-value">''' + metrics_a['current_capital'] + '''</div></div>
-                    </div>
-                    <div class="capital-row">
-                        <div><div class="capital-label">Total Profit</div><div class="capital-value ''' + ('positive' if float(metrics_a['total_profit'].replace('$','').replace(',','')) >= 0 else 'negative') + '''"''' + metrics_a['total_profit'] + '''</div></div>
-                        <div><div class="capital-label">Return %</div><div class="capital-value ''' + ('positive' if float(metrics_a['return_pct'].replace('%','').replace(',','')) >= 0 else 'negative') + '''"''' + metrics_a['return_pct'] + '''</div></div>
-                    </div>
-                </div>
-
-                <div class="capital-box c">
-                    <div class="capital-title">🤖 System C: ML + Claude</div>
-                    <div class="capital-row">
-                        <div><div class="capital-label">Starting Capital</div><div class="capital-value">''' + metrics_c['starting_capital'] + '''</div></div>
-                        <div><div class="capital-label">Current Capital</div><div class="capital-value">''' + metrics_c['current_capital'] + '''</div></div>
-                    </div>
-                    <div class="capital-row">
-                        <div><div class="capital-label">Total Profit</div><div class="capital-value ''' + ('positive' if float(metrics_c['total_profit'].replace('$','').replace(',','')) >= 0 else 'negative') + '''"''' + metrics_c['total_profit'] + '''</div></div>
-                        <div><div class="capital-label">Return %</div><div class="capital-value ''' + ('positive' if float(metrics_c['return_pct'].replace('%','').replace(',','')) >= 0 else 'negative') + '''"''' + metrics_c['return_pct'] + '''</div></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Metrics -->
-            <div class="metrics-grid">
-                <div class="system">
-                    <h2>📊 System A: Metrics</h2>
-                    <div class="metrics-grid-2">
-                        <div class="metric-box">
-                            <div class="metric-label">Total Trades</div>
-                            <div class="metric-value">''' + str(metrics_a['signals']) + '''</div>
-                        </div>
-                        <div class="metric-box">
-                            <div class="metric-label">Win Rate</div>
-                            <div class="metric-value">''' + metrics_a['win_rate'] + '''</div>
-                        </div>
-                        <div class="metric-box">
-                            <div class="metric-label">Wins / Losses</div>
-                            <div class="metric-value">''' + str(metrics_a['wins']) + ''' / ''' + str(metrics_a['losses']) + '''</div>
-                        </div>
-                        <div class="metric-box">
-                            <div class="metric-label">Profit Factor</div>
-                            <div class="metric-value">''' + metrics_a['profit_factor'] + '''</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="system c">
-                    <h2>🤖 System C: Metrics</h2>
-                    <div class="metrics-grid-2">
-                        <div class="metric-box">
-                            <div class="metric-label">Total Trades</div>
-                            <div class="metric-value">''' + str(metrics_c['signals']) + '''</div>
-                        </div>
-                        <div class="metric-box">
-                            <div class="metric-label">Win Rate</div>
-                            <div class="metric-value">''' + metrics_c['win_rate'] + '''</div>
-                        </div>
-                        <div class="metric-box">
-                            <div class="metric-label">Wins / Losses</div>
-                            <div class="metric-value">''' + str(metrics_c['wins']) + ''' / ''' + str(metrics_c['losses']) + '''</div>
-                        </div>
-                        <div class="metric-box">
-                            <div class="metric-label">Profit Factor</div>
-                            <div class="metric-value">''' + metrics_c['profit_factor'] + '''</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Trades Tables -->
-            <div class="trades-section">
-                <div class="trades-box">
-                    <h3>📋 Recent Closed Trades - System A</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Symbol</th>
-                                <th>Dir</th>
-                                <th>Outcome</th>
-                                <th>Entry</th>
-                                <th>Close</th>
-                                <th>P&L %</th>
-                                <th>P&L $</th>
-                                <th>Closed At</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ''' + trades_a + '''
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="trades-box c">
-                    <h3>📋 Recent Closed Trades - System C</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Symbol</th>
-                                <th>Dir</th>
-                                <th>Outcome</th>
-                                <th>Entry</th>
-                                <th>Close</th>
-                                <th>P&L %</th>
-                                <th>P&L $</th>
-                                <th>Closed At</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ''' + trades_c + '''
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="last-updated">
-                📅 Last updated: ''' + datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + ''' UTC | Auto-refresh every 60s
-            </div>
-        </div>
-
-        <script>
-            // Auto-refresh every 60 seconds
-            setTimeout(() => location.reload(), 60000);
-        </script>
-    </body>
-    </html>
-    '''
-
-    return render_template_string(html)
+    return render_template_string(TEMPLATE, m=calculate_metrics(settings.PAPER_TRADES_CSV),
+                                  rows=get_recent_trades(settings.PAPER_TRADES_CSV),
+                                  feed=get_feed_health(),
+                                  now=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8502, debug=False)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8502, debug=False)

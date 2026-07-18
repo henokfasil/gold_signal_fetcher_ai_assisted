@@ -1,4 +1,4 @@
-# Gold Signal Fetcher — AI-Assisted Research System (System C)
+# Gold Signal Fetcher — Unified AI-Assisted Research System
 
 Last reviewed: 2026-07-18
 
@@ -57,13 +57,14 @@ OPEN or REJECTED paper-ledger record with provenance
 Observation-time TP/SL/expiry updates and explicit limitations
 ```
 
-## Important strategy limitation
+## Directional strategy
 
-The current SMC scanner implements a **bullish candidate path**: bullish BOS,
-CHoCH, liquidity sweep, stop below entry and target above entry. The
-orchestrator therefore accepts only `BUY` geometry (`SL < entry < TP`). A
-separate mirrored and tested bearish scanner must be built before System C can
-issue SELL candidates. Never relabel a non-bullish result as SELL.
+The scanner implements separate mirrored mechanics for both directions. BUY
+uses bullish BOS/CHoCH, downside liquidity sweeps, bullish order blocks/FVGs,
+SL below entry and TP above. SELL uses bearish BOS/CHoCH, upside liquidity
+sweeps, bearish order blocks/FVGs, SL above entry and TP below. The 4H
+structure selects the side; ranging 4H structure fails closed. Never relabel a
+candidate to manufacture the opposite direction.
 
 ## ML policy
 
@@ -171,7 +172,7 @@ forward paper trading and stable performance across regimes.
    labels.
 2. Add purging/embargo and combinatorial purged cross-validation.
 3. Build tick or lower-timeframe bid/ask execution replay.
-4. Add a separately tested bearish SMC candidate generator.
+4. Validate BUY and SELL performance separately across market regimes.
 5. Build the DXY/real-yield/VIX snapshot producer with timestamp and source
    provenance.
 6. Add model/prompt/dataset lineage, drift and calibration monitoring.
@@ -181,6 +182,9 @@ forward paper trading and stable performance across regimes.
 ## Security and operations
 
 - Never commit `.env`, API keys, Telegram tokens or account identifiers.
+- Telegram sends only approved paper signals and unified paper metrics. It
+  never places broker orders. Rejected candidates remain visible in the ledger
+  and dashboard without creating notification spam.
 - Preserve the paper ledger before deployment or schema migration.
 - Use a non-overlapping lock around scheduled runs.
 - Keep CDP (`9222`) and maintenance VNC (`5900`) bound to localhost only.

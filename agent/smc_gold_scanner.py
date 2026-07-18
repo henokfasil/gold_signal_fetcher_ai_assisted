@@ -347,6 +347,23 @@ def detect_bos_up(df: pd.DataFrame, swing_highs: List[int]) -> Optional[dict]:
     return best
 
 
+def detect_bos_down(df: pd.DataFrame, swing_lows: List[int]) -> Optional[dict]:
+    """Most recent bearish BOS: a candle close breaks below a prior swing low."""
+    if len(swing_lows) < 2:
+        return None
+    closes, lows = df["close"].values, df["low"].values
+    best = None
+    for sl_idx in swing_lows:
+        level = lows[sl_idx]
+        for j in range(sl_idx + 1, len(closes)):
+            if closes[j] < level:
+                if best is None or j > best["bos_index"]:
+                    best = {"bos_index": j, "broken_level": round(level, 4),
+                            "swing_low_index": sl_idx}
+                break
+    return best
+
+
 # ---------------------------------------------------------------------------
 # Layer 4b: Change of Character (CHoCH) — fires earlier than BOS
 # ---------------------------------------------------------------------------
@@ -381,6 +398,23 @@ def detect_choch_up(df: pd.DataFrame, swing_highs: List[int], swing_lows: List[i
     return None
 
 
+def detect_choch_down(df: pd.DataFrame, swing_highs: List[int], swing_lows: List[int]) -> Optional[dict]:
+    """Bearish CHoCH: after a swing high, price closes below the prior swing low."""
+    if not swing_highs or not swing_lows:
+        return None
+    closes, lows = df["close"].values, df["low"].values
+    last_sh = swing_highs[-1]
+    prior_lows = [sl for sl in swing_lows if sl < last_sh]
+    if not prior_lows:
+        return None
+    level = lows[prior_lows[-1]]
+    for j in range(last_sh + 1, len(closes)):
+        if closes[j] < level:
+            return {"choch_index": j, "broken_level": round(level, 4),
+                    "swing_high_index": last_sh}
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Layer 4c: Liquidity Sweep Detection
 # ---------------------------------------------------------------------------
@@ -411,6 +445,22 @@ def detect_liquidity_sweep_up(df: pd.DataFrame, swing_lows: List[int]) -> Option
                     "close_after": round(closes[j], 4),
                     "age_candles": n - j,
                 }
+    return None
+
+
+def detect_liquidity_sweep_down(df: pd.DataFrame, swing_highs: List[int]) -> Optional[dict]:
+    """Bearish sweep: wick above a prior swing high followed by a close below it."""
+    if len(swing_highs) < 2:
+        return None
+    highs, closes = df["high"].values, df["close"].values
+    n, lookback_start = len(highs), max(0, len(highs) - 20)
+    for sh_idx in reversed(swing_highs[:-1]):
+        level = highs[sh_idx]
+        for j in range(max(sh_idx + 1, lookback_start), n):
+            if highs[j] > level and closes[j] < level:
+                return {"sweep_index": j, "swept_level": round(level, 4),
+                        "wick_high": round(highs[j], 4), "close_after": round(closes[j], 4),
+                        "age_candles": n - j}
     return None
 
 
@@ -460,6 +510,27 @@ def find_last_order_block(df: pd.DataFrame, bos: Optional[dict]) -> Optional[dic
         "ob_close": round(closes[ob_idx], 4),
         "mitigated": mitigated,
     }
+
+
+def find_last_bearish_order_block(df: pd.DataFrame, bos: Optional[dict]) -> Optional[dict]:
+    """Last bullish candle before bearish BOS; invalidated by a close above its high."""
+    if bos is None:
+        return None
+    bos_idx = bos["bos_index"]
+    start = max(0, bos_idx - _MAX_OB_LOOKBACK)
+    opens, closes = df["open"].values, df["close"].values
+    highs, lows = df["high"].values, df["low"].values
+    ob_idx = None
+    for i in range(start, bos_idx):
+        if closes[i] > opens[i]:
+            ob_idx = i
+    if ob_idx is None:
+        return None
+    ob_high, ob_low = highs[ob_idx], lows[ob_idx]
+    return {"ob_index": ob_idx, "ob_high": round(ob_high, 4),
+            "ob_low": round(ob_low, 4), "ob_open": round(opens[ob_idx], 4),
+            "ob_close": round(closes[ob_idx], 4),
+            "mitigated": any(closes[j] > ob_high for j in range(bos_idx, len(closes)))}
 
 
 def is_price_at_order_block(price: float, ob: Optional[dict]) -> bool:
@@ -516,6 +587,30 @@ def detect_fvg(df: pd.DataFrame) -> Optional[dict]:
             "age_candles": n - i,
         }
 
+    return None
+
+
+def detect_bearish_fvg(df: pd.DataFrame) -> Optional[dict]:
+    """Most recent unmitigated bearish FVG created by strong downward displacement."""
+    highs, lows = df["high"].values, df["low"].values
+    opens, closes = df["open"].values, df["close"].values
+    n = len(highs)
+    for i in range(n - 1, max(2, n - _MAX_FVG_AGE), -1):
+        body = opens[i - 1] - closes[i - 1]
+        candle_range = highs[i - 1] - lows[i - 1]
+        if body <= 0 or candle_range == 0 or body / candle_range < 0.6:
+            continue
+        fvg_low, fvg_high = highs[i], lows[i - 2]
+        if fvg_high <= fvg_low:
+            continue
+        size_pct = (fvg_high - fvg_low) / fvg_high
+        if size_pct < _MIN_FVG_SIZE_PCT:
+            continue
+        if any(highs[j] > fvg_high for j in range(i, n)):
+            continue
+        return {"fvg_index": i - 1, "fvg_low": round(fvg_low, 4),
+                "fvg_high": round(fvg_high, 4),
+                "fvg_size_pct": round(size_pct * 100, 3), "age_candles": n - i}
     return None
 
 
@@ -584,11 +679,19 @@ def find_nearest_swing_high_above(df: pd.DataFrame, swing_highs: List[int], pric
     return round(min(candidates), 4) if candidates else None
 
 
+def find_nearest_swing_low_below(df: pd.DataFrame, swing_lows: List[int], price: float) -> Optional[float]:
+    """Nearest swing low below price (sell-side liquidity target)."""
+    lows = df["low"].values
+    candidates = [lows[i] for i in swing_lows if lows[i] < price * 0.999]
+    return round(max(candidates), 4) if candidates else None
+
+
 # ---------------------------------------------------------------------------
 # Layer 6: Scoring
 # ---------------------------------------------------------------------------
 
 def _score_smc_signal(
+    direction: str,
     struct_1w: str,
     struct_1d: str,
     struct_4h: str,
@@ -603,14 +706,12 @@ def _score_smc_signal(
     adx_15m: Optional[float],
     rsi_15m: Optional[float],
     in_killzone: bool,
-    struct_1w_bullish: bool,
 ) -> Tuple[int, bool, str]:
     """
     Score 0-100. Target: 8-15 signals/week.
 
-    Mandatory gates (hard skip if failed):
-      - 4H structure must be bullish (replaces 1W gate)
-      - Must be inside ICT Killzone
+    The 4H structure selects the side; every directional input passed here is
+    already the matching bullish or bearish detector output.
 
     Scoring:
       +20  4H bullish (gate passed)
@@ -625,27 +726,25 @@ def _score_smc_signal(
     Total possible: 110 — capped at 100.
     Min score to fire: GOLD_MIN_SCORE (45 default)
     """
-    # 4H gate: direction determines trade side
-    # bearish 4H → SHORT signals; bullish 4H → LONG signals; ranging → use HTF bias
-    if struct_4h == "ranging" and struct_1w not in ("bullish", "bearish") and struct_1d not in ("bullish", "bearish"):
-        return 0, True, "SKIP: 4H ranging with no directional HTF context"
+    expected = "bullish" if direction == "BUY" else "bearish"
+    if struct_4h != expected:
+        return 0, True, f"SKIP: 4H structure {struct_4h} does not confirm {direction}"
 
     # NOTE: Killzone is now a SOFT BONUS, not a hard gate (2026-06-16)
     # This allows 24/5 trading with position sizing adjustments per liquidity tier.
     # See agent/sessions.py and agent/liquidity_manager.py for session-aware adjustments.
 
-    # Scoring: full credit for bullish 4H, partial for ranging
-    score = 20 if struct_4h == "bullish" else 10
+    score = 20
 
     # SOFT BONUS: Killzone now adds +5 points (was hard gate before)
     killzone_bonus = 5 if in_killzone else 0
     killzone_note = " (+5 Killzone bonus)" if in_killzone else " (outside peak hours)"
 
-    if struct_1d == "bullish":
+    if struct_1d == expected:
         score += 15
 
-    if struct_1w_bullish:
-        score += 10  # Weekly context bonus — still matters, just not a hard gate
+    if struct_1w == expected:
+        score += 10
 
     if bos_4h is not None or choch_4h is not None:
         score += 15
@@ -664,7 +763,8 @@ def _score_smc_signal(
     if adx_15m is not None and adx_15m > 20:
         score += 5
 
-    if rsi_15m is not None and rsi_15m > 50:
+    if rsi_15m is not None and ((direction == "BUY" and rsi_15m > 50) or
+                                (direction == "SELL" and rsi_15m < 50)):
         score += 5
 
     # Apply Killzone soft bonus (changed from hard gate to soft bonus)
@@ -679,6 +779,7 @@ def _score_smc_signal(
 
 def _build_smc_signal(
     symbol: str,
+    direction: str,
     score: int,
     price: float,
     ob_4h: Optional[dict],
@@ -699,25 +800,28 @@ def _build_smc_signal(
 
     TP = nearest 4H swing high above price (next liquidity pool).
     """
-    # --- SL: use tightest available structure level ---
-    if ob_15m is not None and not ob_15m.get("mitigated"):
-        stop_loss = round(ob_15m["ob_low"] * (1 - 0.0005), 4)
-        sl_source = "15M_OB"
-    elif ob_4h is not None and not ob_4h.get("mitigated"):
-        stop_loss = round(ob_4h["ob_low"] * (1 - 0.0005), 4)
-        sl_source = "4H_OB"
+    if direction == "BUY":
+        if ob_15m is not None and not ob_15m.get("mitigated"):
+            stop_loss, sl_source = round(ob_15m["ob_low"] * (1 - 0.0005), 4), "15M_OB"
+        elif ob_4h is not None and not ob_4h.get("mitigated"):
+            stop_loss, sl_source = round(ob_4h["ob_low"] * (1 - 0.0005), 4), "4H_OB"
+        else:
+            stop_loss, sl_source = round(price - atr_1h * settings.GOLD_ATR_SL_MULTIPLIER, 4), "ATR"
+        take_profit = tp_level if tp_level is not None else round(
+            price + atr_1h * settings.GOLD_ATR_TP_MULTIPLIER, 4)
+        sl_dist, tp_dist = price - stop_loss, take_profit - price
+    elif direction == "SELL":
+        if ob_15m is not None and not ob_15m.get("mitigated"):
+            stop_loss, sl_source = round(ob_15m["ob_high"] * (1 + 0.0005), 4), "15M_OB"
+        elif ob_4h is not None and not ob_4h.get("mitigated"):
+            stop_loss, sl_source = round(ob_4h["ob_high"] * (1 + 0.0005), 4), "4H_OB"
+        else:
+            stop_loss, sl_source = round(price + atr_1h * settings.GOLD_ATR_SL_MULTIPLIER, 4), "ATR"
+        take_profit = tp_level if tp_level is not None else round(
+            price - atr_1h * settings.GOLD_ATR_TP_MULTIPLIER, 4)
+        sl_dist, tp_dist = stop_loss - price, price - take_profit
     else:
-        stop_loss = round(price - atr_1h * settings.GOLD_ATR_SL_MULTIPLIER, 4)
-        sl_source = "ATR"
-
-    # --- TP ---
-    if tp_level is not None:
-        take_profit = tp_level
-    else:
-        take_profit = round(price + atr_1h * settings.GOLD_ATR_TP_MULTIPLIER, 4)
-
-    sl_dist = price - stop_loss
-    tp_dist = take_profit - price
+        raise ValueError(f"unsupported direction: {direction}")
     rr_ratio = round(tp_dist / sl_dist, 2) if sl_dist > 0 else 0.0
     sl_pct = round((sl_dist / price) * 100, 4) if price > 0 else 0.0
     tp_pct = round((tp_dist / price) * 100, 4) if price > 0 else 0.0
@@ -735,6 +839,7 @@ def _build_smc_signal(
 
     return {
         "symbol": symbol,
+        "direction": direction,
         "score": score,
         "price": price,
         "entry_low": entry_low,
@@ -864,31 +969,43 @@ def _run_smc_analysis(
 
     logger.info(f"SMC structure: 1W={struct_1w} | 1D={struct_1d} | 4H={struct_4h} | 1H={struct_1h}")
 
+    if struct_4h == "bullish":
+        direction = "BUY"
+    elif struct_4h == "bearish":
+        direction = "SELL"
+    else:
+        logger.info("SMC scanner: 4H structure is ranging — no directional candidate")
+        return None
+
     # --- ICT Killzone check (early log, gate enforced in scoring) ---
     in_killzone, kz_reason = check_killzone()
     logger.info(f"SMC scanner: {kz_reason}")
 
     # --- Layer 4: BOS ---
-    bos_4h = detect_bos_up(df_4h, sh_4h)
-    bos_1h = detect_bos_up(df_1h, sh_1h)
+    bos_4h = detect_bos_up(df_4h, sh_4h) if direction == "BUY" else detect_bos_down(df_4h, sl_4h)
+    bos_1h = detect_bos_up(df_1h, sh_1h) if direction == "BUY" else detect_bos_down(df_1h, sl_1h)
 
     # --- Layer 4b: 15M swing + BOS (entry timing) ---
     sh_15m = detect_swing_highs(df_15m, _SWING_N["15M"])
     sl_15m = detect_swing_lows(df_15m, _SWING_N["15M"])
     struct_15m = classify_market_structure(df_15m, sh_15m, sl_15m)
-    bos_15m = detect_bos_up(df_15m, sh_15m)
+    bos_15m = detect_bos_up(df_15m, sh_15m) if direction == "BUY" else detect_bos_down(df_15m, sl_15m)
 
     # --- Layer 4b: CHoCH detection (fires earlier than BOS) ---
-    choch_4h = detect_choch_up(df_4h, sh_4h, sl_4h)
-    choch_15m = detect_choch_up(df_15m, sh_15m, sl_15m)
+    choch_4h = (detect_choch_up(df_4h, sh_4h, sl_4h) if direction == "BUY"
+                else detect_choch_down(df_4h, sh_4h, sl_4h))
+    choch_15m = (detect_choch_up(df_15m, sh_15m, sl_15m) if direction == "BUY"
+                 else detect_choch_down(df_15m, sh_15m, sl_15m))
 
     # --- Layer 4c: Liquidity sweep (stop hunt before reversal) ---
-    liquidity_sweep_1h = detect_liquidity_sweep_up(df_1h, sl_1h)
+    liquidity_sweep_1h = (detect_liquidity_sweep_up(df_1h, sl_1h) if direction == "BUY"
+                          else detect_liquidity_sweep_down(df_1h, sh_1h))
 
     # --- Layer 5: Order Block ---
-    ob_4h = find_last_order_block(df_4h, bos_4h)
-    ob_1h = find_last_order_block(df_1h, bos_1h)
-    ob_15m = find_last_order_block(df_15m, bos_15m)
+    ob_finder = find_last_order_block if direction == "BUY" else find_last_bearish_order_block
+    ob_4h = ob_finder(df_4h, bos_4h)
+    ob_1h = ob_finder(df_1h, bos_1h)
+    ob_15m = ob_finder(df_15m, bos_15m)
 
     # Use 1H or 15M OB for price-at-OB check (finest entry level)
     price_at_ob = (
@@ -898,7 +1015,7 @@ def _run_smc_analysis(
     )
 
     # --- Layer 5b: FVG ---
-    fvg_1h = detect_fvg(df_1h)
+    fvg_1h = detect_fvg(df_1h) if direction == "BUY" else detect_bearish_fvg(df_1h)
 
     # --- Layer 5c: Premium / Discount zone (use 4H range) ---
     pd_zone_4h = classify_premium_discount(df_4h, sh_4h, sl_4h)
@@ -923,6 +1040,7 @@ def _run_smc_analysis(
 
     # --- Layer 6: Scoring ---
     score, skip, skip_reason = _score_smc_signal(
+        direction=direction,
         struct_1w=struct_1w,
         struct_1d=struct_1d,
         struct_4h=struct_4h,
@@ -937,7 +1055,6 @@ def _run_smc_analysis(
         adx_15m=adx_15m,
         rsi_15m=rsi_15m,
         in_killzone=in_killzone,
-        struct_1w_bullish=(struct_1w == "bullish"),
     )
 
     if skip:
@@ -957,10 +1074,11 @@ def _run_smc_analysis(
         logger.info(f"SMC scanner: score {score} below GOLD_MIN_SCORE {settings.GOLD_MIN_SCORE} — no signal")
         return None
 
-    # --- TP: nearest 4H swing high above price ---
-    tp_level = find_nearest_swing_high_above(df_4h, sh_4h, price)
+    # --- TP: nearest opposing 4H liquidity pool ---
+    tp_level = (find_nearest_swing_high_above(df_4h, sh_4h, price) if direction == "BUY"
+                else find_nearest_swing_low_below(df_4h, sl_4h, price))
     if tp_level is None:
-        logger.info("SMC scanner: no 4H swing high above price — falling back to ATR TP")
+        logger.info("SMC scanner: no opposing 4H swing target — falling back to ATR TP")
 
     # Package SMC context for analyst
     smc_data = {
@@ -969,6 +1087,7 @@ def _run_smc_analysis(
         "struct_4h": struct_4h,
         "struct_1h": struct_1h,
         "struct_15m": struct_15m,
+        "direction": direction,
         "bos_4h": bos_4h,
         "choch_4h": choch_4h,
         "bos_1h": bos_1h,
@@ -995,6 +1114,7 @@ def _run_smc_analysis(
 
     signal = _build_smc_signal(
         symbol=symbol,
+        direction=direction,
         score=score,
         price=price,
         ob_4h=sl_ob,
@@ -1011,7 +1131,7 @@ def _run_smc_analysis(
     # snapshot is supplied by the orchestrator.
     try:
         from agent.ml_feature_engineer_gold import GoldFeatureEngineer
-        feature_frame = GoldFeatureEngineer.extract_features(df_1h)
+        feature_frame = GoldFeatureEngineer.extract_features(df_1h, direction=direction)
         signal["ml_feature_vector"] = (
             GoldFeatureEngineer.prepare_for_model(feature_frame)[-1].tolist()
         )
@@ -1020,7 +1140,7 @@ def _run_smc_analysis(
         logger.warning("SMC scanner: could not build ML feature vector: %s", exc)
 
     logger.info(
-        f"SMC scanner: SIGNAL | price={price} | score={score} | "
+        f"SMC scanner: {direction} SIGNAL | price={price} | score={score} | "
         f"SL={signal['stop_loss']} | TP={signal['take_profit']} | RR={signal['rr_ratio']}"
     )
     return signal

@@ -30,7 +30,7 @@ TRADE_EXPIRY_HOURS = int(os.getenv('TRADE_EXPIRY_HOURS', '48'))
 
 # API Keys and Credentials
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
-TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN') or os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 METAAPI_TOKEN = os.getenv('METAAPI_TOKEN')
 METAAPI_ACCOUNT_ID = os.getenv('METAAPI_ACCOUNT_ID')
@@ -53,6 +53,14 @@ WEEKLY_LOSS_CAP_PCT = float(os.getenv('WEEKLY_LOSS_CAP_PCT', '6.0'))
 # Strategy Configuration
 SYMBOL = os.getenv('SYMBOL', 'XAUUSD')
 GOLD_MODE = os.getenv('GOLD_MODE', 'true').lower() == 'true'
+EMA_FAST = int(os.getenv('EMA_FAST', '20'))
+EMA_SLOW = int(os.getenv('EMA_SLOW', '50'))
+MACD_FAST = int(os.getenv('MACD_FAST', '12'))
+MACD_SLOW = int(os.getenv('MACD_SLOW', '26'))
+MACD_SIGNAL = int(os.getenv('MACD_SIGNAL', '9'))
+GOLD_MIN_SCORE = int(os.getenv('GOLD_MIN_SCORE', '45'))
+GOLD_ATR_SL_MULTIPLIER = float(os.getenv('GOLD_ATR_SL_MULTIPLIER', '1.5'))
+GOLD_ATR_TP_MULTIPLIER = float(os.getenv('GOLD_ATR_TP_MULTIPLIER', '3.0'))
 
 # Logging
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')

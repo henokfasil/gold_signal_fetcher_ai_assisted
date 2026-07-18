@@ -41,11 +41,12 @@ class GoldFeatureEngineer:
 
         # Session-Based
         'session_hour_encoded',
-        'day_of_week_encoded'
+        'day_of_week_encoded',
+        'direction_encoded',
     ]
 
     @staticmethod
-    def extract_features(df: pd.DataFrame, macro_data: dict = None) -> pd.DataFrame:
+    def extract_features(df: pd.DataFrame, macro_data: dict = None, direction: str = None) -> pd.DataFrame:
         """
         Extract gold-specific features from OHLCV data.
 
@@ -144,6 +145,11 @@ class GoldFeatureEngineer:
             timestamps = pd.Series(pd.NaT, index=df.index)
         features['session_hour_encoded'] = timestamps.dt.hour.fillna(0) / 24.0
         features['day_of_week_encoded'] = timestamps.dt.dayofweek.fillna(0) / 7.0
+        # Candidate direction is part of the prediction question: +1 BUY,
+        # -1 SELL, 0 only for non-candidate historical feature exploration.
+        features['direction_encoded'] = {"BUY": 1.0, "SELL": -1.0}.get(
+            str(direction or "").upper(), 0.0
+        )
 
         return features
 

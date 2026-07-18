@@ -5,11 +5,18 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
+import pandas as pd
+
 from agent.claude_analyst import AITradingDecider
 from agent.gold_correlations import GoldCorrelationValidator
 from agent.ml_signal_generator import MLSignalGenerator
-from agent.smc_gold_scanner import _candles_to_df, _run_from_tradingview_snapshot
+from agent.notifier import Notifier
+from agent.smc_gold_scanner import (
+    _build_smc_signal, _candles_to_df, _run_from_tradingview_snapshot,
+    detect_bos_down,
+)
 from dashboard import get_feed_health
+from main_orchestrator import AIAssistedOrchestrator
 
 
 class FakeClaude:
@@ -28,10 +35,13 @@ class ResearchPipelineTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             snapshot = Path(directory) / "tv.json"
             log = Path(directory) / "scanner.log"
+            bars = [{"time": 1_700_000_000 + i * 900, "open": 2000,
+                     "high": 2002, "low": 1998, "close": 2001, "volume": 10}
+                    for i in range(200)]
             snapshot.write_text(json.dumps({
                 "captured_at": datetime.now(timezone.utc).isoformat(),
                 "provider": "tradingview-mcp", "symbol": "OANDA:XAUUSD",
-                "timeframes": {name: {"bar_count": 200}
+                "timeframes": {name: {"bar_count": 200, "bars": bars}
                                for name in ("1W", "1D", "4H", "1H", "15M")},
             }))
             log.write_text("x [ORCHESTRATOR] Result: NO_CANDIDATE\n")
@@ -40,6 +50,36 @@ class ResearchPipelineTests(unittest.TestCase):
             self.assertEqual(health["status"], "HEALTHY")
             self.assertEqual(health["last_scan"], "NO_CANDIDATE")
             self.assertEqual(health["market"], "OPEN")
+
+    def test_bearish_bos_and_sell_geometry_are_real_not_relabelled(self):
+        frame = pd.DataFrame({
+            "open": [10, 9, 8, 8, 7], "high": [11, 10, 9, 9, 8],
+            "low": [9, 8, 7, 7.5, 6], "close": [10, 9, 8, 8, 6.5],
+        })
+        self.assertIsNotNone(detect_bos_down(frame, [1, 3]))
+        compat = {name: {"ema20": 100, "ema50": 101, "price": 100, "macd": {}}
+                  for name in ("1W", "1D", "4H", "1H")}
+        signal = _build_smc_signal(
+            symbol="OANDA:XAUUSD", direction="SELL", score=70, price=100,
+            ob_4h=None, ob_15m=None, atr_1h=2, tp_level=None, news_reason="clear",
+            mtf_compat=compat, smc_data={"struct_4h": "bearish"},
+        )
+        self.assertLess(signal["take_profit"], signal["price"])
+        self.assertGreater(signal["stop_loss"], signal["price"])
+        normalized = AIAssistedOrchestrator._normalize_signal(signal)
+        self.assertEqual(normalized["direction"], "SELL")
+
+    def test_telegram_paper_signal_is_explicit_and_directional(self):
+        notifier = Notifier("token", "chat")
+        with patch.object(notifier, "send") as send:
+            notifier.send_paper_signal("ABC123", {
+                "direction": "SELL", "pair": "OANDA:XAUUSD", "entry": 100,
+                "stop_loss": 102, "take_profit": 96, "rr_ratio": 2,
+                "score": 70,
+            }, {"combined_confidence": 65, "final_reason": "test"})
+        message = send.call_args.args[0]
+        self.assertIn("SELL", message)
+        self.assertIn("PAPER TRADING ONLY", message)
 
     def test_tradingview_unix_timestamps_are_parsed_as_seconds(self):
         candles = [{"time": 1_700_000_000 + i * 3600, "open": 2000,

@@ -1,6 +1,6 @@
 # Gold Signal Fetcher — AI-Assisted Research System
 
-Paper-trading research pipeline combining bullish SMC candidates, validated
+Paper-trading research pipeline combining directional BUY/SELL SMC candidates, validated
 historical-data ML inference, point-in-time macro context and a conservative
 Claude review.
 

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from html import escape
 from datetime import datetime
 
 import pytz
@@ -88,6 +89,27 @@ class Notifier:
             self.send(msg)
         except Exception as e:
             logger.error(f"send_signal error: {e}")
+
+    def send_paper_signal(self, candidate_id: str, signal: dict, decision: dict):
+        """Send an approved, unified System C paper signal; never broker execution."""
+        try:
+            direction = escape(str(signal["direction"]))
+            msg = (
+                f"🧪 <b>PAPER SIGNAL — {direction}</b>\n"
+                f"ID: <code>{escape(candidate_id)}</code>\n"
+                f"Symbol: {escape(str(signal.get('pair') or signal.get('symbol')))}\n"
+                f"Entry: <b>{float(signal['entry']):.2f}</b>\n"
+                f"Stop: {float(signal['stop_loss']):.2f}\n"
+                f"Target: {float(signal['take_profit']):.2f}\n"
+                f"R/R: {float(signal.get('rr_ratio', 0)):.2f}\n"
+                f"SMC: {float(signal.get('score', 0)):.0f}/100\n"
+                f"Combined confidence: {float(decision.get('combined_confidence', 0)):.1f}\n"
+                f"Reason: {escape(str(decision.get('final_reason', 'Approved'))[:500])}\n\n"
+                f"⚠️ <b>PAPER TRADING ONLY — NO BROKER ORDER</b>"
+            )
+            self.send(msg)
+        except Exception as e:
+            logger.error("send_paper_signal error: %s", e)
 
     def send_block_notification(self, symbol: str, score: int, blocked_reason: str):
         """Send brief block notification."""
@@ -181,35 +203,24 @@ class Notifier:
         except Exception as e:
             logger.error(f"send_daily_report error: {e}")
 
-    def send_metrics(self, system_a_metrics: dict, system_c_metrics: dict):
-        """Send System A vs System C comparison metrics."""
+    def send_metrics(self, metrics: dict):
+        """Send unified SMC + ML + Claude paper metrics."""
         try:
             msg = (
-                f"📊 <b>System A vs System C Comparison</b>\n"
-                f"⚙️ <b>System A (SMC-Only):</b>\n"
-                f"Status: {system_a_metrics['status']}\n"
-                f"Signals: {system_a_metrics['signals']}\n"
+                f"📊 <b>Gold Signal Fetcher — Paper Research</b>\n"
+                f"Status: {escape(str(metrics['status']))}\n"
+                f"Candidates: {metrics['candidates']}\n"
+                f"Approved: {metrics['approved']} | Rejected: {metrics['rejected']}\n"
+                f"Open: {metrics['open']}\n"
+                f"BUY / SELL: {metrics['buys']} / {metrics['sells']}\n"
+                f"Wins / Losses / Expired: {metrics['wins']} / {metrics['losses']} / {metrics['expired']}\n"
+                f"Win rate: {metrics['win_rate']}\n"
+                f"Profit factor: {metrics['profit_factor']}\n"
+                f"Realized paper P&amp;L: {metrics['total_profit']}\n"
+                f"Max drawdown: {metrics['max_drawdown']}\n\n"
+                f"⚠️ <b>PAPER TRADING ONLY</b>\n"
+                f"📈 Dashboard: http://187.55.229.4:8502/"
             )
-            if system_a_metrics['signals'] > 0:
-                msg += (
-                    f"Win Rate: {system_a_metrics['win_rate']}\n"
-                    f"Wins/Losses: {system_a_metrics['wins']}/{system_a_metrics['losses']}\n"
-                    f"Total P&L: ${system_a_metrics['total_pnl']}\n"
-                )
-
-            msg += (
-                f"\n🧠 <b>System C (ML + Claude):</b>\n"
-                f"Status: {system_c_metrics['status']}\n"
-                f"Signals: {system_c_metrics['signals']}\n"
-            )
-            if system_c_metrics['signals'] > 0:
-                msg += (
-                    f"Win Rate: {system_c_metrics['win_rate']}\n"
-                    f"Wins/Losses: {system_c_metrics['wins']}/{system_c_metrics['losses']}\n"
-                    f"Total P&L: ${system_c_metrics['total_pnl']}\n"
-                )
-
-            msg += f"\n📈 Dashboard: http://72.60.133.179:8502"
             self.send(msg)
         except Exception as e:
             logger.error(f"send_metrics error: {e}")

@@ -122,14 +122,14 @@ class AIAssistedOrchestrator:
             return None, "price snapshot missing"
         try:
             data = json.loads(path.read_text())
-            record = data.get(settings.SYMBOL, data)
-            timestamp_value = record.get("timestamp") or data.get("timestamp")
+            timestamp_value = data.get("captured_at") or data.get("timestamp")
             if not timestamp_value:
                 return None, "price snapshot has no timestamp"
             age = (utc_now() - parse_utc(timestamp_value)).total_seconds()
             if age < 0 or age > settings.SNAPSHOT_MAX_AGE_SECONDS:
                 return None, f"price snapshot stale ({age:.0f}s)"
-            return float(record["price"]), "fresh price snapshot"
+            bars = data["timeframes"]["15M"]["bars"]
+            return float(bars[-1]["close"]), "fresh TradingView 15M close"
         except (KeyError, ValueError, TypeError, OSError, json.JSONDecodeError) as exc:
             return None, f"invalid price snapshot: {exc}"
 
@@ -180,20 +180,23 @@ class AIAssistedOrchestrator:
 
     @staticmethod
     def _normalize_signal(signal: dict) -> dict:
+        direction = str(signal.get("direction", "")).upper()
         structure = signal.get("mtf", {}).get("smc", {}).get("struct_4h")
-        # The current scanner implements bullish BOS/CHoCH and constructs SL
-        # below / TP above. It must never be relabelled as a short.
-        if structure != "bullish":
-            raise ValueError(f"bullish scanner returned non-bullish structure: {structure}")
+        expected = {"BUY": "bullish", "SELL": "bearish"}.get(direction)
+        if expected is None or structure != expected:
+            raise ValueError(f"direction/structure mismatch: {direction}/{structure}")
         normalized = dict(signal)
         normalized.update({
-            "direction": "BUY", "pair": signal.get("symbol", settings.SYMBOL),
+            "direction": direction, "pair": signal.get("symbol", settings.SYMBOL),
             "entry": float(signal["price"]), "stop_loss": float(signal["stop_loss"]),
             "take_profit": float(signal["take_profit"]),
             "take_profits": [float(signal["take_profit"])],
         })
-        if not normalized["stop_loss"] < normalized["entry"] < normalized["take_profit"]:
-            raise ValueError("invalid BUY geometry: expected SL < entry < TP")
+        valid = (normalized["stop_loss"] < normalized["entry"] < normalized["take_profit"]
+                 if direction == "BUY" else
+                 normalized["take_profit"] < normalized["entry"] < normalized["stop_loss"])
+        if not valid:
+            raise ValueError(f"invalid {direction} signal geometry")
         return normalized
 
     def _risk_vetoes(self, signal: dict) -> list:
@@ -226,10 +229,11 @@ class AIAssistedOrchestrator:
             "macro_snapshot": macro.get("snapshot") if macro.get("available") else None,
         }
 
-    def _record_candidate(self, signal: dict, decision: dict, status: str) -> None:
+    def _record_candidate(self, signal: dict, decision: dict, status: str) -> str:
         base_notional = float(settings.strategy_value("position_sizing", "base_size_usd", 5000))
+        candidate_id = uuid.uuid4().hex[:12].upper()
         self.ledger.append({
-            "candidate_id": uuid.uuid4().hex[:12].upper(), "timestamp": utc_now().isoformat(),
+            "candidate_id": candidate_id, "timestamp": utc_now().isoformat(),
             "pair": signal["pair"], "direction": signal["direction"], "entry": signal["entry"],
             "stop_loss": signal["stop_loss"], "take_profit": signal["take_profit"],
             "rr_ratio": signal.get("rr_ratio"), "smc_score": decision["smc_score"],
@@ -243,6 +247,7 @@ class AIAssistedOrchestrator:
             "decision_reason": decision["final_reason"], "status": status,
             "notional_usd": base_notional, "paper_trading": True,
         })
+        return candidate_id
 
     def run_scan(self):
         logger.info("[ORCHESTRATOR] Research paper-trading scan started")
@@ -275,8 +280,10 @@ class AIAssistedOrchestrator:
             decision["final_reason"] = ", ".join(decision["vetoes"])
 
         status = "OPEN" if decision["should_trade"] else "REJECTED"
-        self._record_candidate(signal, decision, status)
+        candidate_id = self._record_candidate(signal, decision, status)
         logger.info("[DECISION] %s: %s", status, decision["final_reason"])
+        if status == "OPEN":
+            self.notifier.send_paper_signal(candidate_id, signal, decision)
         return {"status": status, "decision": decision}
 
 
