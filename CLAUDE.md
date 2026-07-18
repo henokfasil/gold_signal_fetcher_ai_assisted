@@ -166,6 +166,11 @@ engineering tests. Research acceptance additionally requires point-in-time
 datasets, leakage-safe backtesting, execution costs, out-of-sample calibration,
 forward paper trading and stable performance across regimes.
 
+The binding methodology and hypothesis registry is
+[`RESEARCH_PROTOCOL.md`](RESEARCH_PROTOCOL.md). Changes to candidate lifecycle,
+directional logic, SMC components, regime filters or final acceptance must be
+registered there before evaluation.
+
 ## Next research milestones
 
 1. Obtain deep, exact-symbol 15-minute XAUUSD history and build a versioned
