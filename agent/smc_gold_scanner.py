@@ -124,12 +124,15 @@ def check_news_guard() -> Tuple[bool, str]:
     return False, "NEWS_GUARD: clear"
 
 
-def check_killzone() -> Tuple[bool, str]:
+def check_killzone(as_of: Optional[datetime] = None) -> Tuple[bool, str]:
     """
     Return (in_killzone: bool, session_name: str).
     Only London Open and NY AM sessions have enough liquidity for reliable GOLD setups.
     """
-    hour = datetime.now(timezone.utc).hour
+    moment = as_of or datetime.now(timezone.utc)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    hour = moment.astimezone(timezone.utc).hour
     for start, end in _KILLZONES:
         if start <= hour < end:
             name = "London Open" if start == 6 else "NY AM"
@@ -895,6 +898,7 @@ def _run_smc_analysis(
     df_15m: pd.DataFrame,
     symbol: str,
     news_reason: str,
+    as_of: Optional[datetime] = None,
 ) -> Optional[dict]:
     """Run full SMC pipeline and return signal dict or None."""
 
@@ -978,7 +982,8 @@ def _run_smc_analysis(
         return None
 
     # --- ICT Killzone check (early log, gate enforced in scoring) ---
-    in_killzone, kz_reason = check_killzone()
+    # Historical replay must use the candidate timestamp, never wall-clock time.
+    in_killzone, kz_reason = check_killzone(as_of)
     logger.info(f"SMC scanner: {kz_reason}")
 
     # --- Layer 4: BOS ---

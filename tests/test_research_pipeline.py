@@ -16,7 +16,8 @@ from agent.smc_gold_scanner import (
     detect_bos_down,
 )
 from dashboard import get_feed_health
-from main_orchestrator import AIAssistedOrchestrator
+from main_orchestrator import AIAssistedOrchestrator, ForwardFeatureJournal
+from research.build_historical_dataset import label_candidate, load_ohlcv
 
 
 class FakeClaude:
@@ -31,6 +32,38 @@ class FakeClaude:
 
 
 class ResearchPipelineTests(unittest.TestCase):
+    def test_historical_open_timestamp_becomes_visible_at_close(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "bars.csv"
+            pd.DataFrame([{"time": "2026-01-02T10:00:00Z", "open": 100,
+                           "high": 102, "low": 99, "close": 101, "volume": 1}]).to_csv(source, index=False)
+            frame = load_ohlcv(source, "open")
+            self.assertEqual(frame.index[0].minute, 15)
+
+    def test_historical_same_bar_tp_sl_is_excluded(self):
+        future = pd.DataFrame([{"open": 100, "high": 103, "low": 97, "close": 101}],
+                              index=pd.DatetimeIndex(["2026-01-02T10:15:00Z"]))
+        label = label_candidate({"direction": "BUY", "price": 100,
+                                 "stop_loss": 98, "take_profit": 102},
+                                future, 48, 0.3, 0.1)
+        self.assertEqual(label["label_status"], "AMBIGUOUS_SAME_BAR")
+        self.assertTrue(pd.isna(label["label_profitable"]))
+
+    def test_forward_journal_preserves_exact_candidate_features(self):
+        from agent.ml_feature_engineer_gold import GoldFeatureEngineer
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "forward.csv"
+            journal = ForwardFeatureJournal(path)
+            names = GoldFeatureEngineer.FEATURE_COLS
+            signal = {"pair": "OANDA:XAUUSD", "direction": "SELL", "entry": 100,
+                      "stop_loss": 102, "take_profit": 96, "rr_ratio": 2,
+                      "score": 70, "ml_feature_names": names,
+                      "ml_feature_vector": list(range(len(names)))}
+            journal.append("ABC", "2026-01-02T10:15:00+00:00", signal)
+            row = pd.read_csv(path).iloc[0]
+            self.assertEqual(row["candidate_id"], "ABC")
+            self.assertEqual(row["direction_encoded"], len(names) - 1)
+
     def test_dashboard_reports_healthy_complete_snapshot_without_network(self):
         with tempfile.TemporaryDirectory() as directory:
             snapshot = Path(directory) / "tv.json"

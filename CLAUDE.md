@@ -168,8 +168,11 @@ forward paper trading and stable performance across regimes.
 
 ## Next research milestones
 
-1. Produce a versioned historical candidate dataset and triple-barrier/net-cost
-   labels.
+1. Obtain deep, exact-symbol 15-minute XAUUSD history and build a versioned
+   candidate dataset with `research/build_historical_dataset.py`. The builder
+   treats input timestamps as candle opens by default, exposes each bar only at
+   close, replays the live SMC candidate generator, applies spread/slippage,
+   excludes same-bar TP/SL ambiguity, and emits a SHA-256 manifest.
 2. Add purging/embargo and combinatorial purged cross-validation.
 3. Build tick or lower-timeframe bid/ask execution replay.
 4. Validate BUY and SELL performance separately across market regimes.
@@ -178,6 +181,38 @@ forward paper trading and stable performance across regimes.
 6. Add model/prompt/dataset lineage, drift and calibration monitoring.
 7. Freeze a research revision and forward paper trade it for 3–6 months before
    considering any live-capital design.
+
+## Dataset and forward evidence workflow
+
+Historical source files must be exact XAUUSD OHLCV with UTC timestamps and
+documented candle-open/close semantics. A TradingView Premium chart export is
+acceptable for initial research if the export license permits this use and the
+symbol/provider remain `OANDA:XAUUSD`; do not mix it silently with futures or
+another broker feed. Example:
+
+```bash
+python -m research.build_historical_dataset \
+  data/raw/oanda_xauusd_15m.csv \
+  data/research/xauusd_candidates_v1.csv \
+  --timestamp-is open --scan-minutes 15 --expiry-hours 48 \
+  --spread-points 0.35 --slippage-points 0.10
+```
+
+Costs above are explicit research assumptions, not universal broker facts, and
+must be replaced with empirical bid/ask distributions. Do not train until the
+candidate dataset has at least 500 matured, unambiguous observations and both
+labels in chronological train/test partitions.
+
+Forward collection writes exact candidate-time features to
+`data/forward_candidate_features.csv` and outcomes to
+`data/paper_trades_ai.csv`. Export matured joins with:
+
+```bash
+python -m research.export_forward_dataset data/research/forward_matured.csv
+```
+
+Historical and forward observations must remain separate. Never use forward
+results to repeatedly retune the frozen model being evaluated.
 
 ## Security and operations
 

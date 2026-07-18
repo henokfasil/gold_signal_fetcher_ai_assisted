@@ -4,6 +4,7 @@ This command intentionally has no synthetic-data fallback.
 """
 
 import argparse
+import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,6 +27,8 @@ def train(dataset_path: Path, label_column: str = "label_profitable") -> dict:
     if missing:
         raise ValueError(f"dataset is missing columns: {', '.join(missing)}")
     frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True, errors="raise")
+    frame[label_column] = pd.to_numeric(frame[label_column], errors="coerce")
+    frame = frame.dropna(subset=[label_column, *GoldFeatureEngineer.FEATURE_COLS])
     frame = frame.sort_values("timestamp").drop_duplicates("timestamp", keep="last")
     if len(frame) < 500:
         raise ValueError("at least 500 historical observations are required")
@@ -57,6 +60,7 @@ def train(dataset_path: Path, label_column: str = "label_profitable") -> dict:
         "model_version": datetime.now(timezone.utc).strftime("gold-xgb-%Y%m%dT%H%M%SZ"),
         "training_data_kind": "historical_point_in_time",
         "dataset_path": str(dataset_path.resolve()),
+        "dataset_sha256": hashlib.sha256(dataset_path.read_bytes()).hexdigest(),
         "feature_names": GoldFeatureEngineer.FEATURE_COLS,
         "label_column": label_column,
         "train_rows": len(train_frame), "test_rows": len(test_frame),
@@ -64,8 +68,19 @@ def train(dataset_path: Path, label_column: str = "label_profitable") -> dict:
         "test_start": test_frame["timestamp"].min().isoformat(),
         "test_end": test_frame["timestamp"].max().isoformat(),
         "metrics": metrics,
+        "test_metrics_by_direction": {},
         "warning": "Research model. Chronological holdout is not a final untouched test or CPCV.",
     }
+    if "direction" in test_frame.columns:
+        for direction, subset in test_frame.groupby("direction"):
+            labels = subset[label_column].astype(int)
+            if len(subset) >= 20 and labels.nunique() == 2:
+                probs = model.predict_proba(subset[GoldFeatureEngineer.FEATURE_COLS].astype(float))[:, 1]
+                metadata["test_metrics_by_direction"][str(direction)] = {
+                    "rows": len(subset), "roc_auc": float(roc_auc_score(labels, probs)),
+                    "brier_score": float(brier_score_loss(labels, probs)),
+                    "log_loss": float(log_loss(labels, probs)),
+                }
     settings.ML_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, settings.ML_MODEL_PATH)
     settings.ML_MODEL_METADATA_PATH.write_text(json.dumps(metadata, indent=2) + "\n")

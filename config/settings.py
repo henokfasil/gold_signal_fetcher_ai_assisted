@@ -68,6 +68,9 @@ LOG_FILE = Path(os.getenv('LOG_FILE', PROJECT_ROOT / 'logs' / 'gold_scanner_ai.l
 
 # CSV Paths
 PAPER_TRADES_CSV = Path(os.getenv('PAPER_TRADES_CSV', PROJECT_ROOT / 'data' / 'paper_trades_ai.csv'))
+FORWARD_FEATURES_CSV = Path(
+    os.getenv('FORWARD_FEATURES_CSV', PROJECT_ROOT / 'data' / 'forward_candidate_features.csv')
+)
 SYSTEM_A_CSV = Path(os.getenv('SYSTEM_A_CSV', '/root/Gold_Signal_Fetcher/data/paper_trades.csv'))
 TRADINGVIEW_SNAPSHOT_PATH = Path(
     os.getenv('TRADINGVIEW_SNAPSHOT_PATH', '/tmp/tradingview_snapshot.json')

@@ -17,6 +17,7 @@ from agent.claude_analyst import AITradingDecider
 from agent.gold_correlations import GoldCorrelationValidator
 from agent.liquidity_manager import get_session_description, is_market_closed
 from agent.ml_signal_generator import MLSignalFilter
+from agent.ml_feature_engineer_gold import GoldFeatureEngineer
 from agent.notifier import Notifier
 from agent.smc_gold_scanner import run_gold_scanner
 
@@ -102,11 +103,44 @@ class PaperLedger:
         return total
 
 
+class ForwardFeatureJournal:
+    """Append-only point-in-time features, joined to outcomes by candidate ID."""
+
+    COLUMNS = ["candidate_id", "timestamp", "pair", "direction", "entry",
+               "stop_loss", "take_profit", "rr_ratio", "smc_score",
+               *GoldFeatureEngineer.FEATURE_COLS]
+
+    def __init__(self, path=settings.FORWARD_FEATURES_CSV):
+        self.path = path
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+
+    def append(self, candidate_id: str, timestamp: str, signal: dict) -> None:
+        vector = signal.get("ml_feature_vector")
+        names = signal.get("ml_feature_names")
+        if names != GoldFeatureEngineer.FEATURE_COLS or vector is None or len(vector) != len(names):
+            logger.warning("Forward features unavailable for candidate %s", candidate_id)
+            return
+        row = {
+            "candidate_id": candidate_id, "timestamp": timestamp,
+            "pair": signal["pair"], "direction": signal["direction"],
+            "entry": signal["entry"], "stop_loss": signal["stop_loss"],
+            "take_profit": signal["take_profit"], "rr_ratio": signal.get("rr_ratio"),
+            "smc_score": signal.get("score"), **dict(zip(names, vector)),
+        }
+        exists = self.path.exists() and self.path.stat().st_size > 0
+        with self.path.open("a", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=self.COLUMNS, extrasaction="ignore")
+            if not exists:
+                writer.writeheader()
+            writer.writerow(row)
+
+
 class AIAssistedOrchestrator:
     def __init__(self):
         if not settings.PAPER_TRADING:
             raise RuntimeError("System C is research-only: PAPER_TRADING must remain true")
         self.ledger = PaperLedger()
+        self.forward_features = ForwardFeatureJournal()
         self.ml_filter = MLSignalFilter()
         self.correlation = GoldCorrelationValidator()
         self.ai_decider = AITradingDecider()
@@ -232,8 +266,9 @@ class AIAssistedOrchestrator:
     def _record_candidate(self, signal: dict, decision: dict, status: str) -> str:
         base_notional = float(settings.strategy_value("position_sizing", "base_size_usd", 5000))
         candidate_id = uuid.uuid4().hex[:12].upper()
+        timestamp = utc_now().isoformat()
         self.ledger.append({
-            "candidate_id": candidate_id, "timestamp": utc_now().isoformat(),
+            "candidate_id": candidate_id, "timestamp": timestamp,
             "pair": signal["pair"], "direction": signal["direction"], "entry": signal["entry"],
             "stop_loss": signal["stop_loss"], "take_profit": signal["take_profit"],
             "rr_ratio": signal.get("rr_ratio"), "smc_score": decision["smc_score"],
@@ -247,6 +282,7 @@ class AIAssistedOrchestrator:
             "decision_reason": decision["final_reason"], "status": status,
             "notional_usd": base_notional, "paper_trading": True,
         })
+        self.forward_features.append(candidate_id, timestamp, signal)
         return candidate_id
 
     def run_scan(self):

@@ -10,3 +10,7 @@ as rejected rather than approved with fabricated fallback confidence.
 
 See [CLAUDE.md](CLAUDE.md) for architecture, data contracts, operational status
 and the research roadmap.
+
+Historical dataset replay and forward-evidence export live under `research/`.
+They preserve candidate-time features separately from later paper outcomes so
+model development can be audited without look-ahead leakage.
