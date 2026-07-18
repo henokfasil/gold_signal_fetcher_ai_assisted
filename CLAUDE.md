@@ -2,6 +2,64 @@
 
 Last reviewed: 2026-07-18
 
+## Claude restart handoff
+
+A copy-ready session prompt is available in
+[`CLAUDE_RESTART_PROMPT.md`](CLAUDE_RESTART_PROMPT.md).
+
+Read this file completely, then read `RESEARCH_PROTOCOL.md`, before changing
+strategy logic, labels, thresholds, features or deployment state. This handoff
+is model-agnostic; do not assume a model name or capability that is not present
+in the active Anthropic API configuration.
+
+Current research state at handoff:
+
+- Raw account-free Dukascopy XAUUSD bid/ask history contains 154,709 15-minute
+  bars from 2020-01-01 through 2026-07-17. It is local research data and is not
+  committed to Git.
+- Canonical candidate dataset is
+  `data/research/xauusd_smc_candidates_v3.csv`: 40,792 candidates, 40,623
+  bid/ask-labelled outcomes, 168 ambiguous outcomes and one unmatured outcome.
+  Dataset SHA-256 is
+  `8d0444dd86d10bb87f6532711b310c06753892afdb34bbe4a81600d0b045a77e`.
+- The purged/calibrated walk-forward result is `REJECT_MODEL`: overall ROC-AUC
+  0.490 and Brier score worse than its prevalence baseline. No model artifact
+  was created or deployed. Never rename this result as validated ML.
+- The lifecycle portfolio diagnostic opens 2,695 positions from 40,792 raw
+  candidates after cooldown/risk gates. It returns -0.41%, profit factor 0.999
+  and maximum drawdown 34.55%. BUY contributes +$1,396.99; SELL contributes
+  -$1,437.82. This is a rejected development result, not an edge.
+- Runtime paper controls now use a four-hour same-direction/nearby-entry
+  cooldown and account-level realized-USD daily/weekly loss caps.
+- Historical 2020-2026 results have influenced research decisions and can
+  never again be called an untouched final test.
+- Forward shadow collection continues for both directions. ML remains required
+  for approval and unavailable, so no candidate can become an approved paper
+  signal merely because Claude likes it.
+
+Resume in this order:
+
+1. Verify `git status`, run the verification commands below and confirm the
+   canonical VPS revision/services without touching secrets or historical data.
+2. Reproduce `portfolio_v4_report.json` with
+   `research/simulate_portfolio.py`; never edit result files by hand.
+3. Evaluate BUY-only and SELL-only lifecycle portfolios separately. SELL stays
+   shadow-only unless its own pre-registered hypothesis passes every gate.
+4. Implement walk-forward SMC ablations specified in `RESEARCH_PROTOCOL.md`,
+   including simple baselines, label-interval uniqueness weighting and weekly
+   block-bootstrap uncertainty. Do not tune XGBoost on these same years.
+5. Add causal regime/session diagnostics only inside chronological training
+   folds. Register every proposed filter before examining its next-fold result.
+6. Freeze a revision only if the underlying non-ML baseline and any ML filter
+   pass development gates. Final evidence must come from future forward paper
+   observations with no mid-test changes.
+
+Prohibited shortcuts: random train/test splits, synthetic training fallbacks,
+midpoint-only execution labels when bid/ask exists, counting overlapping rows
+as independent trials, combining BUY and SELL performance to hide a weak side,
+optimizing on 2020-2026 then calling it out of sample, deploying a failed model,
+or enabling broker execution.
+
 ## Status
 
 This repository is a **paper-trading research system**, not a live execution
@@ -179,14 +237,12 @@ registered there before evaluation.
 
 ## Next research milestones
 
-1. Obtain deep, exact-symbol 15-minute XAUUSD history and build a versioned
-   candidate dataset with `research/build_historical_dataset.py`. The builder
-   treats input timestamps as candle opens by default, exposes each bar only at
-   close, replays the live SMC candidate generator, applies spread/slippage,
-   excludes same-bar TP/SL ambiguity, and emits a SHA-256 manifest.
-2. Add purging/embargo and combinatorial purged cross-validation.
-3. Build tick or lower-timeframe bid/ask execution replay.
-4. Validate BUY and SELL performance separately across market regimes.
+1. Evaluate BUY and SELL lifecycle portfolios separately.
+2. Add label-interval uniqueness weights and weekly block-bootstrap confidence
+   intervals to development validation.
+3. Run pre-registered walk-forward SMC component ablations against simple
+   structure-only and no-ML baselines.
+4. Add a runtime-aligned portfolio equity/risk panel to the research dashboard.
 5. Build the DXY/real-yield/VIX snapshot producer with timestamp and source
    provenance.
 6. Add model/prompt/dataset lineage, drift and calibration monitoring.
@@ -227,10 +283,10 @@ for later execution-cost research:
 
 ```bash
 python -m research.build_historical_dataset \
-  data/raw/oanda_xauusd_15m.csv \
-  data/research/xauusd_candidates_v1.csv \
+  data/raw/dukascopy_xauusd_15m_2020_2026.csv \
+  data/research/xauusd_smc_candidates_v3.csv \
   --timestamp-is open --scan-minutes 15 --expiry-hours 48 \
-  --spread-points 0.35 --slippage-points 0.10
+  --spread-points 0.83 --slippage-points 0.10
 ```
 
 Costs above are explicit research assumptions, not universal broker facts, and
