@@ -7,7 +7,7 @@ After=tradingview-display.service
 Type=simple
 User=tvfetcher
 Environment=DISPLAY=:99
-ExecStart=/usr/bin/x11vnc -display :99 -localhost -nopw -forever -shared
+ExecStart=/usr/bin/x11vnc -display :99 -localhost -rfbauth /home/tvfetcher/.vnc/passwd -forever -shared
 Restart=on-failure
 RestartSec=3
 
