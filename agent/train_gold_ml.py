@@ -29,6 +29,8 @@ def train(dataset_path: Path, label_column: str = "label_profitable") -> dict:
     frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True, errors="raise")
     frame[label_column] = pd.to_numeric(frame[label_column], errors="coerce")
     frame = frame.dropna(subset=[label_column, *GoldFeatureEngineer.FEATURE_COLS])
+    if "rr_ratio" in frame.columns:
+        frame = frame[frame["rr_ratio"] >= settings.MIN_RR_RATIO]
     frame = frame.sort_values("timestamp").drop_duplicates("timestamp", keep="last")
     if len(frame) < 500:
         raise ValueError("at least 500 historical observations are required")

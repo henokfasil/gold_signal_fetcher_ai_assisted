@@ -34,19 +34,32 @@ class GoldFeatureEngineer:
         # Volume
         'volume_spike',
 
-        # Gold-Specific Macro
-        'usd_strength',
-        'real_rates_momentum',
-        'risk_sentiment',
-
         # Session-Based
         'session_hour_encoded',
         'day_of_week_encoded',
         'direction_encoded',
+
+        # Candidate-known SMC and risk context
+        'rr_ratio',
+        'smc_score_encoded',
+        'atr_pct',
+        'structure_1w_encoded',
+        'structure_1d_encoded',
+        'structure_4h_encoded',
+        'structure_1h_encoded',
+        'bos_4h_present',
+        'choch_4h_present',
+        'bos_15m_present',
+        'choch_15m_present',
+        'liquidity_sweep_1h_present',
+        'price_at_ob',
+        'fvg_1h_present',
+        'premium_discount_position',
     ]
 
     @staticmethod
-    def extract_features(df: pd.DataFrame, macro_data: dict = None, direction: str = None) -> pd.DataFrame:
+    def extract_features(df: pd.DataFrame, macro_data: dict = None, direction: str = None,
+                         candidate_context: dict = None) -> pd.DataFrame:
         """
         Extract gold-specific features from OHLCV data.
 
@@ -115,24 +128,6 @@ class GoldFeatureEngineer:
         features['volume_ma'] = df['volume'].rolling(20).mean()
         features['volume_spike'] = (df['volume'] / features['volume_ma']) - 1
 
-        # === GOLD-SPECIFIC MACRO FEATURES ===
-
-        if macro_data is None:
-            macro_data = {
-                'usd_strength': 0.0,
-                'real_rates_momentum': 0.0,
-                'risk_sentiment': 50.0
-            }
-
-        # USD Strength (-1 to 1, negative = weak USD = gold bullish)
-        features['usd_strength'] = macro_data.get('usd_strength', 0.0)
-
-        # Real Rates Momentum (-1 to 1, negative = falling rates = gold bullish)
-        features['real_rates_momentum'] = macro_data.get('real_rates_momentum', 0.0)
-
-        # Risk Sentiment (0-100, higher = risk-off = gold bullish)
-        features['risk_sentiment'] = macro_data.get('risk_sentiment', 50.0) / 100.0
-
         # === SESSION-BASED FEATURES ===
 
         # Derive session values from each candle timestamp. Using wall-clock time
@@ -150,6 +145,23 @@ class GoldFeatureEngineer:
         features['direction_encoded'] = {"BUY": 1.0, "SELL": -1.0}.get(
             str(direction or "").upper(), 0.0
         )
+
+        context = candidate_context or {}
+        smc = context.get("smc", {})
+        structure_value = {"bullish": 1.0, "bearish": -1.0, "ranging": 0.0}
+        features["rr_ratio"] = float(context.get("rr_ratio") or 0)
+        features["smc_score_encoded"] = float(context.get("score") or 0) / 100.0
+        close = float(df["close"].iloc[-1]) or 1.0
+        features["atr_pct"] = float(context.get("atr") or 0) / close
+        for timeframe in ("1w", "1d", "4h", "1h"):
+            features[f"structure_{timeframe}_encoded"] = structure_value.get(
+                smc.get(f"struct_{timeframe}"), 0.0)
+        for name in ("bos_4h", "choch_4h", "bos_15m", "choch_15m",
+                     "liquidity_sweep_1h", "fvg_1h"):
+            features[f"{name}_present"] = float(bool(smc.get(name)))
+        features["price_at_ob"] = float(bool(smc.get("price_at_ob")))
+        features["premium_discount_position"] = float(
+            (smc.get("pd_zone") or {}).get("pct_in_range", 0.5))
 
         return features
 

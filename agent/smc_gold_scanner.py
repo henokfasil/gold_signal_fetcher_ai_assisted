@@ -1136,7 +1136,13 @@ def _run_smc_analysis(
     # snapshot is supplied by the orchestrator.
     try:
         from agent.ml_feature_engineer_gold import GoldFeatureEngineer
-        feature_frame = GoldFeatureEngineer.extract_features(df_1h, direction=direction)
+        # Use the decision timeframe so consecutive 15-minute scans do not all
+        # inherit an identical hourly vector. All context exists at candidate time.
+        feature_frame = GoldFeatureEngineer.extract_features(
+            df_15m, direction=direction,
+            candidate_context={"rr_ratio": signal["rr_ratio"], "score": score,
+                               "atr": atr_1h, "smc": smc_data},
+        )
         signal["ml_feature_vector"] = (
             GoldFeatureEngineer.prepare_for_model(feature_frame)[-1].tolist()
         )

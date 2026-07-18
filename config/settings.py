@@ -69,7 +69,7 @@ LOG_FILE = Path(os.getenv('LOG_FILE', PROJECT_ROOT / 'logs' / 'gold_scanner_ai.l
 # CSV Paths
 PAPER_TRADES_CSV = Path(os.getenv('PAPER_TRADES_CSV', PROJECT_ROOT / 'data' / 'paper_trades_ai.csv'))
 FORWARD_FEATURES_CSV = Path(
-    os.getenv('FORWARD_FEATURES_CSV', PROJECT_ROOT / 'data' / 'forward_candidate_features.csv')
+    os.getenv('FORWARD_FEATURES_CSV', PROJECT_ROOT / 'data' / 'forward_candidate_features_v2.csv')
 )
 FORWARD_OUTCOMES_CSV = Path(
     os.getenv('FORWARD_OUTCOMES_CSV', PROJECT_ROOT / 'data' / 'forward_candidate_outcomes.csv')

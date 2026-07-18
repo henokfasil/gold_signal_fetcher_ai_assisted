@@ -74,7 +74,7 @@
   },
 
   "ml_parameters": {
-    "feature_count": 21,
+    "feature_count": 33,
     "confidence_threshold": 35,
     "model_path": "models/xgboost_gold_model_v2.pkl",
     "features": [
@@ -93,11 +93,24 @@
       "price_momentum",
       "volatility",
       "volume_spike",
-      "usd_strength",
-      "real_rates_momentum",
-      "risk_sentiment",
       "session_hour_encoded",
-      "day_of_week_encoded"
+      "day_of_week_encoded",
+      "direction_encoded",
+      "rr_ratio",
+      "smc_score_encoded",
+      "atr_pct",
+      "structure_1w_encoded",
+      "structure_1d_encoded",
+      "structure_4h_encoded",
+      "structure_1h_encoded",
+      "bos_4h_present",
+      "choch_4h_present",
+      "bos_15m_present",
+      "choch_15m_present",
+      "liquidity_sweep_1h_present",
+      "price_at_ob",
+      "fvg_1h_present",
+      "premium_discount_position"
     ]
   },
 

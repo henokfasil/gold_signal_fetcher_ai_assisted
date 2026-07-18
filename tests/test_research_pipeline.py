@@ -62,7 +62,7 @@ class ResearchPipelineTests(unittest.TestCase):
             journal.append("ABC", "2026-01-02T10:15:00+00:00", signal)
             row = pd.read_csv(path).iloc[0]
             self.assertEqual(row["candidate_id"], "ABC")
-            self.assertEqual(row["direction_encoded"], len(names) - 1)
+            self.assertEqual(row["direction_encoded"], names.index("direction_encoded"))
 
     def test_rejected_candidate_can_receive_shadow_outcome(self):
         with tempfile.TemporaryDirectory() as directory:

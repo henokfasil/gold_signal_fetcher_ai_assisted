@@ -217,7 +217,7 @@ candidate dataset has at least 500 matured, unambiguous observations and both
 labels in chronological train/test partitions.
 
 Forward collection writes exact candidate-time features to
-`data/forward_candidate_features.csv` and outcomes to
+`data/forward_candidate_features_v2.csv` and outcomes to
 `data/forward_candidate_outcomes.csv`. This shadow ledger follows every SMC
 candidate—including candidates rejected by unavailable ML or Claude—without
 approving a paper trade or sending Telegram. Export matured joins with:
