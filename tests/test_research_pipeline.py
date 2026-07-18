@@ -219,14 +219,20 @@ class ResearchPipelineTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             snapshot = Path(directory) / "tv.json"
             log = Path(directory) / "scanner.log"
-            bars = [{"time": 1_700_000_000 + i * 900, "open": 2000,
-                     "high": 2002, "low": 1998, "close": 2001, "volume": 10}
-                    for i in range(200)]
+            cadences = {"1W": 604800, "1D": 86400, "4H": 14400,
+                        "1H": 3600, "15M": 900}
+            last_time = int(datetime.now(timezone.utc).timestamp() // 900 * 900)
+            frames = {}
+            for name, cadence in cadences.items():
+                bars = [{"time": last_time - (199 - i) * cadence, "open": 2000,
+                         "high": 2002, "low": 1998, "close": 2001, "volume": 10}
+                        for i in range(200)]
+                frames[name] = {"resolution": name, "bar_count": 200, "bars": bars}
             snapshot.write_text(json.dumps({
+                "schema_version": 2,
                 "captured_at": datetime.now(timezone.utc).isoformat(),
                 "provider": "tradingview-mcp", "symbol": "OANDA:XAUUSD",
-                "timeframes": {name: {"bar_count": 200, "bars": bars}
-                               for name in ("1W", "1D", "4H", "1H", "15M")},
+                "timeframes": frames,
             }))
             log.write_text("x [ORCHESTRATOR] Result: NO_CANDIDATE\n")
             with patch("dashboard.is_market_closed", return_value=False):
@@ -234,6 +240,29 @@ class ResearchPipelineTests(unittest.TestCase):
             self.assertEqual(health["status"], "HEALTHY")
             self.assertEqual(health["last_scan"], "NO_CANDIDATE")
             self.assertEqual(health["market"], "OPEN")
+
+    def test_duplicate_15m_payloads_cannot_claim_multitimeframe_health(self):
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot = Path(directory) / "tv.json"
+            last_time = int(datetime.now(timezone.utc).timestamp() // 900 * 900)
+            bars = [{"time": last_time - (199 - i) * 900, "open": 2000,
+                     "high": 2002, "low": 1998, "close": 2001, "volume": 10}
+                    for i in range(200)]
+            snapshot.write_text(json.dumps({
+                "schema_version": 2,
+                "captured_at": datetime.now(timezone.utc).isoformat(),
+                "provider": "tradingview-mcp", "symbol": "OANDA:XAUUSD",
+                "timeframes": {name: {"resolution": name, "bars": bars}
+                               for name in ("1W", "1D", "4H", "1H", "15M")},
+            }))
+            with patch("dashboard.is_market_closed", return_value=False):
+                health = get_feed_health(snapshot, Path(directory) / "missing.log")
+            self.assertEqual(health["status"], "DEGRADED")
+            self.assertEqual(health["integrity"], "FAIL")
+            self.assertFalse(health["frames"]["1W"]["cadence"])
+            with patch("config.settings.TRADINGVIEW_SNAPSHOT_PATH", snapshot), \
+                 patch("agent.smc_gold_scanner.check_news_guard", return_value=(False, "clear")):
+                self.assertIsNone(_run_from_tradingview_snapshot())
 
     def test_bearish_bos_and_sell_geometry_are_real_not_relabelled(self):
         frame = pd.DataFrame({

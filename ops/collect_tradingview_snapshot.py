@@ -6,6 +6,7 @@ import os
 import subprocess
 import tempfile
 import time
+from statistics import median
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -20,6 +21,8 @@ TIMEFRAMES = {
     "1H": ("60", {"60", "1H"}),
     "15M": ("15", {"15", "15M"}),
 }
+EXPECTED_CADENCE_SECONDS = {"1W": 604800, "1D": 86400, "4H": 14400,
+                            "1H": 3600, "15M": 900}
 
 
 def call(*args):
@@ -39,10 +42,19 @@ def validate_bars(bars, name):
     times = [int(bar["time"]) for bar in bars]
     if times != sorted(set(times)):
         raise ValueError(f"{name}: timestamps are not unique and increasing")
+    intervals = [later - earlier for earlier, later in zip(times, times[1:])]
+    median_interval = float(median(intervals))
+    expected_interval = EXPECTED_CADENCE_SECONDS[name]
+    if abs(median_interval - expected_interval) > expected_interval * 0.05:
+        raise ValueError(
+            f"{name}: median cadence {median_interval:.0f}s, expected {expected_interval}s"
+        )
     for bar in bars:
         values = [float(bar[key]) for key in ("open", "high", "low", "close")]
         if min(values) <= 0 or float(bar["high"]) < float(bar["low"]):
             raise ValueError(f"{name}: malformed OHLC bar")
+    return {"median_interval_seconds": median_interval,
+            "expected_interval_seconds": expected_interval}
 
 
 def main():
@@ -56,12 +68,20 @@ def main():
         if state.get("symbol") != SYMBOL or str(state.get("resolution")) not in accepted_resolutions:
             raise ValueError(f"chart state mismatch for {name}: {state}")
         data = call("ohlcv", "--count", "200")
-        validate_bars(data["bars"], name)
+        cadence = validate_bars(data["bars"], name)
         frames[name] = {"resolution": name, "tradingview_resolution": tv_resolution,
-                        "bars": data["bars"], "bar_count": len(data["bars"])}
+                        "bars": data["bars"], "bar_count": len(data["bars"]),
+                        **cadence}
+
+    fingerprints = {
+        json.dumps(frame["bars"], sort_keys=True, separators=(",", ":"))
+        for frame in frames.values()
+    }
+    if len(fingerprints) != len(frames):
+        raise ValueError("cross-timeframe bar payloads are duplicated")
 
     quote = call("quote", SYMBOL)
-    snapshot = {"schema_version": 1, "provider": "tradingview-mcp",
+    snapshot = {"schema_version": 2, "provider": "tradingview-mcp",
                 "symbol": SYMBOL, "captured_at": datetime.now(timezone.utc).isoformat(),
                 "quote": quote, "timeframes": frames}
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

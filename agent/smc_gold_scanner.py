@@ -23,6 +23,7 @@ Public API mirrors gold_scanner.py:
 import asyncio
 import json
 import logging
+from statistics import median
 from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 
@@ -39,6 +40,8 @@ logger = logging.getLogger(__name__)
 SYMBOL = "XAUUSDxx"
 _GOLD_SYMBOL_VARIANTS = ["XAUUSDxx", "XAUUSDm", "XAUUSD", "GOLD", "XAUUSDc", "XAUUSD.", "XAU/USD"]
 _TF_MAP = {"1W": "1w", "1D": "1d", "4H": "4h", "1H": "1h", "15M": "15m"}
+_EXPECTED_CADENCE_SECONDS = {"1W": 604800, "1D": 86400, "4H": 14400,
+                             "1H": 3600, "15M": 900}
 
 _NFP_BLOCK_START_H = 13
 _NFP_BLOCK_START_M = 25
@@ -1231,16 +1234,31 @@ def _run_from_tradingview_snapshot() -> Optional[dict]:
             raise ValueError(f"snapshot age {age:.0f}s is outside freshness limit")
         if payload.get("symbol") != "OANDA:XAUUSD":
             raise ValueError(f"unexpected symbol {payload.get('symbol')!r}")
+        if payload.get("schema_version") != 2:
+            raise ValueError("snapshot schema does not include cadence validation")
 
         frames = {}
+        fingerprints = set()
         minimums = {"1W": 52, "1D": 52, "4H": 52, "1H": 52, "15M": 20}
         for name, minimum in minimums.items():
             frame = payload["timeframes"][name]
             if frame.get("resolution") != name:
                 raise ValueError(f"resolution mismatch for {name}")
+            bars = frame["bars"]
+            times = [int(bar["time"]) for bar in bars]
+            intervals = [later - earlier for earlier, later in zip(times, times[1:])]
+            actual_cadence = float(median(intervals)) if intervals else 0
+            expected_cadence = _EXPECTED_CADENCE_SECONDS[name]
+            if abs(actual_cadence - expected_cadence) > expected_cadence * .05:
+                raise ValueError(
+                    f"{name} cadence {actual_cadence:.0f}s != {expected_cadence}s"
+                )
+            fingerprints.add(json.dumps(bars, sort_keys=True, separators=(",", ":")))
             frames[name] = _candles_to_df(frame["bars"], min_candles=minimum)
             if frames[name] is None:
                 raise ValueError(f"invalid or insufficient {name} bars")
+        if len(fingerprints) != len(minimums):
+            raise ValueError("cross-timeframe bar payloads are duplicated")
 
         return _run_smc_analysis(
             frames["1W"], frames["1D"], frames["4H"], frames["1H"],

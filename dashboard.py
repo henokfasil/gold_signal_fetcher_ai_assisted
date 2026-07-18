@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import os
+from statistics import median
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -16,6 +17,8 @@ from config import settings
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
 STARTING_CAPITAL = settings.PAPER_ACCOUNT_SIZE
+EXPECTED_CADENCE_SECONDS = {"1W": 604800, "1D": 86400, "4H": 14400,
+                            "1H": 3600, "15M": 900}
 
 
 def load_trades(csv_path):
@@ -105,9 +108,10 @@ def _tail_text(path, max_bytes=65536):
         return handle.read().decode("utf-8", errors="replace")
 
 
-def _validate_bars(bars):
+def _validate_bars(bars, timeframe):
     if not isinstance(bars, list) or not bars:
-        return {"count": 0, "ordered": False, "unique": False, "ohlc": False, "latest": "—"}
+        return {"count": 0, "ordered": False, "unique": False, "ohlc": False,
+                "cadence": False, "interval": "—", "latest": "—"}
     times, valid_ohlc = [], True
     for bar in bars:
         try:
@@ -118,8 +122,14 @@ def _validate_bars(bars):
         except (KeyError, TypeError, ValueError):
             valid_ohlc = False
     latest = datetime.fromtimestamp(times[-1], timezone.utc).strftime("%m-%d %H:%M") if times else "—"
+    intervals = [later - earlier for earlier, later in zip(times, times[1:])]
+    actual_interval = float(median(intervals)) if intervals else 0
+    expected_interval = EXPECTED_CADENCE_SECONDS.get(timeframe, 0)
+    cadence = bool(expected_interval and
+                   abs(actual_interval - expected_interval) <= expected_interval * .05)
     return {"count": len(bars), "ordered": times == sorted(times),
-            "unique": len(times) == len(set(times)), "ohlc": bool(valid_ohlc), "latest": latest}
+            "unique": len(times) == len(set(times)), "ohlc": bool(valid_ohlc),
+            "cadence": cadence, "interval": f"{actual_interval:.0f}s", "latest": latest}
 
 
 def get_feed_health(snapshot_path=None, log_path=None):
@@ -136,11 +146,18 @@ def get_feed_health(snapshot_path=None, log_path=None):
         payload = json.loads(snapshot_path.read_text())
         captured = datetime.fromisoformat(payload["captured_at"].replace("Z", "+00:00")).astimezone(timezone.utc)
         age_seconds = max(0, int((datetime.now(timezone.utc) - captured).total_seconds()))
-        frames = {name: _validate_bars(data.get("bars", [])) for name, data in payload.get("timeframes", {}).items()}
+        frames = {name: _validate_bars(data.get("bars", []), name)
+                  for name, data in payload.get("timeframes", {}).items()}
         closes = [float(payload["timeframes"][name]["bars"][-1]["close"]) for name in frames if frames[name]["count"]]
         divergence = ((max(closes) - min(closes)) / min(closes) * 100) if closes else float("inf")
-        integrity = all(frames.get(name, {}).get("count", 0) >= 200 and
-                        frames[name]["ordered"] and frames[name]["unique"] and frames[name]["ohlc"]
+        frame_payloads = [json.dumps(payload["timeframes"][name].get("bars", []),
+                                    sort_keys=True, separators=(",", ":"))
+                          for name in ("1W", "1D", "4H", "1H", "15M")
+                          if name in payload.get("timeframes", {})]
+        distinct_frames = len(frame_payloads) == 5 and len(set(frame_payloads)) == 5
+        integrity = payload.get("schema_version") == 2 and distinct_frames and all(
+                        frames.get(name, {}).get("count", 0) >= 200 and frames[name]["ordered"] and
+                        frames[name]["unique"] and frames[name]["ohlc"] and frames[name]["cadence"]
                         for name in ("1W", "1D", "4H", "1H", "15M"))
         fresh = age_seconds <= settings.DASHBOARD_FEED_MAX_AGE_SECONDS
         exact = payload.get("symbol") == "OANDA:XAUUSD" and payload.get("provider") == "tradingview-mcp"
@@ -231,7 +248,7 @@ TEMPLATE = """
 <section class="panel feed"><div class="panel-head"><h2>TradingView Data Quality</h2><span class="pill {{ feed.status_class }}">{{ feed.status }}</span></div>
 <div class="grid">
 {% for label,value in [('Provider',feed.provider),('Exact symbol',feed.symbol),('Snapshot age',feed.age),('Captured',feed.captured_at),('OHLC integrity',feed.integrity),('Cross-TF close variance',feed.price_consistency),('Last scan',feed.last_scan),('Market',feed.market),('Paper mode',feed.paper_mode),('Telegram',feed.telegram),('Schedule','Every 15 minutes'),('Execution','No broker orders')] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
-</div><table class="quality"><thead><tr><th>Timeframe</th><th>Bars</th><th>Ordered</th><th>Unique</th><th>OHLC valid</th><th>Latest bar UTC</th></tr></thead><tbody>{% for name,q in feed.frames.items() %}<tr><td>{{ name }}</td><td>{{ q.count }}</td><td class="{{ 'ok' if q.ordered else 'no' }}">{{ 'PASS' if q.ordered else 'FAIL' }}</td><td class="{{ 'ok' if q.unique else 'no' }}">{{ 'PASS' if q.unique else 'FAIL' }}</td><td class="{{ 'ok' if q.ohlc else 'no' }}">{{ 'PASS' if q.ohlc else 'FAIL' }}</td><td>{{ q.latest }}</td></tr>{% endfor %}</tbody></table>
+</div><table class="quality"><thead><tr><th>Timeframe</th><th>Bars</th><th>Ordered</th><th>Unique</th><th>OHLC valid</th><th>Cadence</th><th>Median interval</th><th>Latest bar UTC</th></tr></thead><tbody>{% for name,q in feed.frames.items() %}<tr><td>{{ name }}</td><td>{{ q.count }}</td><td class="{{ 'ok' if q.ordered else 'no' }}">{{ 'PASS' if q.ordered else 'FAIL' }}</td><td class="{{ 'ok' if q.unique else 'no' }}">{{ 'PASS' if q.unique else 'FAIL' }}</td><td class="{{ 'ok' if q.ohlc else 'no' }}">{{ 'PASS' if q.ohlc else 'FAIL' }}</td><td class="{{ 'ok' if q.cadence else 'no' }}">{{ 'PASS' if q.cadence else 'FAIL' }}</td><td>{{ q.interval }}</td><td>{{ q.latest }}</td></tr>{% endfor %}</tbody></table>
 <div class="note">File-only validation: page views do not call TradingView, MCP, Telegram, Claude, or the scanner.</div></section>
 
 <section class="panel"><div class="panel-head"><h2>Prospective Shadow Variants</h2><span class="pill {{ variants.status_class }}">{{ variants.status }}</span></div>
