@@ -3,18 +3,21 @@ Enhanced Dashboard: System A (SMC) vs System C (ML + Claude)
 Includes equity curves, trade tables, capital performance.
 """
 
+import logging
 import os
 import json
 import pandas as pd
 from datetime import datetime, timedelta
 from flask import Flask, render_template_string
 from pathlib import Path
+from config import settings
 
 app = Flask(__name__)
+logger = logging.getLogger(__name__)
 
-SYSTEM_A_CSV = Path("/root/Gold_Signal_Fetcher/data/paper_trades.csv")
-SYSTEM_C_CSV = Path("/root/gold_signal_fetcher_ai_assisted/data/paper_trades_ai.csv")
-STARTING_CAPITAL = 10000
+SYSTEM_A_CSV = settings.SYSTEM_A_CSV
+SYSTEM_C_CSV = settings.PAPER_TRADES_CSV
+STARTING_CAPITAL = settings.PAPER_ACCOUNT_SIZE
 
 
 def load_trades(csv_path):
@@ -48,7 +51,7 @@ def calculate_metrics(csv_path):
         }
 
     # Detect schema
-    is_system_c = 'pnl' in df.columns and 'pair' in df.columns
+    is_system_c = 'candidate_id' in df.columns and 'pair' in df.columns
 
     # BLOCKED signals were never trades — exclude from counts and tables
     if 'status' in df.columns:
@@ -59,13 +62,14 @@ def calculate_metrics(csv_path):
     total_trades = len(df)
 
     if is_system_c:
-        # System C: use 'pnl' column directly
-        df['pnl'] = pd.to_numeric(df['pnl'], errors='coerce').fillna(0)
-        wins = len(df[df['pnl'] > 0])
-        losses = len(df[df['pnl'] < 0])
-        total_pnl = df['pnl'].sum()
-        wins_sum = df[df['pnl'] > 0]['pnl'].sum() if wins > 0 else 0
-        losses_sum = abs(df[df['pnl'] < 0]['pnl'].sum()) if losses > 0 else 1
+        # System C: count outcomes explicitly and use USD P&L for capital.
+        df['pnl_usd'] = pd.to_numeric(df['pnl_usd'], errors='coerce').fillna(0)
+        closed = df[df['status'].isin(['WIN', 'LOSS', 'EXPIRED'])]
+        wins = len(closed[closed['status'] == 'WIN'])
+        losses = len(closed[closed['status'] == 'LOSS'])
+        total_pnl = closed['pnl_usd'].sum()
+        wins_sum = closed[closed['pnl_usd'] > 0]['pnl_usd'].sum() if wins > 0 else 0
+        losses_sum = abs(closed[closed['pnl_usd'] < 0]['pnl_usd'].sum()) if losses > 0 else 1
     else:
         # System A: use 'profit_pct' and check 'result' column
         df['profit_pct'] = pd.to_numeric(df['profit_pct'], errors='coerce').fillna(0)
@@ -104,7 +108,7 @@ def get_recent_trades(csv_path, limit=10):
         return []
 
     # Detect schema (System A or System C)
-    is_system_c = 'pnl' in df.columns and 'pair' in df.columns
+    is_system_c = 'candidate_id' in df.columns and 'pair' in df.columns
     is_system_a = 'signal_id' in df.columns and 'symbol' in df.columns
 
     # BLOCKED signals were never trades — don't render them as OPEN positions
@@ -123,11 +127,12 @@ def get_recent_trades(csv_path, limit=10):
                 pair = row.get('pair', 'XAUUSD')
                 direction = str(row.get('direction', 'N/A')).upper()
                 entry = row.get('entry', 'N/A')
-                pnl = float(row.get('pnl', 0))
-
-                outcome = 'OPEN' if pnl == 0 else ('WIN' if pnl > 0 else 'LOSS')
-                pnl_pct = '-' if pnl == 0 else f'{pnl:.2f}%'
-                pnl_usd = '-' if pnl == 0 else f'${pnl:.2f}'
+                status = str(row.get('status', 'REJECTED')).upper()
+                pct_value = pd.to_numeric(row.get('pnl_pct', ''), errors='coerce')
+                usd_value = pd.to_numeric(row.get('pnl_usd', ''), errors='coerce')
+                outcome = status
+                pnl_pct = '-' if pd.isna(pct_value) else f'{pct_value:.2f}%'
+                pnl_usd = '-' if pd.isna(usd_value) else f'${usd_value:.2f}'
                 timestamp = row.get('timestamp', '')
 
             else:

@@ -1002,6 +1002,19 @@ def _run_smc_analysis(
         smc_data=smc_data,
     )
 
+    # Attach the exact point-in-time feature vector used for later model
+    # inference and audit. Macro values remain neutral until a fresh macro
+    # snapshot is supplied by the orchestrator.
+    try:
+        from agent.ml_feature_engineer_gold import GoldFeatureEngineer
+        feature_frame = GoldFeatureEngineer.extract_features(df_1h)
+        signal["ml_feature_vector"] = (
+            GoldFeatureEngineer.prepare_for_model(feature_frame)[-1].tolist()
+        )
+        signal["ml_feature_names"] = GoldFeatureEngineer.FEATURE_COLS
+    except Exception as exc:
+        logger.warning("SMC scanner: could not build ML feature vector: %s", exc)
+
     logger.info(
         f"SMC scanner: SIGNAL | price={price} | score={score} | "
         f"SL={signal['stop_loss']} | TP={signal['take_profit']} | RR={signal['rr_ratio']}"

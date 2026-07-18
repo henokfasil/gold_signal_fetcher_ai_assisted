@@ -1,260 +1,139 @@
-"""
-Claude AI Analyst for trading decisions.
-Analyzes market context and provides trading recommendations via API.
+"""Structured LLM review for paper-trading candidates.
+
+The LLM is a conservative context reviewer, not a source of market facts and
+not a substitute for a calibrated statistical model.
 """
 
-import os
 import json
 import logging
-from anthropic import Anthropic
+import os
 
 logger = logging.getLogger(__name__)
 
 
 class ClaudeAnalyst:
-    """Claude-powered market analyst for trading decisions."""
+    def __init__(self, model: str = None):
+        self.model = model or os.getenv("ANTHROPIC_REASONING_MODEL", "claude-sonnet-4-5")
+        self.client = None
+        self.unavailable_reason = "ANTHROPIC_API_KEY is missing"
+        if os.getenv("ANTHROPIC_API_KEY"):
+            try:
+                from anthropic import Anthropic
+                self.client = Anthropic()
+                self.unavailable_reason = ""
+            except Exception as exc:
+                self.unavailable_reason = f"Claude client unavailable: {exc}"
 
-    def __init__(self, model: str = "claude-opus-4-8"):
-        """
-        Initialize Claude analyst.
+    def analyze_signal(self, signal_info: dict, market_data: dict, ml_result: dict,
+                       macro_result: dict, open_positions: list = None) -> dict:
+        if self.client is None:
+            return self._unavailable(self.unavailable_reason)
 
-        Args:
-            model: Claude model to use (opus for reasoning, haiku for speed)
-        """
-        self.client = Anthropic()
-        self.model = model
-        self.conversation_history = []
-
-    def analyze_signal(
-        self,
-        signal_info: dict,
-        market_data: dict,
-        ml_confidence: float,
-        open_positions: list = None
-    ) -> dict:
-        """
-        Ask Claude to analyze a trading signal and decide whether to trade.
-
-        Args:
-            signal_info: Signal details (pair, direction, entry, SL, TP)
-            market_data: Current market state (price, trend, ATR, etc)
-            ml_confidence: ML model's confidence (0-100)
-            open_positions: List of currently open trades
-
-        Returns:
-            Decision dict with Claude's recommendation and reasoning
-        """
-        prompt = self._build_analysis_prompt(
-            signal_info, market_data, ml_confidence, open_positions
-        )
-
+        payload = {
+            "signal": {
+                "direction": signal_info.get("direction"),
+                "entry": signal_info.get("entry"),
+                "stop_loss": signal_info.get("stop_loss"),
+                "take_profits": signal_info.get("take_profits"),
+                "smc_score": signal_info.get("score"),
+                "rr_ratio": signal_info.get("rr_ratio"),
+            },
+            "market_data": market_data,
+            "ml": ml_result,
+            "macro": macro_result,
+            "open_position_count": len(open_positions or []),
+        }
         try:
             response = self.client.messages.create(
                 model=self.model,
-                max_tokens=500,
-                system=self._get_system_prompt(),
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
+                max_tokens=400,
+                system=(
+                    "You review XAUUSD PAPER-TRADING candidates. Use only supplied facts; "
+                    "never invent news or market conditions. Reject invalid SL/TP geometry, "
+                    "poor reward/risk, stale data, and explicit macro conflicts. Missing data "
+                    "must reduce confidence. Return only JSON with keys should_trade (boolean), "
+                    "confidence (0-100), reasoning (string), and risks (array of strings)."
+                ),
+                messages=[{"role": "user", "content": json.dumps(payload, default=str)}],
             )
-
-            analysis_text = response.content[0].text
-            decision = self._parse_claude_decision(analysis_text, signal_info)
-            logger.info(f"Claude analysis: confidence={decision['claude_confidence']}% | reasoning={decision['reasoning']}")
-
-            return decision
-
-        except Exception as e:
-            logger.error(f"Claude analysis failed: {e}")
+            raw = response.content[0].text.strip()
+            if raw.startswith("```"):
+                raw = raw.strip("`").removeprefix("json").strip()
+            parsed = json.loads(raw)
+            should_trade = parsed["should_trade"]
+            confidence = float(parsed["confidence"])
+            if not isinstance(should_trade, bool) or not 0 <= confidence <= 100:
+                raise ValueError("response fields outside schema")
             return {
-                'should_trade': True,  # Fallback: trust ML + signal
-                'claude_confidence': 50,
-                'reasoning': f"Claude unavailable, fallback to ML: {str(e)}",
-                'fallback': True
+                "available": True,
+                "should_trade": should_trade,
+                "confidence": confidence,
+                "reasoning": str(parsed.get("reasoning", ""))[:1000],
+                "risks": [str(item)[:250] for item in parsed.get("risks", [])[:8]],
+                "model": self.model,
             }
+        except Exception as exc:
+            logger.error("Claude analysis failed: %s", exc)
+            return self._unavailable(f"Claude analysis failed: {exc}")
 
-    def _get_system_prompt(self) -> str:
-        """System prompt for Claude analyst - GOLD SPECIFIC."""
-        return """You are an expert GOLD market analyst validating XAUUSD trading signals.
-
-GOLD MARKET CONTEXT:
-- Trades 23:00-21:00 UTC (closed outside these hours)
-- Slower-moving than crypto (0.5-1% daily moves, not 2-5%)
-- Inverse correlation: USD weakness = gold strength, rising rates = gold weakness
-- Safe-haven asset: geopolitical risk and equity selloffs boost gold
-- Quarterly macros: Fed decisions, CPI, NFP, treasury yields matter more than daily noise
-
-YOUR ROLE: VALIDATE pre-filtered SMC signals
-- SMC already scored the signal (0-10 scale, you'll get 7-9 range)
-- You're a CONFIRMATION layer, not primary filter
-- Accept good signals, only reject if there's a specific red flag
-
-BASELINE CONFIDENCE RULES:
-- SMC 7-9 + market context supports: 60-75% confidence
-- SMC 7-9 + market context neutral: 50-65% confidence
-- SMC 7-9 + mixed market signals: 40-50% confidence
-- SMC 7-9 + ONE major conflict: 30-40% confidence (still acceptable)
-- SMC 7-9 + EXTREME conflicts (USD surge + rates spike): 15-25% confidence (block)
-
-MARKET CONTEXT TO ASSESS:
-1. USD strength: Is USD rallying or weakening? (inverse to gold)
-2. Real rates: Are Treasury yields + inflation expectations rising? (bearish for gold)
-3. Risk sentiment: Are equities rallying (risk-on) or selling (risk-off)?
-4. Geopolitics: Any major news creating safe-haven demand?
-5. Session timing: Are we in liquid hours (London 08-17 UTC best)?
-
-GOLD-SPECIFIC SIGNALS:
-- Gold BUY: Supported by USD weakness, falling real rates, risk-off sentiment
-- Gold SELL: Supported by USD strength, rising real rates, risk-on sentiment
-- Counter to ALL three factors = HARD BLOCK only
-
-Output ONLY JSON:
-{
-  "should_trade": true/false,
-  "confidence": 0-100,
-  "reasoning": "brief explanation",
-  "key_factors": ["factor1", "factor2", "factor3"]
-}
-
-Only output valid JSON."""
-
-    def _build_analysis_prompt(
-        self,
-        signal_info: dict,
-        market_data: dict,
-        ml_confidence: float,
-        open_positions: list
-    ) -> str:
-        """Build prompt for Claude analysis."""
-        prompt = f"""Analyze this XAUUSD trading signal:
-
-**SIGNAL:**
-- Direction: {signal_info.get('direction', 'UNKNOWN')}
-- Entry: {signal_info.get('entry', 'market')}
-- Stop Loss: {signal_info.get('stop_loss', 'N/A')}
-- Take Profit: {signal_info.get('take_profits', [])}
-- Signal Source: SMC confluence scoring
-
-**ML PREDICTION:**
-- Confidence: {ml_confidence:.0f}% (ML model predicts this signal type is profitable)
-
-**MARKET CONTEXT:**
-- Current Price: {market_data.get('current_price', 'N/A')}
-- Trend (4H): {market_data.get('trend_4h', 'unknown')}
-- Trend (1H): {market_data.get('trend_1h', 'unknown')}
-- RSI (14): {market_data.get('rsi_14', 'N/A')}
-- ATR (14): {market_data.get('atr_14', 'N/A')} pips
-- Volatility: {market_data.get('volatility_level', 'normal')}
-- Recent News Risk: {market_data.get('news_risk', 'low')}
-
-**OPEN POSITIONS:**
-{self._format_open_positions(open_positions)}
-
-Based on this, should we execute this signal? Provide your confidence 0-100."""
-        return prompt
-
-    def _format_open_positions(self, positions: list) -> str:
-        """Format open positions for Claude."""
-        if not positions:
-            return "- None (fresh entry)"
-        return "\n".join([
-            f"- {p.get('symbol')}: {p.get('direction')} @ {p.get('entry_price')} (P&L: {p.get('pnl')})"
-            for p in positions[:3]  # Limit to 3 for context window
-        ])
-
-    def _parse_claude_decision(self, response_text: str, signal_info: dict) -> dict:
-        """Parse Claude's JSON response into decision dict."""
-        try:
-            # Extract JSON from response
-            import re
-            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-            if not json_match:
-                raise ValueError("No JSON found in response")
-
-            decision_json = json.loads(json_match.group())
-
-            # Get raw confidence and boost it if too conservative
-            raw_confidence = decision_json.get('confidence', 50)
-            # Boost Claude's confidence: if saying <40%, boost to 40-50% range (validation layer, not primary)
-            claude_confidence = max(raw_confidence, 40) if raw_confidence < 40 else raw_confidence
-
-            return {
-                'should_trade': decision_json.get('should_trade', True),
-                'claude_confidence': claude_confidence,
-                'reasoning': decision_json.get('reasoning', 'No explanation provided'),
-                'signal_info': signal_info
-            }
-        except Exception as e:
-            logger.error(f"Failed to parse Claude response: {e}")
-            return {
-                'should_trade': True,
-                'claude_confidence': 50,
-                'reasoning': f"Parse error: {str(e)}",
-                'fallback': True
-            }
+    @staticmethod
+    def _unavailable(reason: str) -> dict:
+        # Fail closed. The SMC candidate can still be recorded for research,
+        # but it must not be represented as an AI-approved paper trade.
+        return {"available": False, "should_trade": False, "confidence": None,
+                "reasoning": reason, "risks": ["AI_REVIEW_UNAVAILABLE"], "model": None}
 
 
 class AITradingDecider:
-    """Combine ML + Claude for final trading decision."""
+    """Combine only available, genuine evidence and preserve vetoes."""
 
     def __init__(self):
         self.claude = ClaudeAnalyst()
 
-    def decide(
-        self,
-        signal_info: dict,
-        market_data: dict,
-        ml_confidence: float,
-        smc_score: float,
-        liquidity_tier: str,
-        open_positions: list = None
-    ) -> dict:
-        """
-        Make final trading decision combining ML + Claude.
-
-        Args:
-            signal_info: Signal details
-            market_data: Market context
-            ml_confidence: ML prediction (0-100)
-            smc_score: Original SMC score (0-100)
-            liquidity_tier: Current liquidity tier
-            open_positions: Open trades
-
-        Returns:
-            Final decision with confidence and reasoning
-        """
-        # Get Claude's analysis
-        claude_decision = self.claude.analyze_signal(
-            signal_info, market_data, ml_confidence, open_positions
+    def decide(self, signal_info: dict, market_data: dict, ml_result: dict,
+               macro_result: dict, smc_score: float, liquidity_tier: str,
+               open_positions: list = None) -> dict:
+        claude = self.claude.analyze_signal(
+            signal_info, market_data, ml_result, macro_result, open_positions
         )
+        thresholds = {"peak": 55, "high": 58, "secondary": 65, "closed": 101}
+        threshold = thresholds.get(liquidity_tier, 65)
 
-        # Combine ML + Claude (weighted)
-        combined_confidence = (
-            (ml_confidence * 0.35) +
-            (claude_decision['claude_confidence'] * 0.35) +
-            (smc_score * 0.30)
-        )
+        components = [("smc", float(smc_score), 0.30)]
+        if ml_result.get("available"):
+            components.append(("ml", float(ml_result["confidence"]), 0.35))
+        if claude.get("available"):
+            components.append(("claude", float(claude["confidence"]), 0.35))
+        total_weight = sum(weight for _, _, weight in components)
+        combined = sum(value * weight for _, value, weight in components) / total_weight
 
-        # GOLD-OPTIMIZED thresholds (adapted from profitable ETH strategy)
-        # These match the thresholds that made ETH system +16.77% in 7 days
-        thresholds = {
-            'peak': 50,          # LONDON hours (08-17 UTC): Most liquid, fire at 50%
-            'high': 52,          # Overlap hours: Balanced, 52%
-            'secondary': 58,     # Off-peak hours (thin liquidity): Conservative, 58%
-            'closed': 100        # CLOSED (21-23 UTC): Never trade
-        }
-        threshold = thresholds.get(liquidity_tier, 52)
+        vetoes = []
+        if macro_result.get("is_blocked"):
+            vetoes.append("MACRO_CONFLICT")
+        if not claude.get("available"):
+            vetoes.append("AI_REVIEW_UNAVAILABLE")
+        elif not claude.get("should_trade"):
+            vetoes.append("AI_REJECTED")
+        if not ml_result.get("available"):
+            vetoes.append("VALIDATED_ML_UNAVAILABLE")
+        if liquidity_tier == "closed":
+            vetoes.append("MARKET_CLOSED")
 
-        should_trade = combined_confidence >= threshold
-
+        should_trade = combined >= threshold and not vetoes
         return {
-            'should_trade': should_trade,
-            'ml_confidence': ml_confidence,
-            'claude_confidence': claude_decision['claude_confidence'],
-            'smc_score': smc_score,
-            'combined_confidence': combined_confidence,
-            'threshold': threshold,
-            'liquidity_tier': liquidity_tier,
-            'claude_reasoning': claude_decision['reasoning'],
-            'final_reason': f"ML:{ml_confidence:.0f}% + Claude:{claude_decision['claude_confidence']:.0f}% + SMC:{smc_score:.0f}% = {combined_confidence:.0f}%. {'✅ EXECUTE' if should_trade else '❌ SKIP'} (threshold: {threshold})"
+            "should_trade": should_trade,
+            "combined_confidence": combined,
+            "threshold": threshold,
+            "smc_score": float(smc_score),
+            "ml_confidence": ml_result.get("confidence"),
+            "ml_available": bool(ml_result.get("available")),
+            "ml_reason": ml_result.get("reason"),
+            "claude_confidence": claude.get("confidence"),
+            "claude_available": bool(claude.get("available")),
+            "claude_reasoning": claude.get("reasoning"),
+            "macro_available": bool(macro_result.get("available")),
+            "macro_score": macro_result.get("score"),
+            "vetoes": vetoes,
+            "liquidity_tier": liquidity_tier,
+            "final_reason": "approved" if should_trade else ", ".join(vetoes) or "below threshold",
         }

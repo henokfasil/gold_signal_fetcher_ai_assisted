@@ -1,514 +1,158 @@
-# CLAUDE.md
+# Gold Signal Fetcher — AI-Assisted Research System (System C)
 
-Gold Signal Fetcher - AI-Assisted Version (System C: ML + Claude Combo)
+Last reviewed: 2026-07-18
 
----
+## Status
 
-## Quick Status (2026-07-06) 🚀 PRODUCTION READY - FULLY DEPLOYED & LIVE ✅ DASHBOARD FIXED
+This repository is a **paper-trading research system**, not a live execution
+system and not evidence of a profitable strategy. `PAPER_TRADING=true` is a
+mandatory runtime invariant. The system records SMC candidates and requires
+validated ML plus an available Claude review before it can mark a candidate as
+an approved paper trade.
 
-**System C: Gold Strategy 2.0 (ETH-Adapted) - LIVE ON VPS**
-- ✅ Repository: https://github.com/henokfasil/gold_signal_fetcher_ai_assisted
-- ✅ Status: FULLY DEPLOYED AND OPERATIONAL
-- ✅ Baseline: ETH system (50% WR, +16.77% in 7 days)
-- ✅ Adapted: XAUUSD with gold-specific optimizations
-- ✅ ML components: 21 gold-optimized features + XGBoost gold-trained model
-- ✅ Claude analyst: Gold-aware prompt with 50-70% baseline confidence (fixed pessimism issue)
-- ✅ Cross-asset validator: USD/Treasury yields/VIX correlation checks
-- ✅ Decision thresholds: PEAK 50%, HIGH 52%, SECONDARY 58% (optimized from 55-70%)
-- ✅ CSV logging: Trade data saved with Entry, SL, TP, Status, P&L
-- ✅ Dashboard: Live on port 8502 with metrics, trade tables (FIXED: NaN parsing) ✅ July 6
-- ✅ Signals: ACTIVE (767+ trades logged, System C firing continuously)
-- ✅ Trade Closure: IMPLEMENTED - Real TP/SL hit detection with TradingView MCP
-- ✅ Duplicate Prevention: WORKING - Lockfile + signal deduplication (30-min window)
-- ✅ P&L Calculation: LIVE - Showing real values (-95.31% losses in System C CSV)
-- ✅ VPS: Fully deployed to `/root/gold_signal_fetcher_ai_assisted`
-- 🚀 **Status: PRODUCTION READY - Both systems running, dashboard fully operational**
-- 📅 **Initial Deploy: June 26, 2026 | Dashboard Fixes: July 6, 2026**
+The previous documentation called the system “production ready.” That claim
+was removed after a code audit found disconnected and placeholder components.
 
-**Architecture:**
-```
-XAUUSD Price Data (MetaAPI)
-        ↓
-   SMC Signals Detection (40-90 score range)
-        ↓
-   Cross-Asset Validation (USD Index, Treasury Yields, VIX)
-        ↓
-   ML Confidence Score (XGBoost, 0-100%, gold-trained)
-        ↓
-   Claude Analysis (market context, 50-70% baseline)
-        ↓
-   Combined Decision (ML 35% + Claude 35% + SMC 30%)
-        ↓
-   Trade Execution? (threshold: PEAK 50%, HIGH 52%, SECONDARY 58%)
-        ↓
-   CSV Logging (Entry, SL, TP, Status, P&L)
-        ↓
-   Dashboard Display (Metrics, Equity Curves, Trade Tables)
-        ↓
-   Telegram Notification + Metrics Tracking
-```
+Current VPS facts as of 2026-07-18:
 
-**Key Improvements (v2.0):**
-- ✅ Fixed System C signal drought (0→5+ signals/day)
-- ✅ Lowered thresholds (55-70% → 50-58%)
-- ✅ Added cross-asset correlation validation
-- ✅ Fixed Claude pessimism (20% → 50-70% baseline)
-- ✅ Built gold-specific ML model (21 features)
-- ✅ Professional dashboard with equity curves & trade tables
-- ✅ Real-time CSV logging with proper formatting
+- The previously documented `/root/gold_signal_fetcher_ai_assisted` directory
+  was absent.
+- System A and System C scanner cron entries had been deliberately paused on
+  2026-07-10 for CPU reasons.
+- The older System A dashboard remained active on port 8501.
+- Deployment of this revision must remain stopped until local and VPS
+  verification pass. Do not silently unpause an operator-paused cron entry.
 
----
+## What “edge” means
 
-## Recent Fixes (July 6, 2026) 🔧 DASHBOARD & TRADE CLOSURE
+An edge is a repeatable positive expected value after spreads, slippage and
+losses, demonstrated on data that was not used to select the strategy. Signal
+count, training accuracy and an attractive in-sample dashboard are not proof of
+an edge.
 
-### Issue 1: Dashboard NaN Values (FIXED)
-**Problem:** Dashboard showed "nan%" and "$nan" for System A and System C P&L values
+## Runtime pipeline
 
-**Root Cause:** 
-- Pandas reads empty CSV cells as float NaN
-- CSV has unquoted text with commas (trend_filter_result), causing column misalignment
-- Direction column empty in System A CSV
-
-**Solution Implemented (dashboard.py):**
-```python
-# Handle pandas NaN values correctly
-if pd.isna(direction_val) or direction_str in ['NAN', '']:
-    # Infer BUY/SELL from entry vs take_profit
-    entry_val = float(row['entry_price'])
-    tp_val = float(row['take_profit'])
-    direction = 'BUY' if tp_val > entry_val else 'SELL'
-
-# Parse profit_pct safely
-if pd.isna(pnl_pct_raw):
-    pnl_pct_val = 0
-else:
-    pnl_pct_val = float(pnl_pct_raw)
+```text
+MetaApi point-in-time XAUUSD candles
+              ↓
+Bullish SMC candidate generator
+              ↓
+Signal geometry and research risk gates
+              ↓
+Validated historical-data ML inference (required)
+              ↓
+Fresh external macro snapshot (context/veto when available)
+              ↓
+Claude structured review using supplied facts only (required)
+              ↓
+OPEN or REJECTED paper-ledger record with provenance
+              ↓
+Observation-time TP/SL/expiry updates and explicit limitations
 ```
 
-**Result:**
-- ✅ Direction now shows BUY/SELL (inferred from entry/TP prices)
-- ✅ Outcome shows WIN/LOSS/OPEN (instead of NaN)
-- ✅ P&L displays real values (e.g., -95.31%, $-95.31)
-- ✅ System A and C both display properly on port 8502
+## Important strategy limitation
 
-### Issue 2: Duplicate Trades Logged (FIXED)
-**Problem:** Same signal logged every 5 minutes (761→764→767 trades accumulating)
+The current SMC scanner implements a **bullish candidate path**: bullish BOS,
+CHoCH, liquidity sweep, stop below entry and target above entry. The
+orchestrator therefore accepts only `BUY` geometry (`SL < entry < TP`). A
+separate mirrored and tested bearish scanner must be built before System C can
+issue SELL candidates. Never relabel a non-bullish result as SELL.
 
-**Root Cause:** Concurrent cron executions + no signal deduplication
+## ML policy
 
-**Solution Implemented (main_orchestrator.py + cron wrapper):**
-1. **Lockfile mechanism** in `/root/run_gold_scanner_ai.sh`:
-   - Prevents concurrent execution of System C
-   - Auto-cleans stale locks (>300s old)
-   
-2. **Signal deduplication** in main_orchestrator.py:
-   - Checks if identical signal already logged in last 30 minutes
-   - Compares: direction, entry price, SL, TP (0.1% tolerance)
-   - Skips duplicates automatically
+- Runtime model: `models/xgboost_gold_model_v2.pkl`
+- Required metadata: `models/xgboost_gold_model_v2.metadata.json`
+- Metadata must declare `training_data_kind=historical_point_in_time` and an
+  exact feature-schema match.
+- Missing or invalid models are unavailable and veto approval.
+- There is no random or synthetic training fallback.
+- `agent/train_gold_ml.py` requires a chronological historical dataset with at
+  least 500 observations and reports holdout ROC-AUC, Brier score and log loss.
+- Its simple 80/20 chronological holdout is only a first research gate; CPCV or
+  purged walk-forward evaluation and a final untouched test set are still
+  required before claiming an edge.
 
-**Result:**
-- ✅ Only one trade logged per signal
-- ✅ No concurrent execution conflicts
-- ✅ CSV grows steadily (767 trades = actual trades, not duplicates)
+## Macro snapshot contract
 
-### Issue 3: Trade Closure Logic (IMPLEMENTED)
-**Problem:** All trades stuck as "OPEN" with 0 P&L for 200+ hours
+`agent/gold_correlations.py` reads a fresh JSON snapshot from
+`MACRO_SNAPSHOT_PATH` (default `/tmp/gold_macro_snapshot.json`):
 
-**Solution Implemented (main_orchestrator.py):**
-```python
-def _update_open_trades_system_c(self):
-    """Check if trades hit TP/SL and update P&L"""
-    # Fetch current price from TradingView MCP
-    current_price = self._get_current_price_from_tradingview()
-    
-    for trade in open_trades:
-        if trade['direction'] == 'BUY':
-            if current_price >= trade['take_profit']:
-                pnl = ((current_price - entry) / entry) * 100
-                mark_trade_as_won(trade, pnl)
-            elif current_price <= trade['stop_loss']:
-                pnl = ((stop_loss - entry) / entry) * 100
-                mark_trade_as_loss(trade, pnl)
-        # Similar logic for SELL trades (inverted)
+```json
+{
+  "timestamp": "2026-07-18T12:00:00+00:00",
+  "dxy_return_pct": -0.20,
+  "real_yield_change_bps": -2.0,
+  "vix_return_pct": 1.0
+}
 ```
 
-**Result:**
-- ✅ Trades automatically close when TP/SL hit
-- ✅ P&L calculated and saved to CSV
-- ✅ Real values showing: -95.31% (losses marked)
-- ✅ Runs every 5 minutes (integrated into cron cycle)
+Missing, malformed or stale snapshots are reported as unavailable. The system
+must never replace them with invented constants. Macro thresholds are research
+hypotheses and must be estimated out of sample.
 
-### Issue 4: Price Data Source (UPDATED to TradingView MCP)
-**Problem:** MetaAPI price fetching was unreliable/timing out
+## Claude policy
 
-**Solution Implemented (main_orchestrator.py):**
-```python
-def _get_current_price_from_tradingview(self):
-    """Get price from TradingView MCP snapshot"""
-    try:
-        # Read from /tmp/tradingview_snapshot.json
-        with open('/tmp/tradingview_snapshot.json', 'r') as f:
-            snapshot = json.load(f)
-            return float(snapshot.get('current_price'))
-    except:
-        # Fallback to SMC scanner price data
-        return self.scanner.get_last_price()
-```
+Claude receives structured signal, technical, ML and macro data. It must use
+only those supplied facts. API errors, missing credentials and invalid JSON
+fail closed. Its explicit rejection is a veto, and confidence is never raised
+to an artificial floor. LLM confidence is not assumed to be statistically
+calibrated.
 
-**Result:**
-- ✅ TradingView MCP primary source
-- ✅ Automatic fallback to SMC scanner
-- ✅ More reliable than direct MetaAPI calls
-- ✅ Updates every 5 minutes with cron cycle
+## Paper ledger
 
----
+The canonical ledger is `data/paper_trades_ai.csv`. Every candidate has:
 
-## Deployment Status (July 6, 2026) ✅ LIVE & OPERATIONAL - DASHBOARD FIXED
+- immutable candidate ID and UTC timestamp;
+- entry, SL, TP, direction and R:R;
+- SMC/ML/Claude/macro availability and scores;
+- decision, threshold and veto/rejection reason;
+- explicit `REJECTED`, `OPEN`, `WIN`, `LOSS` or `EXPIRED` status;
+- exit price/time/reason plus separate percentage and USD P&L;
+- `paper_trading=true` provenance.
 
-### 🌐 Live on VPS (72.60.133.179)
-- **IP:** 72.60.133.179
-- **Main Orchestrator:** `/root/gold_signal_fetcher_ai_assisted/main_orchestrator.py`
-- **Dashboard:** http://72.60.133.179:8502 (Flask, port 8502) - **✅ LIVE & RESPONDING**
-  - Displays System A vs System C metrics side-by-side
-  - Auto-refreshes every 10 seconds
-  - Shows real P&L values (no more NaN)
-  - Trade tables with Entry, SL, TP, Status, P&L, Date
-- **Cron Schedule:** Every 5 minutes (Mon-Fri only)
-  - System A: :00, :10, :20, :30, :40, :50
-  - System C: :05, :15, :25, :35, :45, :55 (with lockfile protection)
-- **System A Log:** `/var/log/gold_scanner.log`
-- **System C Log:** `/var/log/gold_scanner_ai.log`
-- **Dashboard Log:** `/tmp/dashboard.log`
-- **VPS Status:** ✅ All systems operational, cron jobs active
+Current exits based on periodic price snapshots are labelled
+`*_OBSERVED_AT_SCAN`; they are not tick-accurate and can miss an intraperiod
+touch. An event-driven bid/ask replay is required for scientifically reliable
+performance measurement.
 
-### 🔧 Configuration Files
-- `.env`: METAAPI_TOKEN, METAAPI_ACCOUNT_ID, TELEGRAM_TOKEN, ANTHROPIC_API_KEY
-- **Strategy Config:** `/root/gold_signal_fetcher_ai_assisted/config/gold_strategy_params.json`
-- **ML Model:** `/root/gold_signal_fetcher_ai_assisted/models/xgboost_gold_model_v2.pkl`
-- **Paper Trades CSV:**
-  - System A: `/root/Gold_Signal_Fetcher/data/paper_trades.csv`
-  - System C: `/root/gold_signal_fetcher_ai_assisted/data/paper_trades_ai.csv`
+## Risk controls
 
-### 📊 Dashboard Features (LIVE)
-- **Metrics Section:** Signals, Win Rate, Wins/Losses, Total P&L
-- **Equity Curves:** Real-time capital tracking (System A blue, System C green)
-- **Trade Tables:** Complete trade details with Entry, SL, TP, Status, P&L, Date
-- **Side-by-Side Comparison:** System A vs System C performance
-- **Auto-Refresh:** Every 60 seconds
-- **Color-Coded:** Green for wins, red for losses, gray for open trades
+The orchestrator enforces maximum open trades, minimum R:R, daily loss cap and
+weekly loss cap. Configuration lives in `config/gold_strategy_params.json` and
+environment overrides live in `.env`. Position sizing is paper notional only;
+no broker order method is present.
 
-### 📱 Telegram Integration
-- **Signal Notifications:** Real-time when signals execute
-- **Message Format:** Direction, Entry, SL, TP, AI Analysis (ML%, Claude%, SMC%, Combined%)
-- **Bot:** Shared with System A
-- **Daily Metrics:** Configurable (cron-based)
+## Verification
 
----
-
-## Deployed Files (v2.0 - June 26, 2026)
-
-### Core Strategy Files (✅ ON VPS - UPDATED July 6)
-1. **agent/gold_correlations.py** - Cross-asset validator (USD/rates/VIX)
-2. **agent/train_gold_ml.py** - XGBoost model trainer for gold
-3. **agent/ml_feature_engineer_gold.py** - 21 gold-optimized features
-4. **agent/claude_analyst.py** - Gold-aware Claude decision engine (UPDATED)
-5. **config/gold_strategy_params.json** - Complete strategy configuration
-6. **main_orchestrator.py** - Signal pipeline with CSV logging + trade closure logic (UPDATED)
-7. **dashboard.py** - ⭐ FIXED July 6: NaN parsing, direction inference, P&L display (UPDATED)
-8. **deploy_gold_strategy.py** - Deployment verification script
-
-### Support Files (✅ ON VPS)
-9. **/root/run_gold_scanner_ai.sh** - System C cron wrapper with lockfile protection (UPDATED)
-10. **/root/Gold_Signal_Fetcher/agent/paper_trader.py** - Paper trading with get_recent_results() (UPDATED)
-
-### Documentation Files
-- **GOLD_STRATEGY_IMPLEMENTATION.md** - Complete setup & troubleshooting guide
-- **DEPLOYMENT_CHECKLIST.md** - 5-phase deployment checklist
-- **CLAUDE.md** - This file (system documentation) - UPDATED July 6
-
-### GitHub Repository
-- **URL:** https://github.com/henokfasil/gold_signal_fetcher_ai_assisted
-- **Branch:** master
-- **Latest Commit:** "Fix dashboard NaN parsing + trade closure logic + deduplication" (July 6)
-
----
-
-## Components - Gold Strategy v2.0
-
-### 1. Gold ML Feature Engineer (`agent/ml_feature_engineer_gold.py`) ⭐ NEW
-Extracts **21 gold-optimized features** from OHLCV:
-- **Technical (9):** RSI(14), MACD, ADX(14), ATR(14), Bollinger Bands, moving averages, momentum, volatility
-- **Macro (3):** USD strength (inverse to gold), Real rates momentum, Risk sentiment (VIX-based)
-- **Session (2):** Session hour encoding, Day-of-week effects
-- **Handles lower volatility:** NaN management via backward fill + zeros
-
-**Why different from crypto:**
-- Gold moves slower → needs session awareness + macro context
-- USD and rates are inverse drivers → monitor daily
-- Risk-on/off sentiment → VIX correlation critical
-
-### 2. Gold ML Trainer (`agent/train_gold_ml.py`) ⭐ NEW
-XGBoost classifier trained specifically for gold:
-- 1000+ training samples on gold price action
-- Binary classification: profitable vs loss signals
-- Threshold: 35-40% confidence (loosened from crypto's 50%)
-- Model saved: `/root/gold_signal_fetcher_ai_assisted/models/xgboost_gold_model_v2.pkl`
-
-**Run on VPS:**
 ```bash
-python agent/train_gold_ml.py
-# Output: ✅ Gold model training complete!
+python -m compileall -q .
+python -m unittest discover -s tests -v
+python validate_code.py
 ```
 
-### 3. Cross-Asset Correlation Validator (`agent/gold_correlations.py`) ⭐ NEW
-Validates XAUUSD signals using macro correlations:
-- **USD Index:** When USD strengthens → gold bearish (short blocks)
-- **Treasury Yields:** When rates rise → gold bearish (short blocks)
-- **VIX:** When risk-off (VIX up) → gold bullish (long bonus)
-- Returns SMT score (0-100) + hard block logic
+Do not describe the system as profitable or production ready based on these
+engineering tests. Research acceptance additionally requires point-in-time
+datasets, leakage-safe backtesting, execution costs, out-of-sample calibration,
+forward paper trading and stable performance across regimes.
 
-**Example validation:**
-```
-Signal: BUY XAUUSD
-USD Index: +0.5 (strengthening) → ⚠️ Conflict
-10Y Yield: -5 bps (falling) → ✅ Aligned
-VIX: +2% (rising) → ✅ Risk-off aligned
-Result: SMT Score 65/100 → Allowed (not blocking)
-```
+## Next research milestones
 
-### 4. Claude Analyst UPDATED (`agent/claude_analyst.py`) ⭐ FIXED
-Gold-aware version addressing signal drought:
-- **Old:** Pessimistic crypto prompt (20% confidence)
-- **New:** Gold-specific context (50-70% baseline confidence)
-- **Includes:** 23:00-21:00 UTC trading hours, USD/rates/VIX context, geopolitical awareness
-- **Confidence boost:** Minimum 40% floor prevents extreme pessimism
+1. Produce a versioned historical candidate dataset and triple-barrier/net-cost
+   labels.
+2. Add purging/embargo and combinatorial purged cross-validation.
+3. Build tick or lower-timeframe bid/ask execution replay.
+4. Add a separately tested bearish SMC candidate generator.
+5. Build the DXY/real-yield/VIX snapshot producer with timestamp and source
+   provenance.
+6. Add model/prompt/dataset lineage, drift and calibration monitoring.
+7. Freeze a research revision and forward paper trade it for 3–6 months before
+   considering any live-capital design.
 
-### 5. Strategy Configuration (`config/gold_strategy_params.json`) ⭐ NEW
-Complete gold strategy config matching ETH baseline:
-- Timeframes: Weekly bias, Daily structure, 4H confirmation, 1H entry
-- Thresholds: PEAK 50%, HIGH 52%, SECONDARY 58%, CLOSED 100%
-- Position sizing: $5K base (adaptive Kelly fraction)
-- Risk gates: Daily -3%, Weekly -6%, Min R:R 2.0, 40-min SL cooldown
+## Security and operations
 
----
-
-## Decision Formula - Gold v2.0
-
-```
-Final Confidence = (ML_Score × 0.35) + (Claude_Score × 0.35) + (SMC_Score × 0.30)
-
-BEFORE: IF Final_Confidence >= Tier_Threshold → Execute
-        (System C fired 0 signals - TOO PESSIMISTIC)
-
-AFTER: Check Correlation Validator FIRST (USD/rates/VIX)
-       If blocked by hard conflict → SKIP
-       Else → IF Final_Confidence >= Tier_Threshold → EXECUTE
-```
-
-**NEW Tier Thresholds (Optimized Down):**
-- PEAK (LONDON 08-17 UTC): **50%** (was 55% - more permissive)
-- HIGH (overlaps): **52%** (was 60% - aligned with new scores)
-- SECONDARY (thin hours): **58%** (was 70% - much more permissive)
-- CLOSED (21-23 UTC): 100% (never trade)
-
-**Example: Why System C Now Fires Signals**
-```
-SMC Score: 8/10 = 80% × 0.30 = 24%
-ML Score: 45% × 0.35 = 15.75%
-Claude Score: 50% × 0.35 = 17.5%
-───────────────────────────────
-TOTAL: 57.25% > 50% (PEAK) ✅ FIRES!
-
-Before (with 55% PEAK threshold): 57.25% > 55% still fires, but Claude was only giving 20% → total 45% < 55% → BLOCKED
-```
-
----
-
-## Deployment Plan - Gold Strategy v2.0
-
-### Phase 1: Fix System C Signal Drought ✅ COMPLETE (June 26)
-**Root Cause Analysis:**
-- Claude pessimism: 20% confidence (should be 50-70%)
-- Thresholds too high: 55-70% (should be 50-58%)
-- No cross-asset validation: gold ≠ crypto (needs USD/rates/VIX)
-
-**Solution Implemented:**
-- ✅ Gold ML feature engineer (21 features, macro-aware)
-- ✅ Gold ML trainer (XGBoost on gold-specific data)
-- ✅ Cross-asset correlation validator (USD/rates/VIX blocker)
-- ✅ Claude analyzer updated (gold prompt, baseline 50-70%)
-- ✅ Decision thresholds optimized (50-58%)
-- ✅ Strategy parameters config (complete, gold-tuned)
-- ✅ Deployment verification script (ready)
-- ✅ Comprehensive documentation (GOLD_STRATEGY_IMPLEMENTATION.md)
-
-### Phase 2: Deploy to VPS (Immediate)
-1. **Copy files to VPS:**
-   ```bash
-   scp agent/gold_correlations.py root@72.60.133.179:/root/gold_signal_fetcher_ai_assisted/agent/
-   scp agent/train_gold_ml.py root@72.60.133.179:/root/gold_signal_fetcher_ai_assisted/agent/
-   scp agent/ml_feature_engineer_gold.py root@72.60.133.179:/root/gold_signal_fetcher_ai_assisted/agent/
-   scp config/gold_strategy_params.json root@72.60.133.179:/root/gold_signal_fetcher_ai_assisted/config/
-   scp deploy_gold_strategy.py root@72.60.133.179:/root/gold_signal_fetcher_ai_assisted/
-   ```
-
-2. **Train gold ML model:**
-   ```bash
-   python agent/train_gold_ml.py
-   ```
-
-3. **Verify deployment:**
-   ```bash
-   python deploy_gold_strategy.py
-   ```
-
-4. **Update orchestrator** (add correlation validator import + call)
-
-5. **Restart cron jobs** (already staggered)
-
-### Phase 3: Monitor First Week (June 26 - July 3)
-- Expected: 5-10 signals/day (vs 0 before)
-- Win rate: 48-52%
-- P&L: +50-100/day
-- Monitor correlation validator blocking (should be <10%)
-- Check Claude confidence distribution (should peak 50-70%)
-
----
-
-## Expected Performance - Gold v2.0
-
-**Conservative estimate (first month after fix):**
-- **Signals/day:** 5-10 (was 0, now unfixed)
-- **Win rate:** 48-52%
-- **Profit factor:** 2.0+ R:R maintained
-- **Monthly return:** +8-12% (vs 0% during drought)
-- **Max drawdown:** <3%
-- **Sharpe ratio:** 1.5+
-
-**Why System C now works:**
-1. Fixed Claude pessimism: 20% → 50-70% baseline
-2. Lowered thresholds: 55-70% → 50-58%
-3. Added USD/rates/VIX validation: prevents conflicting signals
-4. Gold-trained ML: 35-40% threshold (not 50%)
-5. Correlation bonus: +5-10% when macro aligns
-
-**Comparison to ETH baseline:**
-- ETH system: 50% WR, 2.0 R:R, +16.77% in 7 days
-- Gold system: 50% WR, 2.0 R:R, +8-12% in 30 days (slower market, lower volatility)
-
----
-
-## Cost Considerations
-
-**Claude API usage:**
-- ~1 analysis per 5 minutes (during trading hours)
-- ~48 analyses/day × $0.003/analysis = ~$0.15/day
-- ~$4.50/month for daily trading
-
-**XGBoost:**
-- Local compute, no API cost
-- Improves over time with real trading data
-
----
-
-## Next Immediate Actions
-
-1. **Merge base components** from `Gold_Signal_Fetcher` into this repo
-2. **Update main.py** to orchestrate: SMC → ML → Claude → Trade
-3. **Set up VPS** parallel cron job
-4. **Start paper trading** both systems
-5. **Track metrics** daily for 4 weeks
-
----
-
-## Files Structure - v2.0
-
-```
-gold_signal_fetcher_ai_assisted/
-├── GOLD_STRATEGY_IMPLEMENTATION.md     # ⭐ New: Complete deployment guide
-├── DEPLOYMENT_CHECKLIST.md             # ⭐ New: 5-phase quick reference
-├── deploy_gold_strategy.py             # ⭐ New: Deployment verification script
-├── main_orchestrator.py                # Full pipeline orchestrator
-├── dashboard.py                        # Real-time comparison dashboard
-├── agent/
-│   ├── gold_correlations.py            # ⭐ New: Cross-asset validator (USD/rates/VIX)
-│   ├── train_gold_ml.py                # ⭐ New: Gold ML model trainer
-│   ├── ml_feature_engineer_gold.py     # ⭐ New: 21 gold-optimized features
-│   ├── ml_feature_engineer.py          # Original: 16 crypto features
-│   ├── ml_signal_generator.py          # XGBoost predictor
-│   ├── claude_analyst.py               # ⭐ UPDATED: Gold-aware prompt (50-70% baseline)
-│   ├── smc_gold_scanner.py             # SMC signal generation
-│   ├── paper_trader.py                 # Trade execution & tracking
-│   ├── liquidity_manager.py            # Session/tier logic
-│   ├── notifier.py                     # Telegram notifications
-│   └── sessions.py                     # Session management
-├── config/
-│   ├── gold_strategy_params.json       # ⭐ New: Gold strategy configuration
-│   └── settings.py                     # Configuration
-├── data/
-│   └── paper_trades_ai.csv             # Results tracking
-├── models/
-│   ├── xgboost_gold_model_v2.pkl       # ⭐ New: Gold-trained XGBoost
-│   ├── xgboost_gold_model.pkl          # Original crypto model
-│   └── feature_cols.json               # Feature names
-├── requirements.txt                    # Dependencies
-├── .env.example                        # Environment template
-└── CLAUDE.md                           # This file
-```
-
-**NEW files (v2.0 fixes):**
-- `agent/gold_correlations.py` — Fixes: No USD/rates/VIX validation
-- `agent/train_gold_ml.py` — Fixes: No gold-specific ML model
-- `agent/ml_feature_engineer_gold.py` — Fixes: No macro features
-- `config/gold_strategy_params.json` — Fixes: No gold config
-- `deploy_gold_strategy.py` — Verification script
-- `GOLD_STRATEGY_IMPLEMENTATION.md` — Deployment documentation
-- `DEPLOYMENT_CHECKLIST.md` — Step-by-step checklist
-
-**UPDATED files (v2.0 fixes):**
-- `agent/claude_analyst.py` — Fixes: Pessimistic 20% confidence + high 55-70% thresholds
-
----
-
-## Why System C Failed (Then Fixed)
-
-**Problem: System C firing 0 signals over 3+ days**
-
-| Root Cause | Symptom | Solution |
-|-----------|---------|----------|
-| Claude pessimism | 20% confidence (should be 50-70%) | Gold-aware prompt with baseline |
-| High thresholds | 55-70% requirement | Lowered to 50-58% |
-| No macro validation | All signals treated equally | Added USD/rates/VIX checks |
-| Crypto ML model | 50% threshold (too high for gold) | Gold ML trainer (35-40% threshold) |
-| No session awareness | Ignores 21-23 UTC closed hours | Added session encoding |
-
-**Example of fix in action:**
-```
-Before: SMC 8, ML 40%, Claude 20% → (8×0.3) + (40×0.35) + (20×0.35) = 39% < 55% → BLOCKED
-After:  SMC 8, ML 45%, Claude 55% → (8×0.3) + (45×0.35) + (55×0.35) = 58% > 50% → FIRES ✅
-```
-
----
-
-## Monitoring - v2.0
-
-**Daily Checks (First Week):**
-
-| Metric | Target | Alert if |
-|--------|--------|----------|
-| Signals/day | 5-10 | < 2 or > 15 |
-| Execution % | 60-70% | < 40% or > 90% |
-| Claude confidence | 50-70% avg | < 30% or > 85% |
-| Correlation blocks | < 10% | > 20% |
-| Win rate | 48-52% | < 40% or > 60% |
-
-**Weekly Review:**
-
-| Metric | Target | Alert if |
-|--------|--------|----------|
-| Win Rate | 50%+ | < 45% |
-| Profit Factor | 2.0+ | < 1.5 |
-| Weekly P&L | +50-100 | < 0 |
-| Max Drawdown | 3% | > 5% |
-| Sharpe Ratio | 1.5+ | < 1.0 |
-| Claude Cost | < $3/week | > $5/week |
+- Never commit `.env`, API keys, Telegram tokens or account identifiers.
+- Preserve the paper ledger before deployment or schema migration.
+- Use a non-overlapping lock around scheduled runs.
+- Keep System C stopped after deployment if resource or integrity checks fail.
+- Production deployment and strategy profitability are separate acceptance
+  decisions.

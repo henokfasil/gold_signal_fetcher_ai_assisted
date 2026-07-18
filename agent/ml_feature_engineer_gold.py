@@ -5,7 +5,6 @@ Extends base features with macro and session-based indicators.
 
 import pandas as pd
 import numpy as np
-from datetime import datetime
 
 
 class GoldFeatureEngineer:
@@ -135,13 +134,16 @@ class GoldFeatureEngineer:
 
         # === SESSION-BASED FEATURES ===
 
-        # Encode current hour (0-23) as cyclical features
-        current_hour = datetime.utcnow().hour
-        features['session_hour_encoded'] = current_hour / 24.0
-
-        # Encode day of week (0-6) as cyclical features
-        current_dow = datetime.utcnow().weekday()
-        features['day_of_week_encoded'] = current_dow / 7.0
+        # Derive session values from each candle timestamp. Using wall-clock time
+        # here would make historical training rows contain the inference time.
+        if isinstance(df.index, pd.DatetimeIndex):
+            timestamps = pd.Series(df.index, index=df.index)
+        elif 'timestamp' in df.columns:
+            timestamps = pd.to_datetime(df['timestamp'], utc=True, errors='coerce')
+        else:
+            timestamps = pd.Series(pd.NaT, index=df.index)
+        features['session_hour_encoded'] = timestamps.dt.hour.fillna(0) / 24.0
+        features['day_of_week_encoded'] = timestamps.dt.dayofweek.fillna(0) / 7.0
 
         return features
 
@@ -157,7 +159,9 @@ class GoldFeatureEngineer:
             Array of feature values (NaN rows excluded)
         """
         X = features[GoldFeatureEngineer.FEATURE_COLS].copy()
-        X = X.bfill().fillna(0)  # Fill NaN with backward fill, then 0
+        # Forward fill uses only information available at or before each row.
+        # Backward filling would leak future indicator values into early rows.
+        X = X.ffill().fillna(0)
 
         return X.values
 

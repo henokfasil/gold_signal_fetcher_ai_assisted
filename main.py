@@ -7,7 +7,8 @@ import logging
 import sys
 import os
 from dotenv import load_dotenv
-load_dotenv("/root/gold_signal_fetcher_ai_assisted/.env")
+from config import settings
+load_dotenv(settings.PROJECT_ROOT / ".env")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,7 +22,7 @@ def main():
     logger.info("=" * 60)
     logger.info("Gold Signal Fetcher - AI-Assisted Version")
     logger.info("=" * 60)
-    logger.info("Mode: ML + Claude decision-making")
+    logger.info("Mode: research paper trading; run main_orchestrator.py for a scan")
     logger.info("Features: SMC signals → ML filtering → Claude analysis → Trade decision")
 
     logger.info("")
@@ -39,10 +40,7 @@ def main():
     logger.info("4. Paper trade alongside System A (SMC-only)")
     logger.info("5. Compare metrics after 4 weeks")
     logger.info("")
-    logger.info("EXPECTED IMPROVEMENTS:")
-    logger.info("- Win rate: 50-55% → 58-65% (with ML filtering)")
-    logger.info("- Fewer false signals (Claude validation)")
-    logger.info("- Better market-context awareness")
+    logger.info("No profitability claim is made until out-of-sample and forward validation pass.")
     logger.info("")
     logger.info("=" * 60)
 

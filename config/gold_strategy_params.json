@@ -1,7 +1,7 @@
 {
   "strategy_name": "Gold ETH-Strategy-Adapted",
   "description": "XAUUSD trading strategy adapted from profitable ETH System A+C",
-  "version": "2.0",
+  "version": "3.0-research",
 
   "timeframes": {
     "bias": "1W",
@@ -76,7 +76,7 @@
   "ml_parameters": {
     "feature_count": 21,
     "confidence_threshold": 35,
-    "model_path": "/root/gold_signal_fetcher_ai_assisted/models/xgboost_gold_model_v2.pkl",
+    "model_path": "models/xgboost_gold_model_v2.pkl",
     "features": [
       "rsi_14",
       "macd",
@@ -102,10 +102,8 @@
   },
 
   "claude_parameters": {
-    "model": "claude-opus-4-8",
-    "baseline_confidence_min": 50,
-    "baseline_confidence_max": 70,
-    "min_confidence_floor": 40,
+    "model_env": "ANTHROPIC_REASONING_MODEL",
+    "fail_closed": true,
     "max_tokens": 500
   },
 
@@ -114,12 +112,12 @@
     "claude_weight": 0.35,
     "smc_weight": 0.30,
     "fire_thresholds": {
-      "peak": 50,
-      "high": 52,
-      "secondary": 58,
-      "closed": 100
+      "peak": 55,
+      "high": 58,
+      "secondary": 65,
+      "closed": 101
     },
-    "expected_signals_per_day": 7
+    "expected_signals_per_day": null
   },
 
   "performance_targets": {
@@ -131,5 +129,5 @@
     "sharpe_ratio": 1.5
   },
 
-  "notes": "Based on ETH strategy achieving 50% WR + 2.0 R:R = +16.77% in 7 days. Gold slower moving, so thresholds and position sizing adjusted accordingly."
+  "notes": "Research hypotheses only. Thresholds and performance targets are not evidence of an edge and require leakage-safe out-of-sample validation."
 }

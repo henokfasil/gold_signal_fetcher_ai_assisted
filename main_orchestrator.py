@@ -1,441 +1,288 @@
-"""
-Gold Signal Fetcher - AI-Assisted (System C)
-Orchestrator combining SMC + ML + Claude for superior signal generation.
+"""Research-grade paper-trading orchestrator for System C.
 
-Full pipeline:
-1. SMC detects signals (technical confluence)
-2. ML filters with confidence score (0-100%)
-3. Claude analyzes market context (risk, timing, news)
-4. Combined decision (ML 35% + Claude 35% + SMC 30%)
-5. Execute if confidence >= tier threshold
-6. Track P&L for continuous learning
+Every candidate is auditable. Missing ML, macro, or LLM evidence is explicit;
+no random model or fabricated neutral score can approve a paper trade.
 """
 
-import logging
-import sys
-import os
 import csv
-from pathlib import Path
-from dotenv import load_dotenv
-from datetime import datetime, timedelta
+import json
+import logging
+import uuid
+from datetime import datetime, timedelta, timezone
 
-# Load environment
-load_dotenv("/root/gold_signal_fetcher_ai_assisted/.env")
+import pandas as pd
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+from config import settings
+from agent.claude_analyst import AITradingDecider
+from agent.gold_correlations import GoldCorrelationValidator
+from agent.liquidity_manager import get_session_description, is_market_closed
+from agent.ml_signal_generator import MLSignalFilter
+from agent.notifier import Notifier
+from agent.smc_gold_scanner import run_gold_scanner
+
+logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO),
+                    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Import core components
-try:
-    from agent.smc_gold_scanner import run_gold_scanner
-    from agent.paper_trader import update_gold_trades, get_open_trades
-    from agent.liquidity_manager import get_session_description, is_market_closed
-    from agent.notifier import Notifier
-    logger.info("[ORCHESTRATOR] Core imports successful")
-except ImportError as e:
-    logger.error(f"[ORCHESTRATOR] Import error: {e}")
-    sys.exit(1)
+LEDGER_COLUMNS = [
+    "candidate_id", "timestamp", "pair", "direction", "entry", "stop_loss",
+    "take_profit", "rr_ratio", "smc_score", "ml_available", "ml_confidence",
+    "ml_model_version", "claude_available", "claude_confidence",
+    "macro_available", "macro_score", "combined_confidence", "threshold",
+    "decision", "decision_reason", "status", "exit_price", "exit_time",
+    "exit_reason", "pnl_pct", "pnl_usd", "notional_usd", "paper_trading",
+]
 
-# Optional AI imports (graceful degradation)
-try:
-    from agent.ml_signal_generator import MLSignalFilter
-    from agent.claude_analyst import AITradingDecider
-    HAS_AI = True
-    logger.info("[ORCHESTRATOR] AI components loaded")
-except Exception as e:
-    HAS_AI = False
-    logger.warning(f"[ORCHESTRATOR] AI components unavailable ({e}), running in SMC-only mode")
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def parse_utc(value: str) -> datetime:
+    parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed.astimezone(timezone.utc)
+
+
+class PaperLedger:
+    def __init__(self, path=settings.PAPER_TRADES_CSV):
+        self.path = path
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+
+    def load(self) -> pd.DataFrame:
+        if not self.path.exists() or self.path.stat().st_size == 0:
+            return pd.DataFrame(columns=LEDGER_COLUMNS)
+        frame = pd.read_csv(self.path, dtype=str).fillna("")
+        for column in LEDGER_COLUMNS:
+            if column not in frame.columns:
+                frame[column] = ""
+        return frame[LEDGER_COLUMNS]
+
+    def save(self, frame: pd.DataFrame) -> None:
+        temp = self.path.with_suffix(self.path.suffix + ".tmp")
+        frame[LEDGER_COLUMNS].to_csv(temp, index=False)
+        temp.replace(self.path)
+
+    def append(self, row: dict) -> None:
+        file_exists = self.path.exists() and self.path.stat().st_size > 0
+        with self.path.open("a", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=LEDGER_COLUMNS, extrasaction="ignore")
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow({column: row.get(column, "") for column in LEDGER_COLUMNS})
+
+    def open_positions(self) -> list:
+        frame = self.load()
+        return frame[frame["status"] == "OPEN"].to_dict("records")
+
+    def is_duplicate(self, signal: dict, minutes: int = 30) -> bool:
+        frame = self.load()
+        if frame.empty:
+            return False
+        cutoff = utc_now() - timedelta(minutes=minutes)
+        entry = float(signal["entry"])
+        for _, row in frame.tail(500).iterrows():
+            try:
+                if parse_utc(row["timestamp"]) < cutoff or row["direction"] != signal["direction"]:
+                    continue
+                if abs(float(row["entry"]) - entry) <= entry * 0.001:
+                    return True
+            except (ValueError, TypeError):
+                continue
+        return False
+
+    def realized_pnl(self, since: datetime) -> float:
+        frame = self.load()
+        total = 0.0
+        for _, row in frame.iterrows():
+            try:
+                if row["status"] in {"WIN", "LOSS", "EXPIRED"} and parse_utc(row["exit_time"]) >= since:
+                    total += float(row["pnl_pct"] or 0)
+            except (ValueError, TypeError):
+                continue
+        return total
 
 
 class AIAssistedOrchestrator:
-    """Orchestrate SMC + ML + Claude trading pipeline."""
-
     def __init__(self):
-        """Initialize orchestrator with all components."""
-        if HAS_AI:
-            self.ml_filter = MLSignalFilter()
-            self.ai_decider = AITradingDecider()
-        else:
-            self.ml_filter = None
-            self.ai_decider = None
-
+        if not settings.PAPER_TRADING:
+            raise RuntimeError("System C is research-only: PAPER_TRADING must remain true")
+        self.ledger = PaperLedger()
+        self.ml_filter = MLSignalFilter()
+        self.correlation = GoldCorrelationValidator()
+        self.ai_decider = AITradingDecider()
         self.notifier = Notifier(
-            token=os.environ.get("TELEGRAM_TOKEN"),
-            chat_id=os.environ.get("TELEGRAM_CHAT_ID"),
+            token=settings.TELEGRAM_BOT_TOKEN or __import__("os").environ.get("TELEGRAM_TOKEN"),
+            chat_id=settings.TELEGRAM_CHAT_ID,
             scan_only=False,
         )
-        self.metaapi_token = os.environ.get("METAAPI_TOKEN")
-        self.metaapi_account_id = os.environ.get("METAAPI_ACCOUNT_ID")
 
-    def _get_current_price_from_tradingview(self, symbol: str = "XAUUSD") -> float:
-        """Fetch current price directly from TradingView charts via MCP."""
+    def _fresh_price(self):
+        path = settings.TRADINGVIEW_SNAPSHOT_PATH
+        if not path.exists():
+            return None, "price snapshot missing"
         try:
-            # Use TradingView MCP to read live price
-            # The tv_launch tool should auto-detect and connect to TradingView Desktop
-            import json
-            from pathlib import Path
+            data = json.loads(path.read_text())
+            record = data.get(settings.SYMBOL, data)
+            timestamp_value = record.get("timestamp") or data.get("timestamp")
+            if not timestamp_value:
+                return None, "price snapshot has no timestamp"
+            age = (utc_now() - parse_utc(timestamp_value)).total_seconds()
+            if age < 0 or age > settings.SNAPSHOT_MAX_AGE_SECONDS:
+                return None, f"price snapshot stale ({age:.0f}s)"
+            return float(record["price"]), "fresh price snapshot"
+        except (KeyError, ValueError, TypeError, OSError, json.JSONDecodeError) as exc:
+            return None, f"invalid price snapshot: {exc}"
 
-            # Read from TradingView price snapshot (cached/live)
-            # Try to get latest quote from TradingView indicator data
-            tv_data_path = Path("/tmp/tradingview_snapshot.json")
-
-            if tv_data_path.exists():
-                with open(tv_data_path, 'r') as f:
-                    data = json.load(f)
-                    if 'XAUUSD' in data and 'price' in data['XAUUSD']:
-                        price = float(data['XAUUSD']['price'])
-                        logger.info(f"[PRICE] Current price from TradingView: {price}")
-                        return price
-
-            # Fallback: use last price from the SMC scanner run
-            from agent.smc_gold_scanner import run_gold_scanner
-            signal = run_gold_scanner(self.metaapi_token, self.metaapi_account_id)
-            if signal and 'price' in signal:
-                price = float(signal['price'])
-                logger.info(f"[PRICE] Current price from SMC scanner: {price}")
-                return price
-
-            logger.warning("[PRICE] Could not fetch live price from TradingView or SMC")
-            return None
-
-        except Exception as e:
-            logger.debug(f"[PRICE] Error fetching: {e}")
-            return None
-
-    def _update_open_trades_system_c(self, metaapi_token: str, metaapi_account_id: str) -> int:
-        """Update open trades in System C CSV using MetaAPI price data."""
-        csv_path = Path("/root/gold_signal_fetcher_ai_assisted/data/paper_trades_ai.csv")
-        if not csv_path.exists():
+    def update_open_trades(self) -> int:
+        """Apply observation-time exits while recording their limited precision."""
+        frame = self.ledger.load()
+        open_rows = frame[frame["status"] == "OPEN"]
+        if open_rows.empty:
             return 0
-
-        try:
-            import pandas as pd
-            df = pd.read_csv(csv_path, dtype=str).fillna("")
-            if df.empty:
-                return 0
-
-            updated = 0
-            now = datetime.utcnow()
-
-            # Get current price from TradingView MCP (or fallback to SMC scanner)
-            current_price = self._get_current_price_from_tradingview("XAUUSD")
-            if current_price:
-                logger.info(f"[TRADE-UPDATE] Using current XAUUSD price: {current_price}")
-            else:
-                logger.warning("[TRADE-UPDATE] No live price available, will retry next cycle")
-
-            for idx, row in df.iterrows():
-                try:
-                    # Skip if already closed (pnl != 0)
-                    pnl = float(row.get("pnl", 0))
-                    if pnl != 0:
-                        continue
-
-                    entry = float(row.get("entry", 0))
-                    sl = float(row.get("stop_loss", 0))
-                    tp_str = row.get("take_profits", "[0]").strip("[]").strip("np.float64()")
-                    tp = float(tp_str) if tp_str else 0
-                    direction = str(row.get("direction", "BUY")).upper()
-
-                    # Check expiry (48 hours)
-                    ts = datetime.fromisoformat(row.get("timestamp", "").replace("Z", "+00:00"))
-                    age_hours = (now - ts).total_seconds() / 3600
-
-                    if age_hours > 48:
-                        # Expired - mark as 0% P&L
-                        df.at[idx, "pnl"] = "0"
-                        updated += 1
-                        logger.info(f"[TRADE-CLOSE] Trade EXPIRED (age: {age_hours:.1f}h)")
-                        continue
-
-                    # Check if TP/SL hit using current price
-                    if current_price is None:
-                        continue  # Skip if no price data
-
-                    result = None
-                    exit_pnl = None
-
-                    if direction == "BUY":
-                        if current_price <= sl:
-                            result = "LOSS"
-                            exit_pnl = ((sl - entry) / entry) * 100
-                        elif current_price >= tp:
-                            result = "WIN"
-                            exit_pnl = ((tp - entry) / entry) * 100
-                    else:  # SELL
-                        if current_price >= sl:
-                            result = "LOSS"
-                            exit_pnl = ((entry - sl) / entry) * 100
-                        elif current_price <= tp:
-                            result = "WIN"
-                            exit_pnl = ((entry - tp) / entry) * 100
-
-                    if result:
-                        df.at[idx, "pnl"] = str(round(exit_pnl, 2))
-                        updated += 1
-                        logger.info(f"[TRADE-CLOSE] {direction} {result}: {exit_pnl:.2f}% P&L @ {current_price:.2f}")
-
-                except (ValueError, TypeError, AttributeError) as e:
-                    logger.debug(f"Error parsing trade row: {e}")
+        current_price, price_reason = self._fresh_price()
+        now = utc_now()
+        updated = 0
+        for index, row in open_rows.iterrows():
+            try:
+                entry, stop, target = map(float, (row["entry"], row["stop_loss"], row["take_profit"]))
+                direction = row["direction"]
+                age = now - parse_utc(row["timestamp"])
+                result = exit_price = exit_reason = None
+                if current_price is not None:
+                    if direction == "BUY" and current_price <= stop:
+                        result, exit_price, exit_reason = "LOSS", stop, "SL_OBSERVED_AT_SCAN"
+                    elif direction == "BUY" and current_price >= target:
+                        result, exit_price, exit_reason = "WIN", target, "TP_OBSERVED_AT_SCAN"
+                    elif direction == "SELL" and current_price >= stop:
+                        result, exit_price, exit_reason = "LOSS", stop, "SL_OBSERVED_AT_SCAN"
+                    elif direction == "SELL" and current_price <= target:
+                        result, exit_price, exit_reason = "WIN", target, "TP_OBSERVED_AT_SCAN"
+                if result is None and age >= timedelta(hours=settings.TRADE_EXPIRY_HOURS):
+                    result, exit_price = "EXPIRED", current_price or entry
+                    exit_reason = f"TIME_EXPIRY_{settings.TRADE_EXPIRY_HOURS}H;{price_reason}"
+                if result is None:
                     continue
+                signed_move = ((exit_price - entry) / entry) * 100
+                pnl_pct = signed_move if direction == "BUY" else -signed_move
+                notional = float(row["notional_usd"] or 0)
+                frame.at[index, "status"] = result
+                frame.at[index, "exit_price"] = f"{exit_price:.5f}"
+                frame.at[index, "exit_time"] = now.isoformat()
+                frame.at[index, "exit_reason"] = exit_reason
+                frame.at[index, "pnl_pct"] = f"{pnl_pct:.6f}"
+                frame.at[index, "pnl_usd"] = f"{notional * pnl_pct / 100:.2f}"
+                updated += 1
+            except (ValueError, TypeError) as exc:
+                logger.warning("Invalid open ledger row %s: %s", index, exc)
+        if updated:
+            self.ledger.save(frame)
+        return updated
 
-            if updated > 0:
-                df.to_csv(csv_path, index=False)
-                logger.info(f"✅ Updated {updated} System C trades with real MetaAPI prices")
+    @staticmethod
+    def _normalize_signal(signal: dict) -> dict:
+        structure = signal.get("mtf", {}).get("smc", {}).get("struct_4h")
+        # The current scanner implements bullish BOS/CHoCH and constructs SL
+        # below / TP above. It must never be relabelled as a short.
+        if structure != "bullish":
+            raise ValueError(f"bullish scanner returned non-bullish structure: {structure}")
+        normalized = dict(signal)
+        normalized.update({
+            "direction": "BUY", "pair": signal.get("symbol", settings.SYMBOL),
+            "entry": float(signal["price"]), "stop_loss": float(signal["stop_loss"]),
+            "take_profit": float(signal["take_profit"]),
+            "take_profits": [float(signal["take_profit"])],
+        })
+        if not normalized["stop_loss"] < normalized["entry"] < normalized["take_profit"]:
+            raise ValueError("invalid BUY geometry: expected SL < entry < TP")
+        return normalized
 
-            return updated
-        except Exception as e:
-            logger.error(f"Error updating System C trades: {e}")
-            return 0
+    def _risk_vetoes(self, signal: dict) -> list:
+        vetoes = []
+        open_count = len(self.ledger.open_positions())
+        max_open = int(settings.strategy_value("risk_gates", "max_open_trades", settings.MAX_OPEN_TRADES))
+        min_rr = float(settings.strategy_value("risk_gates", "min_risk_reward_ratio", settings.MIN_RR_RATIO))
+        if open_count >= max_open:
+            vetoes.append("MAX_OPEN_TRADES")
+        if float(signal.get("rr_ratio") or 0) < min_rr:
+            vetoes.append("MIN_RR_NOT_MET")
+        today = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
+        week = today - timedelta(days=today.weekday())
+        if self.ledger.realized_pnl(today) <= -abs(settings.DAILY_LOSS_CAP_PCT):
+            vetoes.append("DAILY_LOSS_CAP")
+        if self.ledger.realized_pnl(week) <= -abs(settings.WEEKLY_LOSS_CAP_PCT):
+            vetoes.append("WEEKLY_LOSS_CAP")
+        return vetoes
+
+    def _market_context(self, signal: dict, macro: dict) -> dict:
+        mtf = signal.get("mtf", {})
+        return {
+            "as_of": utc_now().isoformat(),
+            "price": signal["entry"],
+            "trend_4h": mtf.get("smc", {}).get("struct_4h"),
+            "trend_1h": mtf.get("smc", {}).get("struct_1h"),
+            "rsi_1h": mtf.get("1H", {}).get("rsi"),
+            "atr_1h": signal.get("atr"),
+            "news_guard": signal.get("news_guard_status"),
+            "macro_snapshot": macro.get("snapshot") if macro.get("available") else None,
+        }
+
+    def _record_candidate(self, signal: dict, decision: dict, status: str) -> None:
+        base_notional = float(settings.strategy_value("position_sizing", "base_size_usd", 5000))
+        self.ledger.append({
+            "candidate_id": uuid.uuid4().hex[:12].upper(), "timestamp": utc_now().isoformat(),
+            "pair": signal["pair"], "direction": signal["direction"], "entry": signal["entry"],
+            "stop_loss": signal["stop_loss"], "take_profit": signal["take_profit"],
+            "rr_ratio": signal.get("rr_ratio"), "smc_score": decision["smc_score"],
+            "ml_available": decision["ml_available"], "ml_confidence": decision["ml_confidence"],
+            "ml_model_version": decision.get("ml_model_version"),
+            "claude_available": decision["claude_available"],
+            "claude_confidence": decision["claude_confidence"],
+            "macro_available": decision["macro_available"], "macro_score": decision["macro_score"],
+            "combined_confidence": f"{decision['combined_confidence']:.4f}",
+            "threshold": decision["threshold"], "decision": "APPROVE" if status == "OPEN" else "REJECT",
+            "decision_reason": decision["final_reason"], "status": status,
+            "notional_usd": base_notional, "paper_trading": True,
+        })
 
     def run_scan(self):
-        """Execute full AI-assisted scan cycle."""
-        logger.info("[ORCHESTRATOR] Starting scan cycle (AI " + ("enabled" if HAS_AI else "disabled") + ")")
-
-        # **NEW: Update open trades (check for closures) every cycle**
-        try:
-            updated = self._update_open_trades_system_c(self.metaapi_token, self.metaapi_account_id)
-            if updated > 0:
-                logger.info(f"[ORCHESTRATOR] Updated {updated} open trades")
-        except Exception as e:
-            logger.warning(f"[ORCHESTRATOR] Trade update skipped: {e}")
-
-        # Check market status
-        session_info = get_session_description()
-        logger.info(
-            f"[SESSION] {session_info['current_day']} {session_info['current_time_utc']} UTC | "
-            f"Tier: {session_info['liquidity_tier']} | "
-            f"Position size: {session_info['position_size_multiplier']:.0%}"
-        )
-
+        logger.info("[ORCHESTRATOR] Research paper-trading scan started")
+        self.update_open_trades()
+        session = get_session_description()
         if is_market_closed():
-            logger.warning("[ORCHESTRATOR] Market closed - skipping scan")
-            return
+            logger.info("[ORCHESTRATOR] Market closed")
+            return {"status": "MARKET_CLOSED"}
 
-        # Step 1: Update open trades
-        try:
-            updated = update_gold_trades(self.metaapi_token, self.metaapi_account_id)
-            logger.info(f"[ORCHESTRATOR] Updated {updated} open trades")
-        except Exception as e:
-            logger.error(f"[ORCHESTRATOR] Error updating trades: {e}")
-
-        # Step 2: Get SMC signal
-        signal = None
-        try:
-            signal = run_gold_scanner(self.metaapi_token, self.metaapi_account_id)
-            if signal:
-                # Derive direction from market structure
-                smc_data = signal.get('mtf', {}).get('smc', {})
-                struct_4h = smc_data.get('struct_4h', 'unknown')
-                signal['direction'] = 'BUY' if struct_4h == 'bullish' else 'SELL'
-                signal['pair'] = signal.get('symbol', 'XAUUSD')
-                signal['entry'] = signal.get('price')
-                signal['take_profits'] = [signal.get('take_profit')]
-                logger.info(f"[ORCHESTRATOR] SMC signal: {signal['direction']} @ {signal.get('entry')} | Score: {signal.get('score')}")
-            else:
-                logger.info("[ORCHESTRATOR] No SMC signal this cycle")
-        except Exception as e:
-            logger.error(f"[ORCHESTRATOR] SMC scan failed: {e}")
-            return
-
+        signal = run_gold_scanner(settings.METAAPI_TOKEN, settings.METAAPI_ACCOUNT_ID)
         if not signal:
-            logger.info("[ORCHESTRATOR] Scan complete - no signal")
-            return
+            return {"status": "NO_CANDIDATE"}
+        signal = self._normalize_signal(signal)
+        if self.ledger.is_duplicate(signal):
+            return {"status": "DUPLICATE"}
 
-        # Step 3: Apply AI layer if available, otherwise just execute
-        if not HAS_AI:
-            logger.info("[ORCHESTRATOR] AI unavailable - executing SMC signal directly")
-            self._execute_trade_simple(signal)
-            return
-
-        try:
-            decision = self._apply_ai_layer(signal, session_info)
-            logger.info(f"[ORCHESTRATOR] AI Decision: {decision['final_reason']}")
-
-            if not decision['should_trade']:
-                logger.info("[ORCHESTRATOR] Signal filtered by AI - skipping execution")
-                self.notifier.send(
-                    f"🤖 AI filtered signal\n\n"
-                    f"SMC Score: {decision['smc_score']:.0f}%\n"
-                    f"ML Confidence: {decision['ml_confidence']:.0f}%\n"
-                    f"Claude: {decision['claude_confidence']:.0f}%\n"
-                    f"Combined: {decision['combined_confidence']:.0f}% (threshold: {decision['threshold']}%)\n\n"
-                    f"Reason: {decision['claude_reasoning']}"
-                )
-                return
-
-            # **NEW: Step 3b: Check for duplicate signals (prevent duplicate logging)**
-            if self._is_duplicate_signal(signal):
-                logger.warning(f"[DEDUP] Duplicate signal detected: {signal['direction']} @ {signal['entry']:.2f}")
-                return
-
-            # Step 4: Execute trade
-            self._execute_trade(signal, decision)
-
-        except Exception as e:
-            logger.error(f"[ORCHESTRATOR] AI layer error: {e}")
-            self.notifier.bot_error(f"AI layer failed: {e}")
-
-    def _is_duplicate_signal(self, signal, max_age_minutes=30) -> bool:
-        """Check if identical signal already logged in last N minutes (deduplication)."""
-        csv_path = Path("/root/gold_signal_fetcher_ai_assisted/data/paper_trades_ai.csv")
-        if not csv_path.exists():
-            return False
-
-        try:
-            import pandas as pd
-            df = pd.read_csv(csv_path, dtype=str).fillna("")
-            if df.empty:
-                return False
-
-            direction = signal.get("direction", "")
-            entry = float(signal.get("entry", 0))
-            sl = float(signal.get("stop_loss", 0))
-            tp = float(signal.get("take_profits", [0])[0]) if signal.get("take_profits") else 0
-
-            now = datetime.utcnow()
-            for _, row in df.iterrows():
-                try:
-                    ts = datetime.fromisoformat(row.get("timestamp", "").replace("Z", "+00:00"))
-                    age_min = (now - ts).total_seconds() / 60
-
-                    if age_min > max_age_minutes:
-                        continue
-
-                    # Match if same direction, entry, SL, TP within tolerance
-                    if (row.get("direction", "").upper() == direction.upper() and
-                        abs(float(row.get("entry", 0)) - entry) < entry * 0.001 and
-                        abs(float(row.get("stop_loss", 0)) - sl) < entry * 0.001 and
-                        abs(float(row.get("take_profits", str([0]))[1:-1].split(",")[0]) - tp) < entry * 0.001):
-                        logger.info(f"[DEDUP] Found duplicate from {age_min:.0f} min ago")
-                        return True
-                except (ValueError, TypeError, IndexError):
-                    continue
-        except Exception as e:
-            logger.warning(f"[DEDUP] Error checking duplicates: {e}")
-        return False
-
-    def _apply_ai_layer(self, signal, session_info) -> dict:
-        """Apply ML + Claude analysis to signal."""
-        logger.info("[AI-LAYER] Analyzing signal with ML + Claude")
-
-        # Prepare market data for Claude
-        market_data = {
-            'current_price': signal.get('entry', 'market'),
-            'trend_4h': signal.get('indicators_4h', {}).get('trend', 'unknown'),
-            'trend_1h': signal.get('indicators_1h', {}).get('trend', 'unknown'),
-            'rsi_14': signal.get('indicators_1h', {}).get('rsi', 'N/A'),
-            'atr_14': signal.get('indicators_1h', {}).get('atr', 'N/A'),
-            'volatility_level': 'normal',
-            'news_risk': 'low'
-        }
-
-        # Get open positions for Claude context
-        try:
-            open_positions = get_open_trades()
-        except:
-            open_positions = []
-
-        # Use AI decider (combines ML + Claude)
+        ml_result = self.ml_filter.score_signal(signal)
+        macro_result = self.correlation.validate_signal(signal["direction"])
         decision = self.ai_decider.decide(
-            signal_info=signal,
-            market_data=market_data,
-            ml_confidence=signal.get('ml_confidence', 50),
-            smc_score=signal.get('score', 50),
-            liquidity_tier=session_info['liquidity_tier'],
-            open_positions=open_positions
+            signal_info=signal, market_data=self._market_context(signal, macro_result),
+            ml_result=ml_result, macro_result=macro_result,
+            smc_score=float(signal.get("score", 0)), liquidity_tier=session["liquidity_tier"],
+            open_positions=self.ledger.open_positions(),
         )
+        decision["ml_model_version"] = ml_result.get("model_version")
+        risk_vetoes = self._risk_vetoes(signal)
+        if risk_vetoes:
+            decision["vetoes"].extend(risk_vetoes)
+            decision["should_trade"] = False
+            decision["final_reason"] = ", ".join(decision["vetoes"])
 
-        return decision
-
-    def _execute_trade_simple(self, signal):
-        """Execute trade without AI approval (fallback mode)."""
-        logger.info(f"[EXECUTOR] Executing SMC-only trade: {signal['direction']} {signal['pair']}")
-        self.notifier.send(
-            f"📊 *SMC Signal Executed*\n\n"
-            f"Direction: {signal['direction']} {signal['pair']}\n"
-            f"Entry: {signal.get('entry', 'market')}\n"
-            f"SL: {signal.get('stop_loss', 'N/A')}\n"
-            f"TPs: {signal.get('take_profits', [])}\n"
-            f"Score: {signal.get('score', 'N/A')}%\n\n"
-            f"⚠️ AI layer unavailable - executing on SMC confidence only"
-        )
-
-    def _log_trade_to_csv(self, signal, decision):
-        """Log executed trade to paper_trades_ai.csv."""
-        csv_path = Path("/root/gold_signal_fetcher_ai_assisted/data/paper_trades_ai.csv")
-        csv_path.parent.mkdir(parents=True, exist_ok=True)
-
-        trade_row = {
-            'timestamp': datetime.utcnow().isoformat(),
-            'pair': signal.get('pair', 'XAUUSD'),
-            'direction': signal.get('direction', 'UNKNOWN'),
-            'entry': float(signal.get('entry', 0)) if signal.get('entry') else 0,
-            'stop_loss': float(signal.get('stop_loss', 0)) if signal.get('stop_loss') else 0,
-            'take_profits': str(signal.get('take_profits', [])),
-            'pnl': 0,
-            'signal_source': 'system_c_ai',
-            'ml_confidence': float(decision.get('ml_confidence', 0)),
-            'claude_confidence': float(decision.get('claude_confidence', 0)),
-            'combined_confidence': float(decision.get('combined_confidence', 0)),
-        }
-
-        try:
-            file_exists = csv_path.exists()
-            with open(csv_path, 'a', newline='') as f:
-                writer = csv.DictWriter(f, fieldnames=trade_row.keys())
-                if not file_exists:
-                    writer.writeheader()
-                writer.writerow(trade_row)
-            logger.info(f"[CSV] Trade logged: {signal['pair']} {signal['direction']}")
-        except Exception as e:
-            logger.error(f"[CSV] Failed to log trade: {e}")
-
-    def _execute_trade(self, signal, decision):
-        """Execute the trade after AI approval."""
-        logger.info(f"[EXECUTOR] Executing trade: {signal['direction']} {signal['pair']}")
-
-        try:
-            # Log to CSV first
-            self._log_trade_to_csv(signal, decision)
-
-            # Notify user with AI reasoning
-            msg = (
-                f"🤖 *AI Signal Executed*\n\n"
-                f"Direction: {signal['direction']} {signal['pair']}\n"
-                f"Entry: {signal.get('entry', 'market')}\n"
-                f"SL: {signal.get('stop_loss', 'N/A')}\n"
-                f"TPs: {signal.get('take_profits', [])}\n\n"
-                f"*AI Analysis:*\n"
-                f"SMC: {decision['smc_score']:.0f}% | "
-                f"ML: {decision['ml_confidence']:.0f}% | "
-                f"Claude: {decision['claude_confidence']:.0f}%\n"
-                f"Combined: {decision['combined_confidence']:.0f}%\n\n"
-                f"Claude: {decision['claude_reasoning']}"
-            )
-            self.notifier.send(msg)
-            logger.info(f"[EXECUTOR] Trade notification sent")
-
-        except Exception as e:
-            logger.error(f"[EXECUTOR] Error: {e}")
-            self.notifier.send(f"⚠️ Trade execution error: {e}")
+        status = "OPEN" if decision["should_trade"] else "REJECTED"
+        self._record_candidate(signal, decision, status)
+        logger.info("[DECISION] %s: %s", status, decision["final_reason"])
+        return {"status": status, "decision": decision}
 
 
 def main():
-    """Main entry point."""
-    logger.info("=" * 70)
-    logger.info("Gold Signal Fetcher - AI-Assisted (System C)")
-    logger.info("=" * 70)
-    logger.info("Pipeline: SMC Signals → ML Filtering → Claude Analysis → Trade")
-    logger.info("")
-
-    orchestrator = AIAssistedOrchestrator()
-    orchestrator.run_scan()
-
-    logger.info("=" * 70)
+    result = AIAssistedOrchestrator().run_scan()
+    logger.info("[ORCHESTRATOR] Result: %s", result.get("status"))
 
 
 if __name__ == "__main__":

@@ -1,160 +1,101 @@
-"""
-ML-based signal generation using XGBoost.
-Predicts signal profitability based on technical indicators.
+"""Validated XGBoost inference for gold paper-trading candidates.
+
+Unlike the original implementation, this module never creates a model from
+random data.  A model is usable only when it has metadata proving that it was
+trained from historical, point-in-time observations.
 """
 
-import os
 import json
-import joblib
-import numpy as np
-import pandas as pd
-import xgboost as xgb
-from datetime import datetime
-from pathlib import Path
+import logging
 
-from .ml_feature_engineer import FeatureEngineer
+import numpy as np
+
+from config import settings
+from .ml_feature_engineer_gold import GoldFeatureEngineer
+
+logger = logging.getLogger(__name__)
 
 
 class MLSignalGenerator:
-    """XGBoost-based signal prediction."""
-
-    MODEL_PATH = Path("/root/gold_signal_fetcher_ai_assisted/models/xgboost_gold_model.pkl")
-    FEATURE_COLS_PATH = Path("/root/gold_signal_fetcher_ai_assisted/models/feature_cols.json")
+    """Load and score a versioned gold model, or report it unavailable."""
 
     def __init__(self):
-        """Initialize ML model or train from scratch if needed."""
         self.model = None
-        self.feature_engineer = FeatureEngineer()
-        self.load_or_train_model()
+        self.metadata = {}
+        self.unavailable_reason = "model not loaded"
+        self._load_validated_model()
 
-    def load_or_train_model(self):
-        """Load existing model or train new one."""
-        if self.MODEL_PATH.exists():
-            self.model = joblib.load(self.MODEL_PATH)
-            print("[ML] Loaded existing XGBoost model")
-        else:
-            self.train_initial_model()
+    @property
+    def available(self) -> bool:
+        return self.model is not None
 
-    def train_initial_model(self):
-        """Train initial model on random data (will improve with real trading data)."""
-        # For now, create a simple model that learns basic patterns
-        # In production, this would train on actual historical trades
+    def _load_validated_model(self) -> None:
+        model_path = settings.ML_MODEL_PATH
+        metadata_path = settings.ML_MODEL_METADATA_PATH
+        if not model_path.exists() or not metadata_path.exists():
+            self.unavailable_reason = "validated model or metadata is missing"
+            return
 
-        X_train = np.random.randn(100, 16)  # 16 features
-        y_train = (np.random.randn(100) > 0).astype(int)  # 50% win/loss
+        try:
+            metadata = json.loads(metadata_path.read_text())
+            if metadata.get("training_data_kind") != "historical_point_in_time":
+                self.unavailable_reason = "model metadata does not certify historical point-in-time data"
+                return
+            if metadata.get("feature_names") != GoldFeatureEngineer.FEATURE_COLS:
+                self.unavailable_reason = "model feature schema does not match runtime schema"
+                return
+            import joblib
+            self.model = joblib.load(model_path)
+            self.metadata = metadata
+            self.unavailable_reason = ""
+            logger.info("[ML] Loaded validated model %s", metadata.get("model_version", "unknown"))
+        except Exception as exc:
+            self.model = None
+            self.unavailable_reason = f"model load failed: {exc}"
+            logger.warning("[ML] %s", self.unavailable_reason)
 
-        self.model = xgb.XGBClassifier(
-            max_depth=4,
-            n_estimators=50,
-            learning_rate=0.1,
-            random_state=42,
-            objective='binary:logistic'
-        )
-        self.model.fit(X_train, y_train)
-
-        # Save model
-        self.MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-        joblib.dump(self.model, self.MODEL_PATH)
-        print("[ML] Trained and saved initial XGBoost model")
-
-    def predict_signal_confidence(self, features_df: pd.DataFrame) -> float:
-        """
-        Predict confidence that a signal will be profitable.
-
-        Args:
-            features_df: DataFrame with extracted features
-
-        Returns:
-            Confidence score (0-100)
-        """
-        if self.model is None:
-            return 50.0  # Neutral if no model
-
-        X = self.feature_engineer.prepare_for_model(features_df)
-
-        # Get last row (most recent)
-        if len(X) == 0:
-            return 50.0
-
-        recent_features = X[-1:].reshape(1, -1)
-
-        # Predict probability
-        proba = self.model.predict_proba(recent_features)[0][1]
-        confidence = proba * 100
-
-        return float(confidence)
-
-    def update_model_with_trade_result(self, trade_data: dict, profit: float):
-        """
-        Update model with real trade outcome for continuous learning.
-
-        Args:
-            trade_data: Features of the trade
-            profit: Actual P&L from the trade
-        """
-        # In production, this would retrain the model periodically
-        # For now, just log it for later analysis
-        print(f"[ML] Trade result: profit={profit}, model should improve with more data")
+    def predict_feature_vector(self, feature_vector) -> dict:
+        """Return a scored result with explicit availability and provenance."""
+        if not self.available:
+            return {
+                "available": False,
+                "confidence": None,
+                "reason": self.unavailable_reason,
+                "model_version": None,
+            }
+        try:
+            vector = np.asarray(feature_vector, dtype=float).reshape(1, -1)
+            if vector.shape[1] != len(GoldFeatureEngineer.FEATURE_COLS):
+                raise ValueError(f"expected {len(GoldFeatureEngineer.FEATURE_COLS)} features")
+            confidence = float(self.model.predict_proba(vector)[0][1] * 100)
+            return {
+                "available": True,
+                "confidence": confidence,
+                "reason": "validated model inference",
+                "model_version": self.metadata.get("model_version"),
+            }
+        except Exception as exc:
+            return {
+                "available": False,
+                "confidence": None,
+                "reason": f"inference failed: {exc}",
+                "model_version": self.metadata.get("model_version"),
+            }
 
 
 class MLSignalFilter:
-    """Filter signals using ML confidence scores."""
+    """Compatibility wrapper used by the orchestrator."""
 
     def __init__(self):
         self.ml_generator = MLSignalGenerator()
 
-    def should_execute_signal(
-        self,
-        features_df: pd.DataFrame,
-        base_score: float,
-        liquidity_tier: str
-    ) -> dict:
-        """
-        Decide whether to execute a signal based on ML + base score.
-
-        Args:
-            features_df: DataFrame with technical features
-            base_score: SMC signal score (0-100)
-            liquidity_tier: Current liquidity tier (peak/high/secondary/closed)
-
-        Returns:
-            Decision dict with confidence, recommendation, reason
-        """
-        ml_confidence = self.ml_generator.predict_signal_confidence(features_df)
-
-        # Combine scores
-        combined_confidence = (base_score * 0.4) + (ml_confidence * 0.6)
-
-        # Tier-based thresholds
-        thresholds = {
-            'peak': 60,          # Lower threshold during peak liquidity
-            'high': 65,          # Moderate threshold
-            'secondary': 75,     # Higher threshold during thin hours
-            'closed': 100        # Don't trade when closed
-        }
-
-        threshold = thresholds.get(liquidity_tier, 70)
-
-        decision = {
-            'should_trade': combined_confidence >= threshold,
-            'ml_confidence': ml_confidence,
-            'base_score': base_score,
-            'combined_confidence': combined_confidence,
-            'threshold': threshold,
-            'liquidity_tier': liquidity_tier,
-            'reason': _get_decision_reason(
-                combined_confidence, threshold, liquidity_tier, ml_confidence
-            )
-        }
-
-        return decision
-
-
-def _get_decision_reason(confidence: float, threshold: float, tier: str, ml_conf: float) -> str:
-    """Generate human-readable reason for signal decision."""
-    if confidence < threshold:
-        gap = threshold - confidence
-        return f"Confidence {confidence:.0f} below threshold {threshold} (gap: {gap:.0f}). ML skeptical ({ml_conf:.0f}%)"
-    else:
-        gap = confidence - threshold
-        return f"Confidence {confidence:.0f} above threshold {threshold} (margin: {gap:.0f}). ML supports ({ml_conf:.0f}%)"
+    def score_signal(self, signal: dict) -> dict:
+        vector = signal.get("ml_feature_vector")
+        if vector is None:
+            return {
+                "available": False,
+                "confidence": None,
+                "reason": "signal does not contain a point-in-time feature vector",
+                "model_version": None,
+            }
+        return self.ml_generator.predict_feature_vector(vector)

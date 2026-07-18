@@ -2,12 +2,22 @@
 Configuration settings for Gold Signal Fetcher AI-Assisted System C
 """
 
+import json
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv(Path(__file__).parent.parent / '.env')
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(PROJECT_ROOT / '.env')
+
+STRATEGY_CONFIG_PATH = Path(
+    os.getenv('GOLD_STRATEGY_CONFIG', PROJECT_ROOT / 'config' / 'gold_strategy_params.json')
+)
+try:
+    STRATEGY_CONFIG = json.loads(STRATEGY_CONFIG_PATH.read_text())
+except (OSError, json.JSONDecodeError):
+    STRATEGY_CONFIG = {}
 
 # Timezone
 TIMEZONE = os.getenv('LOCAL_TIMEZONE', 'Europe/Rome')
@@ -27,7 +37,10 @@ METAAPI_ACCOUNT_ID = os.getenv('METAAPI_ACCOUNT_ID')
 
 # ML Model Configuration
 ML_CONFIDENCE_THRESHOLD = float(os.getenv('ML_CONFIDENCE_THRESHOLD', '0.35'))
-ML_MODEL_PATH = Path(__file__).parent.parent / 'models' / 'xgboost_gold_model_v2.pkl'
+ML_MODEL_PATH = Path(os.getenv('ML_MODEL_PATH', PROJECT_ROOT / 'models' / 'xgboost_gold_model_v2.pkl'))
+ML_MODEL_METADATA_PATH = Path(
+    os.getenv('ML_MODEL_METADATA_PATH', PROJECT_ROOT / 'models' / 'xgboost_gold_model_v2.metadata.json')
+)
 
 # Risk Management
 RISK_PER_TRADE_PCT = float(os.getenv('RISK_PER_TRADE_PCT', '1.0'))
@@ -42,11 +55,21 @@ GOLD_MODE = os.getenv('GOLD_MODE', 'true').lower() == 'true'
 
 # Logging
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
-LOG_FILE = Path('/var/log/gold_scanner_ai.log')
+LOG_FILE = Path(os.getenv('LOG_FILE', PROJECT_ROOT / 'logs' / 'gold_scanner_ai.log'))
 
 # CSV Paths
-PAPER_TRADES_CSV = Path(__file__).parent.parent / 'data' / 'paper_trades_ai.csv'
-SYSTEM_A_CSV = Path('/root/Gold_Signal_Fetcher/data/paper_trades.csv')
+PAPER_TRADES_CSV = Path(os.getenv('PAPER_TRADES_CSV', PROJECT_ROOT / 'data' / 'paper_trades_ai.csv'))
+SYSTEM_A_CSV = Path(os.getenv('SYSTEM_A_CSV', '/root/Gold_Signal_Fetcher/data/paper_trades.csv'))
+TRADINGVIEW_SNAPSHOT_PATH = Path(
+    os.getenv('TRADINGVIEW_SNAPSHOT_PATH', '/tmp/tradingview_snapshot.json')
+)
+MACRO_SNAPSHOT_PATH = Path(os.getenv('MACRO_SNAPSHOT_PATH', '/tmp/gold_macro_snapshot.json'))
+SNAPSHOT_MAX_AGE_SECONDS = int(os.getenv('SNAPSHOT_MAX_AGE_SECONDS', '900'))
+
+
+def strategy_value(section: str, key: str, default):
+    """Read a strategy setting while keeping environment-safe defaults."""
+    return STRATEGY_CONFIG.get(section, {}).get(key, default)
 
 # Validation
 def validate_settings():

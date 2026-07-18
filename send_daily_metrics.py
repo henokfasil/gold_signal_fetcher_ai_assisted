@@ -11,10 +11,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Load env
-load_dotenv("/root/gold_signal_fetcher_ai_assisted/.env")
+from config import settings
+load_dotenv(settings.PROJECT_ROOT / ".env")
 
 # Import notifier
-sys.path.insert(0, "/root/gold_signal_fetcher_ai_assisted")
+sys.path.insert(0, str(settings.PROJECT_ROOT))
 from agent.notifier import Notifier
 
 def get_metrics(csv_path, is_system_a=False):
@@ -28,7 +29,9 @@ def get_metrics(csv_path, is_system_a=False):
             return {'status': 'No trades yet', 'signals': 0, 'wins': 0, 'losses': 0}
 
         # Handle different column names
-        pnl_col = 'pnl' if 'pnl' in df.columns else 'profit_pct'
+        is_system_c = 'candidate_id' in df.columns
+        pnl_col = 'pnl_usd' if is_system_c else 'profit_pct'
+        df[pnl_col] = pd.to_numeric(df[pnl_col], errors='coerce').fillna(0)
 
         # Filter out blocked signals (System A only)
         if is_system_a and 'status' in df.columns:
@@ -37,9 +40,16 @@ def get_metrics(csv_path, is_system_a=False):
         if df.empty:
             return {'status': 'No executed trades', 'signals': 0, 'wins': 0, 'losses': 0}
 
-        wins = df[df[pnl_col] > 0]
-        losses = df[df[pnl_col] < 0]
-        total = len(df)
+        if is_system_c:
+            executed = df[df['status'].isin(['OPEN', 'WIN', 'LOSS', 'EXPIRED'])]
+            closed = executed[executed['status'].isin(['WIN', 'LOSS', 'EXPIRED'])]
+            wins = closed[closed['status'] == 'WIN']
+            losses = closed[closed['status'] == 'LOSS']
+            total = len(executed)
+        else:
+            wins = df[df[pnl_col] > 0]
+            losses = df[df[pnl_col] < 0]
+            total = len(df)
 
         win_rate = (len(wins) / total * 100) if total > 0 else 0
         total_pnl = df[pnl_col].sum()
@@ -59,8 +69,8 @@ def get_metrics(csv_path, is_system_a=False):
 if __name__ == "__main__":
     try:
         # Get metrics
-        a_metrics = get_metrics("/root/Gold_Signal_Fetcher/data/paper_trades.csv", is_system_a=True)
-        c_metrics = get_metrics("/root/gold_signal_fetcher_ai_assisted/data/paper_trades_ai.csv")
+        a_metrics = get_metrics(settings.SYSTEM_A_CSV, is_system_a=True)
+        c_metrics = get_metrics(settings.PAPER_TRADES_CSV)
 
         # Send via notifier
         notifier = Notifier(
