@@ -29,6 +29,11 @@ Current research state at handoff:
   candidates after cooldown/risk gates. It returns -0.41%, profit factor 0.999
   and maximum drawdown 34.55%. BUY contributes +$1,396.99; SELL contributes
   -$1,437.82. This is a rejected development result, not an edge.
+- Overlap-aware evidence reduces the 11,843 eligible labels to Kish effective
+  sample size about 5,478 (summed uniqueness about 2,898). BUY-only returns
+  +22.53% developmentally, but its weekly-bootstrap 95% interval includes a
+  large loss (-28.09% to +80.77%) and drawdown is 25.25%. SELL-only returns
+  -14.72%. Liquidity sweep is only a forward hypothesis; it is not validated.
 - Runtime paper controls now use a four-hour same-direction/nearby-entry
   cooldown and account-level realized-USD daily/weekly loss caps.
 - Historical 2020-2026 results have influenced research decisions and can

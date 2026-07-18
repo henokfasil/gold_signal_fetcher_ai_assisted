@@ -19,6 +19,7 @@ from dashboard import get_feed_health
 from main_orchestrator import AIAssistedOrchestrator, ForwardFeatureJournal, ForwardOutcomeJournal
 from research.build_historical_dataset import label_candidate, load_ohlcv
 from research.simulate_portfolio import simulate
+from research.analyze_research_evidence import label_uniqueness, weekly_block_bootstrap
 
 
 class FakeClaude:
@@ -33,6 +34,25 @@ class FakeClaude:
 
 
 class ResearchPipelineTests(unittest.TestCase):
+    def test_label_uniqueness_discounts_overlapping_outcomes(self):
+        frame = pd.DataFrame({
+            "timestamp": ["2026-01-02T10:00:00Z", "2026-01-02T10:15:00Z"],
+            "exit_time": ["2026-01-02T10:30:00Z", "2026-01-02T10:30:00Z"],
+        })
+        weights, report = label_uniqueness(frame)
+        self.assertLess(weights.iloc[1], weights.iloc[0])
+        self.assertLess(report["sum_uniqueness"], 2)
+        self.assertEqual(report["max_label_concurrency"], 2)
+
+    def test_weekly_bootstrap_is_deterministic(self):
+        opened = pd.DataFrame({
+            "exit_time": ["2026-01-02T10:00:00Z", "2026-01-09T10:00:00Z"],
+            "pnl_usd": [10.0, -5.0],
+        })
+        first = weekly_block_bootstrap(opened, samples=50, seed=7)
+        second = weekly_block_bootstrap(opened, samples=50, seed=7)
+        self.assertEqual(first, second)
+
     def test_portfolio_simulator_enforces_setup_cooldown(self):
         rows = pd.DataFrame([
             {"timestamp": "2026-01-02T10:00:00Z", "exit_time": "2026-01-02T11:00:00Z",

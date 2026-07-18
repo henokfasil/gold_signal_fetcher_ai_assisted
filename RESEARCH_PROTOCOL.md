@@ -102,3 +102,24 @@ $10,000 starting paper capital and $5,000 fixed notional per position:
 This is a rejection, not an edge. The near-flat ending return does not excuse
 the unacceptable path drawdown, and SELL offsets BUY. Results remain
 development-only because the period influenced the research design.
+
+## Direction, dependence and ablation diagnostic
+
+`research/analyze_research_evidence.py` reproduces direction-only portfolios,
+label-interval uniqueness, deterministic weekly block bootstraps and fixed SMC
+variant comparisons. Current development findings:
+
+- 11,843 eligible labels have Kish effective sample size about 5,478, summed
+  uniqueness about 2,898 and maximum label concurrency 50;
+- BUY-only: +22.53%, PF 1.13, maximum drawdown 25.25%; weekly-bootstrap 95%
+  return interval is -28.09% to +80.77%, so positive expectancy is not
+  established;
+- SELL-only: -14.72%, PF 0.90, maximum drawdown 38.28%; it remains shadow-only;
+- structure + liquidity sweep: +34.40%, PF 1.15, drawdown 19.26%, but only 3/6
+  positive years and selected from contaminated development history;
+- order-block, FVG and CHoCH filtered variants have negative total development
+  returns.
+
+Liquidity sweep is therefore a registered forward hypothesis, not an accepted
+edge. The bootstrap lower bound is negative, BUY drawdown remains excessive and
+no ablation result authorizes ML training or approval.
