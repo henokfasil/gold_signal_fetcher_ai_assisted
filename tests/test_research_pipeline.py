@@ -16,7 +16,7 @@ from agent.smc_gold_scanner import (
     detect_bos_down,
 )
 from dashboard import get_feed_health
-from main_orchestrator import AIAssistedOrchestrator, ForwardFeatureJournal
+from main_orchestrator import AIAssistedOrchestrator, ForwardFeatureJournal, ForwardOutcomeJournal
 from research.build_historical_dataset import label_candidate, load_ohlcv
 
 
@@ -63,6 +63,20 @@ class ResearchPipelineTests(unittest.TestCase):
             row = pd.read_csv(path).iloc[0]
             self.assertEqual(row["candidate_id"], "ABC")
             self.assertEqual(row["direction_encoded"], len(names) - 1)
+
+    def test_rejected_candidate_can_receive_shadow_outcome(self):
+        with tempfile.TemporaryDirectory() as directory:
+            journal = ForwardOutcomeJournal(Path(directory) / "outcomes.csv")
+            signal = {"direction": "SELL", "entry": 100, "stop_loss": 102,
+                      "take_profit": 96}
+            started = datetime(2026, 1, 2, 10, 0, tzinfo=timezone.utc)
+            journal.append("ABC", started.isoformat(), signal)
+            updated = journal.update({"high": 101, "low": 95, "close": 97},
+                                     started + timedelta(minutes=15))
+            row = journal.load().iloc[0]
+            self.assertEqual(updated, 1)
+            self.assertEqual(row["status"], "TP")
+            self.assertEqual(row["label_profitable"], "1")
 
     def test_dashboard_reports_healthy_complete_snapshot_without_network(self):
         with tempfile.TemporaryDirectory() as directory:

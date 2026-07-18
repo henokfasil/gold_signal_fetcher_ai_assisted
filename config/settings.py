@@ -71,6 +71,11 @@ PAPER_TRADES_CSV = Path(os.getenv('PAPER_TRADES_CSV', PROJECT_ROOT / 'data' / 'p
 FORWARD_FEATURES_CSV = Path(
     os.getenv('FORWARD_FEATURES_CSV', PROJECT_ROOT / 'data' / 'forward_candidate_features.csv')
 )
+FORWARD_OUTCOMES_CSV = Path(
+    os.getenv('FORWARD_OUTCOMES_CSV', PROJECT_ROOT / 'data' / 'forward_candidate_outcomes.csv')
+)
+RESEARCH_SPREAD_POINTS = float(os.getenv('RESEARCH_SPREAD_POINTS', '0.35'))
+RESEARCH_SLIPPAGE_POINTS = float(os.getenv('RESEARCH_SLIPPAGE_POINTS', '0.10'))
 SYSTEM_A_CSV = Path(os.getenv('SYSTEM_A_CSV', '/root/Gold_Signal_Fetcher/data/paper_trades.csv'))
 TRADINGVIEW_SNAPSHOT_PATH = Path(
     os.getenv('TRADINGVIEW_SNAPSHOT_PATH', '/tmp/tradingview_snapshot.json')

@@ -205,7 +205,9 @@ labels in chronological train/test partitions.
 
 Forward collection writes exact candidate-time features to
 `data/forward_candidate_features.csv` and outcomes to
-`data/paper_trades_ai.csv`. Export matured joins with:
+`data/forward_candidate_outcomes.csv`. This shadow ledger follows every SMC
+candidate—including candidates rejected by unavailable ML or Claude—without
+approving a paper trade or sending Telegram. Export matured joins with:
 
 ```bash
 python -m research.export_forward_dataset data/research/forward_matured.csv

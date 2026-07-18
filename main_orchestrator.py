@@ -135,12 +135,88 @@ class ForwardFeatureJournal:
             writer.writerow(row)
 
 
+class ForwardOutcomeJournal:
+    """Shadow-label every candidate; this never approves or executes a trade."""
+
+    COLUMNS = ["candidate_id", "candidate_time", "direction", "entry", "stop_loss",
+               "take_profit", "status", "exit_time", "exit_price", "label_profitable",
+               "net_return_pct", "label_note"]
+
+    def __init__(self, path=settings.FORWARD_OUTCOMES_CSV):
+        self.path = path
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+
+    def load(self) -> pd.DataFrame:
+        if not self.path.exists() or self.path.stat().st_size == 0:
+            return pd.DataFrame(columns=self.COLUMNS)
+        frame = pd.read_csv(self.path, dtype=str).fillna("")
+        for column in self.COLUMNS:
+            if column not in frame:
+                frame[column] = ""
+        return frame[self.COLUMNS]
+
+    def append(self, candidate_id: str, timestamp: str, signal: dict) -> None:
+        exists = self.path.exists() and self.path.stat().st_size > 0
+        with self.path.open("a", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=self.COLUMNS)
+            if not exists:
+                writer.writeheader()
+            writer.writerow({"candidate_id": candidate_id, "candidate_time": timestamp,
+                             "direction": signal["direction"], "entry": signal["entry"],
+                             "stop_loss": signal["stop_loss"], "take_profit": signal["take_profit"],
+                             "status": "TRACKING", "label_note": "SHADOW_RESEARCH_ONLY"})
+
+    def update(self, bar: dict, bar_time: datetime) -> int:
+        frame = self.load()
+        tracking = frame[frame["status"] == "TRACKING"]
+        if tracking.empty:
+            return 0
+        high, low, close = map(float, (bar["high"], bar["low"], bar["close"]))
+        cost = settings.RESEARCH_SPREAD_POINTS + 2 * settings.RESEARCH_SLIPPAGE_POINTS
+        updated = 0
+        for index, row in tracking.iterrows():
+            candidate_time = parse_utc(row["candidate_time"])
+            if bar_time <= candidate_time:
+                continue
+            direction = row["direction"]
+            entry, stop, target = map(float, (row["entry"], row["stop_loss"], row["take_profit"]))
+            hit_tp = high >= target if direction == "BUY" else low <= target
+            hit_sl = low <= stop if direction == "BUY" else high >= stop
+            status = exit_price = note = None
+            if hit_tp and hit_sl:
+                status, note = "AMBIGUOUS", "TP_AND_SL_IN_SAME_15M_BAR"
+            elif hit_tp:
+                status, exit_price, note = "TP", target, "BARRIER_OBSERVED_15M"
+            elif hit_sl:
+                status, exit_price, note = "SL", stop, "BARRIER_OBSERVED_15M"
+            elif bar_time - candidate_time >= timedelta(hours=settings.TRADE_EXPIRY_HOURS):
+                status, exit_price, note = "EXPIRY", close, "TIME_EXPIRY_15M_CLOSE"
+            if status is None:
+                continue
+            frame.at[index, "status"] = status
+            frame.at[index, "exit_time"] = bar_time.isoformat()
+            frame.at[index, "label_note"] = note
+            if exit_price is not None:
+                gross = exit_price - entry if direction == "BUY" else entry - exit_price
+                net = gross - cost
+                frame.at[index, "exit_price"] = f"{exit_price:.5f}"
+                frame.at[index, "net_return_pct"] = f"{net / entry * 100:.8f}"
+                frame.at[index, "label_profitable"] = "1" if net > 0 else "0"
+            updated += 1
+        if updated:
+            temp = self.path.with_suffix(self.path.suffix + ".tmp")
+            frame.to_csv(temp, index=False)
+            temp.replace(self.path)
+        return updated
+
+
 class AIAssistedOrchestrator:
     def __init__(self):
         if not settings.PAPER_TRADING:
             raise RuntimeError("System C is research-only: PAPER_TRADING must remain true")
         self.ledger = PaperLedger()
         self.forward_features = ForwardFeatureJournal()
+        self.forward_outcomes = ForwardOutcomeJournal()
         self.ml_filter = MLSignalFilter()
         self.correlation = GoldCorrelationValidator()
         self.ai_decider = AITradingDecider()
@@ -166,6 +242,27 @@ class AIAssistedOrchestrator:
             return float(bars[-1]["close"]), "fresh TradingView 15M close"
         except (KeyError, ValueError, TypeError, OSError, json.JSONDecodeError) as exc:
             return None, f"invalid price snapshot: {exc}"
+
+    def update_forward_outcomes(self) -> int:
+        """Replay all completed snapshot bars newer than tracked candidates."""
+        try:
+            payload = json.loads(settings.TRADINGVIEW_SNAPSHOT_PATH.read_text())
+            captured_at = parse_utc(payload["captured_at"])
+            updated = 0
+            for bar in payload["timeframes"]["15M"]["bars"]:
+                raw_time = bar["time"]
+                open_time = (datetime.fromtimestamp(float(raw_time), tz=timezone.utc)
+                             if isinstance(raw_time, (int, float)) or str(raw_time).isdigit()
+                             else parse_utc(str(raw_time)))
+                close_time = open_time + timedelta(minutes=15)
+                # TradingView includes the currently forming bar. Never label
+                # from it because its high/low are not final yet.
+                if close_time <= captured_at:
+                    updated += self.forward_outcomes.update(bar, close_time)
+            return updated
+        except (OSError, KeyError, ValueError, TypeError, json.JSONDecodeError) as exc:
+            logger.warning("Forward shadow outcomes not updated: %s", exc)
+            return 0
 
     def update_open_trades(self) -> int:
         """Apply observation-time exits while recording their limited precision."""
@@ -283,11 +380,13 @@ class AIAssistedOrchestrator:
             "notional_usd": base_notional, "paper_trading": True,
         })
         self.forward_features.append(candidate_id, timestamp, signal)
+        self.forward_outcomes.append(candidate_id, timestamp, signal)
         return candidate_id
 
     def run_scan(self):
         logger.info("[ORCHESTRATOR] Research paper-trading scan started")
         self.update_open_trades()
+        self.update_forward_outcomes()
         session = get_session_description()
         if is_market_closed():
             logger.info("[ORCHESTRATOR] Market closed")
