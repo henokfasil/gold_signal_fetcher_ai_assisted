@@ -143,6 +143,10 @@ def main():
     parser.add_argument("--slippage-points", type=float, default=0.10)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    # The live scanner emits several INFO lines per decision. Historical replay
+    # can contain 100k+ decision points, so retain warnings and periodic builder
+    # progress without producing gigabytes of logs.
+    logging.getLogger("agent.smc_gold_scanner").setLevel(logging.WARNING)
     source = load_ohlcv(args.input, args.timestamp_is)
     result = build(source, args.scan_minutes, args.expiry_hours, args.spread_points, args.slippage_points)
     args.output.parent.mkdir(parents=True, exist_ok=True)
