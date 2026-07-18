@@ -13,15 +13,19 @@ an approved paper trade.
 The previous documentation called the system “production ready.” That claim
 was removed after a code audit found disconnected and placeholder components.
 
-Current VPS facts as of 2026-07-18:
+Canonical VPS facts as of 2026-07-18:
 
-- The previously documented `/root/gold_signal_fetcher_ai_assisted` directory
-  was absent.
-- System A and System C scanner cron entries had been deliberately paused on
-  2026-07-10 for CPU reasons.
-- The older System A dashboard remained active on port 8501.
-- Deployment of this revision must remain stopped until local and VPS
-  verification pass. Do not silently unpause an operator-paused cron entry.
+- Canonical host: `187.55.229.4` (`srv1831821`).
+- Dashboard: `http://187.55.229.4:8502/` via
+  `gold-signal-fetcher.service`.
+- Repository: `/root/gold_signal_fetcher_ai_assisted`.
+- Scheduled paper scanner: `ops/run_gold_scanner_ai.sh` through cron.
+- The former host `72.60.133.179` is not the canonical deployment and must
+  remain inactive for System C.
+- Before this revision, the migrated VPS had local changes using Yahoo Finance
+  `GC=F`. That is a gold-futures proxy rather than broker XAUUSD, and its 4H and
+  15M interval adaptation was incomplete. System C now uses the configured
+  MetaApi/MT5 account for point-in-time XAUUSD candles.
 
 ## What “edge” means
 
