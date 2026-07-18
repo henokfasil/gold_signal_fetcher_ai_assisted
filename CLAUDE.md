@@ -153,6 +153,8 @@ forward paper trading and stable performance across regimes.
 - Never commit `.env`, API keys, Telegram tokens or account identifiers.
 - Preserve the paper ledger before deployment or schema migration.
 - Use a non-overlapping lock around scheduled runs.
+- The canonical wrapper is `ops/run_gold_scanner_ai.sh`; it uses `flock`,
+  forces `PAPER_TRADING=true`, and writes logs inside the project by default.
 - Keep System C stopped after deployment if resource or integrity checks fail.
 - Production deployment and strategy profitability are separate acceptance
   decisions.
