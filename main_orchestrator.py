@@ -274,17 +274,23 @@ class ForwardOutcomeJournal:
             close = float(bar[f"{side}_close"] if has_quotes else bar["close"])
             cost = (2 * settings.RESEARCH_SLIPPAGE_POINTS if has_quotes else
                     settings.RESEARCH_SPREAD_POINTS + 2 * settings.RESEARCH_SLIPPAGE_POINTS)
-            hit_tp = high >= target if direction == "BUY" else low <= target
-            hit_sl = low <= stop if direction == "BUY" else high >= stop
             status = exit_price = note = None
-            if hit_tp and hit_sl:
-                status, note = "AMBIGUOUS", "TP_AND_SL_IN_SAME_15M_BAR"
-            elif hit_tp:
-                status, exit_price, note = "TP", target, "BARRIER_OBSERVED_15M"
-            elif hit_sl:
-                status, exit_price, note = "SL", stop, "BARRIER_OBSERVED_15M"
-            elif bar_time - candidate_time >= timedelta(hours=settings.TRADE_EXPIRY_HOURS):
-                status, exit_price, note = "EXPIRY", close, "TIME_EXPIRY_15M_CLOSE"
+            cutoff = candidate_time + timedelta(hours=settings.TRADE_EXPIRY_HOURS)
+            if bar_time > cutoff:
+                status, exit_price, note = (
+                    "EXPIRY", close, "FIRST_EXECUTABLE_CLOSE_AFTER_EXPIRY"
+                )
+            else:
+                hit_tp = high >= target if direction == "BUY" else low <= target
+                hit_sl = low <= stop if direction == "BUY" else high >= stop
+                if hit_tp and hit_sl:
+                    status, note = "AMBIGUOUS", "TP_AND_SL_IN_SAME_15M_BAR"
+                elif hit_tp:
+                    status, exit_price, note = "TP", target, "BARRIER_OBSERVED_15M"
+                elif hit_sl:
+                    status, exit_price, note = "SL", stop, "BARRIER_OBSERVED_15M"
+                elif bar_time >= cutoff:
+                    status, exit_price, note = "EXPIRY", close, "TIME_EXPIRY_15M_CLOSE"
             if status is None:
                 continue
             frame.at[index, "status"] = status
@@ -310,7 +316,7 @@ class ForwardOutcomeJournal:
 class ForwardVariantJournal:
     """Append-only membership in the hash-locked prospective shadow test."""
 
-    EXPECTED_CONTRACT_SHA256 = "8e7e6155b89fb893cc1b12218229a8f1e5f0f5ce87f682465278642f2bd75a83"
+    EXPECTED_CONTRACT_SHA256 = "1af9f22e4fe21bacbc6766d85911a65c206fb857a512c782888133b8c1dfdcba"
     COLUMNS = [
         "candidate_id", "timestamp", "experiment_version", "contract_sha256",
         "strategy_config_version", "feature_schema_sha256", "ml_model_version",
@@ -344,7 +350,12 @@ class ForwardVariantJournal:
             source.get("provider") == "dukascopy-public" and
             source.get("symbol") == "DUKASCOPY:XAUUSD" and
             source.get("forming_candles_excluded") is True and
+            source.get("target_version") == "bid_ask_fixed_clock_v1" and
             int(common.get("outcome_expiry_hours", -1)) == settings.TRADE_EXPIRY_HOURS and
+            common.get("outcome_horizon_semantics") == (
+                "fixed UTC clock hours; first executable close at/after cutoff"
+            ) and
+            common.get("post_cutoff_bar_range_used_for_barrier") is False and
             common.get("bid_ask_spread_source") == "observed Dukascopy executable-side candles" and
             common.get("midpoint_fallback_permitted") is False and
             float(common.get("slippage_points_per_side", -1)) == settings.RESEARCH_SLIPPAGE_POINTS and
@@ -356,16 +367,31 @@ class ForwardVariantJournal:
                 set(contract.get("variants", {})) != required_variants or
                 contract.get("lineage", {}).get("feature_schema_sha256") != feature_schema_sha256 or
                 not runtime_contract_matches or stopping.get("design") != "fixed-horizon-no-peek-pilot" or
+                not stopping.get("assignment_cutoff_at_utc") or
+                not stopping.get("evaluate_once_at_utc") or
                 stopping.get("interim_performance_evaluation_permitted") is not False or
                 stopping.get("confirmation_claim_permitted") is not False or
                 contract.get("isolation", {}).get("may_approve_paper_trade") is not False or
                 contract.get("isolation", {}).get("may_send_telegram") is not False):
             raise RuntimeError("shadow experiment contract violates frozen research rules or runtime settings")
+        try:
+            self.assignment_cutoff = parse_utc(stopping["assignment_cutoff_at_utc"])
+            evaluation_at = parse_utc(stopping["evaluate_once_at_utc"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise RuntimeError("shadow experiment has invalid fixed timestamps") from exc
+        if evaluation_at <= self.assignment_cutoff:
+            raise RuntimeError("shadow experiment evaluation must follow assignment cutoff")
         self.contract = contract
         self.contract_sha256 = digest
 
     def append(self, candidate_id: str, timestamp: str, signal: dict,
                decision: dict = None) -> None:
+        if parse_utc(timestamp) > self.assignment_cutoff:
+            logger.info(
+                "Shadow assignment skipped after frozen cutoff: %s (%s)",
+                candidate_id, self.assignment_cutoff.isoformat(),
+            )
+            return
         decision = decision or {}
         direction = str(signal.get("direction", "")).upper()
         variants = self.contract["variants"]

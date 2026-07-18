@@ -1,0 +1,37 @@
+{
+  "starting_capital": 10000.0,
+  "ending_capital": 9766.981092881022,
+  "net_pnl_usd": -233.01890711897795,
+  "return_pct": -2.330189071189781,
+  "opened": 2702,
+  "rejected": 38090,
+  "max_concurrent": 11,
+  "max_drawdown_pct": 36.42310710984067,
+  "profit_factor": 0.9924393066918834,
+  "by_direction": {
+    "BUY": {
+      "trades": 1463,
+      "win_rate": 0.28161312371838687,
+      "pnl_usd": 1576.1028711134481,
+      "mean_net_return_pct": 0.021546177322125073
+    },
+    "SELL": {
+      "trades": 1239,
+      "win_rate": 0.24455205811138014,
+      "pnl_usd": -1809.1217782324225,
+      "mean_net_return_pct": -0.029202934273324016
+    }
+  },
+  "rejection_reasons": {
+    "SETUP_COOLDOWN": 30579,
+    "MIN_RR_NOT_MET": 7426,
+    "UNMATURED_OR_AMBIGUOUS": 45,
+    "WEEKLY_LOSS_CAP": 25,
+    "DAILY_LOSS_CAP": 15
+  },
+  "limitations": [
+    "Development history, not untouched evidence.",
+    "Fixed paper notional; no broker execution or financing costs.",
+    "Portfolio outcomes use Dukascopy historical bid/ask labels."
+  ]
+}

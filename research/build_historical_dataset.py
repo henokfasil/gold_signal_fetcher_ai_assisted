@@ -66,7 +66,7 @@ def resample_closed_bars(source: pd.DataFrame, rule: str) -> pd.DataFrame:
 
 def label_candidate(signal: dict, future: pd.DataFrame, expiry_hours: int,
                     spread_points: float, slippage_points: float,
-                    decision_bar: pd.Series = None) -> dict:
+                    decision_bar: pd.Series = None, candidate_time=None) -> dict:
     direction = signal["direction"]
     entry, stop, target = map(float, (signal["price"], signal["stop_loss"], signal["take_profit"]))
     has_quotes = (decision_bar is not None and
@@ -80,7 +80,21 @@ def label_candidate(signal: dict, future: pd.DataFrame, expiry_hours: int,
         side = "bid" if direction == "BUY" else "ask"
     else:
         executable_entry, cost, side = entry, float(spread_points) + 2.0 * float(slippage_points), None
-    horizon = future.iloc[: max(1, expiry_hours * 4)]
+    if candidate_time is None:
+        # Compatibility for callers without an explicit decision time. Dataset
+        # construction always supplies candidate_time and uses clock time.
+        horizon = future.iloc[: max(1, expiry_hours * 4)]
+        expiry_bar = horizon.iloc[-1:] if not horizon.empty else horizon
+    else:
+        decision_time = pd.Timestamp(candidate_time)
+        decision_time = (decision_time.tz_localize("UTC") if decision_time.tz is None
+                         else decision_time.tz_convert("UTC"))
+        cutoff = decision_time + pd.Timedelta(hours=expiry_hours)
+        # Barrier monitoring ends at the fixed UTC cutoff. When the market is
+        # closed then, liquidation uses the first executable close afterward
+        # without using that post-cutoff candle's range to invent a TP or SL.
+        horizon = future.loc[future.index <= cutoff]
+        expiry_bar = future.loc[future.index >= cutoff].iloc[:1]
     for timestamp, bar in horizon.iterrows():
         high = bar[f"{side}_high"] if side else bar["high"]
         low = bar[f"{side}_low"] if side else bar["low"]
@@ -97,14 +111,14 @@ def label_candidate(signal: dict, future: pd.DataFrame, expiry_hours: int,
                     "label_status": "TP" if hit_tp else "SL", "exit_time": timestamp.isoformat(),
             "net_return_pct": net_points / executable_entry * 100,
             "execution_label_source": "BID_ASK" if has_quotes else "MIDPOINT_COST_ASSUMPTION"}
-    if horizon.empty:
+    if expiry_bar.empty:
         return {"label_profitable": np.nan, "label_status": "UNMATURED",
                 "exit_time": "", "net_return_pct": np.nan}
-    exit_price = float(horizon.iloc[-1][f"{side}_close"] if side else horizon.iloc[-1]["close"])
+    exit_price = float(expiry_bar.iloc[0][f"{side}_close"] if side else expiry_bar.iloc[0]["close"])
     gross_points = exit_price - executable_entry if direction == "BUY" else executable_entry - exit_price
     net_points = gross_points - cost
     return {"label_profitable": int(net_points > 0), "label_status": "EXPIRY",
-            "exit_time": horizon.index[-1].isoformat(), "net_return_pct": net_points / executable_entry * 100,
+            "exit_time": expiry_bar.index[0].isoformat(), "net_return_pct": net_points / executable_entry * 100,
             "execution_label_source": "BID_ASK" if has_quotes else "MIDPOINT_COST_ASSUMPTION"}
 
 
@@ -140,7 +154,10 @@ def build(source: pd.DataFrame, scan_minutes: int = 15, expiry_hours: int = 48,
         decision_bar = source.loc[as_of]
         if isinstance(decision_bar, pd.DataFrame):
             decision_bar = decision_bar.iloc[-1]
-        label = label_candidate(signal, future, expiry_hours, spread_points, slippage_points, decision_bar)
+        label = label_candidate(
+            signal, future, expiry_hours, spread_points, slippage_points,
+            decision_bar, candidate_time=as_of,
+        )
         row = {"timestamp": as_of.isoformat(), "pair": "OANDA:XAUUSD",
                "direction": signal["direction"], "entry": signal["price"],
                "stop_loss": signal["stop_loss"], "take_profit": signal["take_profit"],
@@ -178,6 +195,7 @@ def main():
                 "timestamp_semantics": args.timestamp_is, "scan_minutes": args.scan_minutes,
                 "expiry_hours": args.expiry_hours, "spread_points": args.spread_points,
                 "slippage_points_per_side": args.slippage_points,
+                "horizon_semantics": "fixed UTC clock hours; first executable close at/after cutoff",
                 "ambiguous_rows": int((result.get("label_status") == "AMBIGUOUS_SAME_BAR").sum()) if len(result) else 0,
                 "warning": "Research labels from 15-minute OHLC; same-bar TP/SL ordering is excluded."}
     args.output.with_suffix(args.output.suffix + ".manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")

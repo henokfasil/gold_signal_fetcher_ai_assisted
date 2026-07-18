@@ -214,7 +214,8 @@ def get_shadow_variants(assignments_path=None, outcomes_path=None, contract_path
     result = {
         "status": "FROZEN · COLLECTING", "status_class": "warn",
         "experiment": "—", "frozen_at": "—", "first_assignment": "Awaiting first candidate",
-        "evaluation_at": "—", "purpose": "Pilot diagnostics; no edge claim",
+        "assignment_cutoff": "—", "evaluation_at": "—",
+        "purpose": "Pilot diagnostics; no edge claim",
         "baseline_assigned": 0, "baseline_eligible": 0, "baseline_matured": 0,
         "liquidity_assigned": 0, "liquidity_eligible": 0, "liquidity_matured": 0,
         "effect": "None — research only",
@@ -224,6 +225,8 @@ def get_shadow_variants(assignments_path=None, outcomes_path=None, contract_path
         result["experiment"] = contract["experiment_version"]
         result["frozen_at"] = str(contract["frozen_at_utc"]).replace("T", " ").replace("Z", " UTC")
         stopping = contract.get("stopping_rule", {})
+        result["assignment_cutoff"] = str(stopping.get("assignment_cutoff_at_utc", "—")).replace(
+            "T", " ").replace("Z", " UTC")
         result["evaluation_at"] = str(stopping.get("evaluate_once_at_utc", "—")).replace(
             "T", " ").replace("Z", " UTC")
         result["purpose"] = contract.get("pilot_purpose", result["purpose"])
@@ -288,7 +291,7 @@ TEMPLATE = """
 
 <section class="panel"><div class="panel-head"><h2>Prospective Shadow Variants</h2><span class="pill {{ variants.status_class }}">{{ variants.status }}</span></div>
 <div class="grid">
-{% for label,value in [('Experiment',variants.experiment),('Frozen at',variants.frozen_at),('Evaluate once at',variants.evaluation_at),('Purpose',variants.purpose),('First assignment',variants.first_assignment),('Decision / Telegram effect',variants.effect),('Baseline assigned',variants.baseline_assigned),('Baseline R/R eligible',variants.baseline_eligible),('Baseline matured',variants.baseline_matured),('BUY + 1H sweep assigned',variants.liquidity_assigned),('BUY + 1H sweep R/R eligible',variants.liquidity_eligible),('BUY + 1H sweep matured',variants.liquidity_matured)] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
+{% for label,value in [('Experiment',variants.experiment),('Frozen at',variants.frozen_at),('Assignment cutoff',variants.assignment_cutoff),('Evaluate once after maturity',variants.evaluation_at),('Purpose',variants.purpose),('First assignment',variants.first_assignment),('Decision / Telegram effect',variants.effect),('Baseline assigned',variants.baseline_assigned),('Baseline R/R eligible',variants.baseline_eligible),('Baseline matured',variants.baseline_matured),('BUY + 1H sweep assigned',variants.liquidity_assigned),('BUY + 1H sweep R/R eligible',variants.liquidity_eligible),('BUY + 1H sweep matured',variants.liquidity_matured)] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
 </div><div class="note">This fixed 26-week run is an underpowered no-peek pilot for plumbing, event rate, feed stability and variance estimation. It cannot by itself validate profitability. Membership is assigned once at candidate time and has no decision or Telegram effect.</div></section>
 
 <div class="capital"><div class="panel"><div class="label">Paper starting capital</div><div class="value">{{ m.starting_capital }}</div></div><div class="panel"><div class="label">Paper marked capital</div><div class="value">{{ m.current_capital }}</div></div><div class="panel"><div class="label">Realized paper P&amp;L</div><div class="value">{{ m.total_profit }} · {{ m.return_pct }}</div></div></div>

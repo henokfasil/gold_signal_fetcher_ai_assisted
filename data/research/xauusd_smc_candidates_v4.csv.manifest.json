@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "target_version": "bid_ask_fixed_clock_v1",
+  "candidate_source": "data/research/xauusd_smc_candidates_v3.csv",
+  "candidate_source_sha256": "8d0444dd86d10bb87f6532711b310c06753892afdb34bbe4a81600d0b045a77e",
+  "price_source": "data/raw/dukascopy_xauusd_15m_2020_2026.csv",
+  "price_source_sha256": "c61a27b37628972377aff01817a223631fb57253ddc5dcd217cf0a6f6d3ddeeb",
+  "dataset_sha256": "0b74895cbd58917e485043acaee470815b1149a7d1647a662d93f08cda919520",
+  "rows": 40792,
+  "expiry_hours_utc_clock": 48,
+  "expiry_execution": "first executable 15M close at/after cutoff",
+  "barrier_monitoring": "candidate close < bar close <= UTC cutoff",
+  "post_cutoff_bar_range_used_for_barrier": false,
+  "slippage_points_per_side": 0.1,
+  "spread": "observed bid/ask",
+  "alternative_horizons_hours": [
+    1,
+    4,
+    12,
+    48
+  ],
+  "ambiguous_rows": 156,
+  "unmatured_rows": 13,
+  "labels_over_48_clock_hours": 2945,
+  "max_label_duration_hours": 120.0,
+  "research_warning": "Candidate/feature design remains contaminated by inspected 2020-2026 history; new targets do not create an untouched test."
+}

@@ -84,14 +84,21 @@ def plan(path, effects=(.03, .05, .08), pilot_weeks=26, candidate_target=200):
         "test": "one-sided weekly-cluster-robust mean greater than zero, alpha=0.05",
         "target_power": .80,
         "historical_variance_reference": observed,
+        "power_at_fixed_pilot_for_historical_mean": projected_power(
+            observed["mean_net_return_pct"], observed, pilot_weeks
+        ),
+        "power_at_candidate_target_for_historical_mean": projected_power(
+            observed["mean_net_return_pct"], observed,
+            candidate_target / observed["average_candidates_per_week"],
+        ),
         "historical_portfolio_reference": portfolio,
         "effect_scenarios": scenarios,
         "recommendation": {
             "design": "fixed 26-week pilot with no interim outcome analysis",
             "purpose": "falsification and forward variance estimation, not guaranteed validation",
             "primary_cutoff_rule": (
-                "include candidates assigned at or before the fixed cutoff; allow 48 hours "
-                "for maturity; never extend because the observed result is inconvenient"
+                "include candidates assigned at or before the fixed cutoff; use the separately "
+                "fixed maturity-evaluation time; never extend because the result is inconvenient"
             ),
             "next_confirmation": (
                 "use pilot variance to preregister a separately versioned, adequately powered test"

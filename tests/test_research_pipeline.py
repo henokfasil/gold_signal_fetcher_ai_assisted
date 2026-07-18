@@ -25,6 +25,7 @@ from research.build_historical_dataset import label_candidate, load_ohlcv
 from research.export_forward_dataset import export
 from research.simulate_portfolio import simulate
 from research.analyze_research_evidence import label_uniqueness, weekly_block_bootstrap
+from research.relabel_candidate_targets import relabel
 
 
 class FakeClaude:
@@ -101,6 +102,50 @@ class ResearchPipelineTests(unittest.TestCase):
         self.assertEqual(label["execution_label_source"], "BID_ASK")
         self.assertAlmostEqual(label["net_return_pct"], (102 - 100.8 - .2) / 100.8 * 100)
 
+    def test_fixed_clock_expiry_ignores_post_cutoff_barrier_range(self):
+        decision_time = pd.Timestamp("2026-01-02T20:00:00Z")  # Friday
+        future = pd.DataFrame([
+            {"bid_high": 101, "bid_low": 99, "bid_close": 100,
+             "ask_high": 101.5, "ask_low": 99.5, "ask_close": 100.5},
+            # First executable close after the Sunday cutoff. Its high crosses
+            # TP, but the range is post-expiry and must not create a TP label.
+            {"bid_high": 103, "bid_low": 99, "bid_close": 101,
+             "ask_high": 103.5, "ask_low": 99.5, "ask_close": 101.5},
+        ], index=pd.DatetimeIndex([
+            "2026-01-02T20:15:00Z", "2026-01-04T22:15:00Z",
+        ]))
+        decision = pd.Series({"ask_close": 100.5, "bid_close": 100.0})
+        label = label_candidate(
+            {"direction": "BUY", "price": 100, "stop_loss": 98, "take_profit": 102},
+            future, 48, .35, .1, decision, candidate_time=decision_time,
+        )
+        self.assertEqual(label["label_status"], "EXPIRY")
+        self.assertEqual(label["exit_time"], "2026-01-04T22:15:00+00:00")
+
+    def test_relabel_targets_use_clock_horizons_and_executable_sides(self):
+        index = pd.DatetimeIndex([
+            "2026-01-02T20:00:00Z", "2026-01-02T20:15:00Z",
+            "2026-01-04T22:15:00Z",
+        ])
+        source = pd.DataFrame({
+            "bid_open": [100, 100, 100], "bid_high": [101, 101, 103],
+            "bid_low": [99, 99, 99], "bid_close": [100, 100, 101],
+            "ask_open": [100.5, 100.5, 100.5], "ask_high": [101.5, 101.5, 103.5],
+            "ask_low": [99.5, 99.5, 99.5], "ask_close": [100.5, 100.5, 101.5],
+        }, index=index)
+        candidates = pd.DataFrame([{
+            "timestamp": "2026-01-02T20:00:00Z", "direction": "BUY",
+            "entry": 100.25, "stop_loss": 98, "take_profit": 102,
+        }])
+        result = relabel(candidates, source).iloc[0]
+        self.assertEqual(result["label_status"], "EXPIRY")
+        self.assertEqual(result["execution_label_source"], "BID_ASK_FIXED_CLOCK")
+        self.assertAlmostEqual(result["executable_entry"], 100.5)
+        self.assertAlmostEqual(result["label_duration_hours"], 50.25)
+        self.assertAlmostEqual(
+            result["net_return_pct"], (101 - 100.5 - .2) / 100.5 * 100,
+        )
+
     def test_forward_journal_preserves_exact_candidate_features(self):
         from agent.ml_feature_engineer_gold import GoldFeatureEngineer
         with tempfile.TemporaryDirectory() as directory:
@@ -158,6 +203,28 @@ class ResearchPipelineTests(unittest.TestCase):
             self.assertAlmostEqual(float(row["net_return_pct"]), expected, places=7)
             self.assertIn("BID_ASK", row["label_note"])
 
+    def test_forward_runtime_does_not_count_barrier_after_clock_expiry(self):
+        with tempfile.TemporaryDirectory() as directory, \
+             patch("config.settings.PRICE_DATA_PROVIDER", "dukascopy"):
+            journal = ForwardOutcomeJournal(Path(directory) / "outcomes.csv")
+            started = datetime(2026, 1, 2, 20, 0, tzinfo=timezone.utc)
+            journal.append("ABC", started.isoformat(), {
+                "direction": "BUY", "entry": 100, "stop_loss": 98,
+                "take_profit": 102, "decision_bid_close": 100,
+                "decision_ask_close": 100.5,
+                "execution_quote_source": "DUKASCOPY_BID_ASK",
+            })
+            bar = {
+                "high": 103, "low": 99, "close": 101,
+                "bid_high": 103, "bid_low": 99, "bid_close": 101,
+                "ask_high": 103.5, "ask_low": 99.5, "ask_close": 101.5,
+            }
+            updated = journal.update(bar, started + timedelta(hours=50, minutes=15))
+            row = journal.load().iloc[0]
+            self.assertEqual(updated, 1)
+            self.assertEqual(row["status"], "EXPIRY")
+            self.assertIn("FIRST_EXECUTABLE_CLOSE_AFTER_EXPIRY", row["label_note"])
+
     def test_forward_variant_membership_is_point_in_time_and_directional(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "assignments.csv"
@@ -186,6 +253,14 @@ class ResearchPipelineTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "hash mismatch"):
                 ForwardVariantJournal(Path(directory) / "rows.csv", contract)
 
+    def test_forward_variant_stops_assigning_after_fixed_cutoff(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "assignments.csv"
+            journal = ForwardVariantJournal(path)
+            signal = {"direction": "BUY", "rr_ratio": 2.1, "mtf": {"smc": {}}}
+            journal.append("LATE", "2027-01-16T23:04:39Z", signal)
+            self.assertFalse(path.exists())
+
     def test_forward_variant_refuses_runtime_slippage_drift(self):
         with tempfile.TemporaryDirectory() as directory, \
              patch("config.settings.RESEARCH_SLIPPAGE_POINTS", 0.50):
@@ -200,7 +275,7 @@ class ResearchPipelineTests(unittest.TestCase):
             feature_row.update({name: 0.0 for name in GoldFeatureEngineer.FEATURE_COLS})
             pd.DataFrame([feature_row]).to_csv(root / "features.csv", index=False)
             pd.DataFrame([{
-                "candidate_id": "ABC", "experiment_version": "forward-pilot-20260719-v2",
+                "candidate_id": "ABC", "experiment_version": "forward-pilot-20260719-v3",
                 "contract_sha256": ForwardVariantJournal.EXPECTED_CONTRACT_SHA256,
                 "baseline_v1": 1, "buy_liquidity_v1": 1, "min_rr_eligible": 1,
                 "liquidity_sweep_1h_present": 1, "paper_trading": True,
@@ -219,7 +294,7 @@ class ResearchPipelineTests(unittest.TestCase):
                             root / "assignments.csv")
             self.assertEqual(len(joined), 1)
             self.assertEqual(joined.iloc[0]["experiment_version"],
-                             "forward-pilot-20260719-v2")
+                             "forward-pilot-20260719-v3")
             self.assertEqual(str(joined.iloc[0]["buy_liquidity_v1"]), "1")
 
     def test_dashboard_shadow_panel_counts_only_eligible_matured_members(self):
@@ -227,10 +302,10 @@ class ResearchPipelineTests(unittest.TestCase):
             root = Path(directory)
             pd.DataFrame([
                 {"candidate_id": "BUY1", "timestamp": "2026-07-18T21:20:00Z",
-                 "experiment_version": "forward-pilot-20260719-v2", "baseline_v1": 1,
+                 "experiment_version": "forward-pilot-20260719-v3", "baseline_v1": 1,
                  "buy_liquidity_v1": 1, "min_rr_eligible": 1},
                 {"candidate_id": "SELL1", "timestamp": "2026-07-18T21:35:00Z",
-                 "experiment_version": "forward-pilot-20260719-v2", "baseline_v1": 1,
+                 "experiment_version": "forward-pilot-20260719-v3", "baseline_v1": 1,
                  "buy_liquidity_v1": 0, "min_rr_eligible": 1},
             ]).to_csv(root / "assignments.csv", index=False)
             pd.DataFrame([

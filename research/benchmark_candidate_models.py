@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Leakage-aware development benchmarks for gold candidate classification.
 
-All models share the same expanding folds, 48-hour purge, calibration windows
-and break-even selection rule. Results are development diagnostics only: the
-historical period has already influenced feature and strategy design.
+All models share the same expanding folds, actual-label-exit purge,
+calibration windows and break-even selection rule. Results are development
+diagnostics only: the historical period has already influenced feature and
+strategy design.
 """
 
 import argparse
@@ -21,7 +22,6 @@ from xgboost import XGBClassifier
 from agent.ml_feature_engineer_gold import GoldFeatureEngineer
 
 
-PURGE = pd.Timedelta(hours=48)
 FEATURES = GoldFeatureEngineer.FEATURE_COLS
 MODEL_FEATURES = {
     "calibration_prevalence": [],
@@ -138,7 +138,8 @@ def weekly_block_intervals(frame, samples=2000, seed=42):
 def benchmark(path, bootstrap_samples=2000, seed=42):
     frame = pd.read_csv(path)
     frame["timestamp"] = pd.to_datetime(frame.timestamp, utc=True)
-    frame = frame.dropna(subset=["label_profitable", "net_return_pct", *FEATURES])
+    frame["exit_time"] = pd.to_datetime(frame.exit_time, utc=True, errors="coerce")
+    frame = frame.dropna(subset=["label_profitable", "net_return_pct", "exit_time", *FEATURES])
     frame = frame[frame.rr_ratio >= 2].sort_values("timestamp").reset_index(drop=True)
     predictions = {name: [] for name in MODEL_FEATURES}
     fold_reports = {name: [] for name in MODEL_FEATURES}
@@ -146,12 +147,13 @@ def benchmark(path, bootstrap_samples=2000, seed=42):
     for year in years:
         start = pd.Timestamp(f"{year}-01-01", tz="UTC")
         end = pd.Timestamp(f"{year + 1}-01-01", tz="UTC")
-        prior = frame[frame.timestamp < start - PURGE]
+        prior = frame[(frame.timestamp < start) & (frame.exit_time < start)]
         test = frame[(frame.timestamp >= start) & (frame.timestamp < end)].copy()
         if len(prior) < 500 or len(test) < 100:
             continue
         calibration_start = prior.timestamp.iloc[int(len(prior) * .8)]
-        train = prior[prior.timestamp < calibration_start - PURGE]
+        train = prior[(prior.timestamp < calibration_start) &
+                      (prior.exit_time < calibration_start)]
         calibration = prior[prior.timestamp >= calibration_start]
         for model_name in MODEL_FEATURES:
             scored = test[[
@@ -203,7 +205,7 @@ def benchmark(path, bootstrap_samples=2000, seed=42):
     return {
         "status": "DEVELOPMENT_BENCHMARK_ONLY",
         "scope": "CONTAMINATED_HISTORY_NOT_MODEL_AUTHORIZATION",
-        "purge_hours": 48,
+        "purge_method": "actual label exit must precede calibration/test boundary",
         "selection_rule": "probability >= 1/(rr_ratio+1)+0.03",
         "models": reports,
         "diagnostic_gates": diagnostic_gates,

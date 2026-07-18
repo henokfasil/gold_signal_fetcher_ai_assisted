@@ -24,17 +24,17 @@ Important evidence already established:
 
 - Historical source: local Dukascopy XAUUSD bid/ask 15-minute data, 2020-2026.
 - Canonical development dataset:
-  `data/research/xauusd_smc_candidates_v3.csv`.
+  `data/research/xauusd_smc_candidates_v4.csv`.
 - Dataset SHA-256:
-  `8d0444dd86d10bb87f6532711b310c06753892afdb34bbe4a81600d0b045a77e`.
+  `0b74895cbd58917e485043acaee470815b1149a7d1647a662d93f08cda919520`.
 - Walk-forward ML decision: `REJECT_MODEL`; overall ROC-AUC is approximately
   0.490 and calibrated probabilities do not beat the prevalence baseline.
 - Simple prevalence/direction/SMC-score/all-feature logistic benchmarks do not
   reveal predictive signal either; their dependence-aware uncertainty includes
   chance/zero.
 - No validated ML model exists. Do not create metadata claiming otherwise.
-- Lifecycle portfolio result: -0.41% return, profit factor 0.999, maximum
-  drawdown 34.55%; BUY P&L positive and SELL P&L negative.
+- Lifecycle portfolio result: -2.33% return, profit factor 0.992, maximum
+  drawdown 36.42%; BUY P&L positive and SELL P&L negative.
 - 2020-2026 has influenced development and is not an untouched final test.
 - The system is paper-only, fail-closed and contains no authorized broker
   execution path.
@@ -42,9 +42,15 @@ Important evidence already established:
   timeframe and is rejected for automated runtime use.
 - Runtime source: account-free Dukascopy public XAUUSD bid/ask snapshots at
   1W/1D/4H/1H/15M with forming-bar, cadence, OHLC, quote and freshness checks.
-- Frozen experiment: `forward-pilot-20260719-v2`, fixed evaluation at
-  2027-01-16 22:35:57 UTC, no interim performance analysis and no confirmation
-  claim. Continue independent feature/target research while it runs.
+- The legacy 48-hour label used 192 traded candles rather than a fixed UTC
+  horizon. Corrected v4 targets monitor barriers only through the UTC cutoff,
+  expire at the first executable close at/after it and purge folds by actual
+  label exit time.
+- Frozen experiment: `forward-pilot-20260719-v3`; assignment cutoff is
+  2027-01-16 23:04:38 UTC and fixed evaluation after the maturity buffer is
+  2027-01-23 23:04:38 UTC. No interim performance analysis or confirmation
+  claim is permitted. Continue independent feature/target research while it
+  runs.
 
 Continue with these objectives in order:
 
@@ -64,7 +70,8 @@ Continue with these objectives in order:
 Required methodological constraints:
 
 - Strict chronological evaluation; no random split.
-- At least 48-hour purging/embargo around label-dependent boundaries.
+- Purge every train/calibration/test boundary using actual label exit times;
+  nominal row counts or candle counts are not sufficient.
 - Bid/ask execution labels when available.
 - BUY and SELL reported independently.
 - All failed results preserved and reported honestly.

@@ -11,23 +11,22 @@ marketing material and must not be used to claim profitability.
 
 `research/benchmark_candidate_models.py` compares constant prevalence,
 direction-only logistic, SMC-score-only logistic, all-feature logistic and the
-existing XGBoost model under identical expanding folds, 48-hour purge,
+existing XGBoost model under identical expanding folds, actual-label-exit
+purging,
 calibration and economic selection. The committed report is
-`data/research/candidate_model_benchmarks_v1.json`.
+`data/research/candidate_model_benchmarks_v2.json`.
 
 | Model | OOS AUC | Brier | Selected mean net return |
 |---|---:|---:|---:|
-| Prevalence | 0.4836 | 0.1963 | -0.0062% |
-| Direction logistic | 0.5109 | 0.1953 | -0.0048% |
-| SMC-score logistic | 0.4811 | 0.1966 | -0.0052% |
-| All-feature logistic | 0.5093 | 0.1970 | +0.0023% |
-| XGBoost | 0.4899 | 0.1971 | -0.0093% |
+| Prevalence | 0.4829 | 0.2036 | -0.0064% |
+| Direction logistic | 0.5029 | 0.2028 | +0.0016% |
+| SMC-score logistic | 0.4794 | 0.2040 | -0.0079% |
+| All-feature logistic | 0.5052 | 0.2052 | +0.0045% |
+| XGBoost | 0.4888 | 0.2062 | -0.0143% |
 
 Every dependence-aware AUC interval includes 0.50 and every selected-return
-interval includes zero. XGBoost selected mean probability is 26.36% versus a
-22.30% win rate, a 4.06-point gap—not the approximately 14 points inferred in
-the external review. The economic conclusion is unchanged: there is no useful
-validated model in this feature/target experiment.
+interval includes zero. The economic conclusion is unchanged: there is no
+useful validated model in this feature/target experiment.
 
 ### Gate provenance and future gate correction
 
@@ -41,21 +40,33 @@ does not pass.
 ### BUY liquidity-sweep uncertainty
 
 The lifecycle-filtered BUY + 1H liquidity-sweep variant opens 1,086 historical
-positions, returns +43.20%, has PF 1.37 and 14.01% maximum drawdown. Its weekly
-bootstrap 95% intervals are -5.76% to +101.28% for return and 0.95 to 1.86 for
+positions, returns +40.34%, has PF 1.36 and 13.70% maximum drawdown. Its weekly
+bootstrap 95% intervals are -3.81% to +90.11% for return and 0.97 to 1.79 for
 PF. This remains a promising contaminated hypothesis, not an edge.
 
 ### Six months is a pilot, not validation
 
 `research/plan_forward_experiment.py` estimates weekly-cluster power. At the
-historical approximately +0.08% mean return per candidate, a 26-week run has
-only about 14.4% power; a 200-candidate run has about 17.4%. Waiting and then
+historical corrected +0.0743% mean return per candidate, a 26-week run has
+only about 15.3% power; a 200-candidate run has about 18.6%. Waiting and then
 calling either result definitive would be scientifically wrong.
 
-The replacement contract `forward-pilot-20260719-v2` has one fixed evaluation
-time, 2027-01-16 22:35:57 UTC, no interim performance analysis and no
-confirmation claim. It estimates event rate, feed reliability and forward
+The replacement contract `forward-pilot-20260719-v3` stops new assignments at
+2027-01-16 23:04:38 UTC and has one fixed evaluation time after its maturity
+buffer, 2027-01-23 23:04:38 UTC. It permits no interim performance analysis and
+no confirmation claim. It estimates event rate, feed reliability and forward
 variance while separately versioned feature/target research continues now.
+
+### Clock-horizon defect and correction
+
+The external review accepted the stated 48-hour purge, but code inspection
+found that the historical label used 192 traded candles rather than 48 UTC
+clock hours. Weekend closures made 4,019 labels run longer than 48 clock hours;
+1,071 comparable outcomes changed when corrected. Dataset v4 now monitors
+barriers only through the fixed cutoff, expires at the first executable close
+at/after cutoff without using that post-cutoff candle's range, and purges
+training/calibration/test boundaries using actual exit times. The prospective
+contract was upgraded before any assignments or outcomes existed.
 
 ## Runtime defect found and repaired
 

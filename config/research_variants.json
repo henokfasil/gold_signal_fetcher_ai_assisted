@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "experiment_version": "forward-pilot-20260719-v2",
-  "frozen_at_utc": "2026-07-18T22:35:57Z",
+  "experiment_version": "forward-pilot-20260719-v3",
+  "frozen_at_utc": "2026-07-18T23:04:38Z",
   "paper_only": true,
   "pilot_purpose": "No-peek plumbing, candidate-rate, feed-stability and variance-estimation pilot; not a confirmatory edge test",
   "source_contract": {
@@ -13,10 +13,11 @@
       "midpoint"
     ],
     "decision_timeframe": "15M",
-    "forming_candles_excluded": true
+    "forming_candles_excluded": true,
+    "target_version": "bid_ask_fixed_clock_v1"
   },
   "lineage": {
-    "implementation_parent_revision": "1a59bd3",
+    "implementation_parent_revision": "e3a9111",
     "strategy_config_version": "3.0-research",
     "feature_schema_sha256": "8e567c3aa764cc894bf1892e6ceae8011aa4933b69a23f4e80bfaa996063e965",
     "model_state_at_freeze": "REJECT_MODEL_NO_ARTIFACT_DEPLOYED",
@@ -26,6 +27,8 @@
   "common_evaluation": {
     "minimum_risk_reward_ratio": 2.0,
     "outcome_expiry_hours": 48,
+    "outcome_horizon_semantics": "fixed UTC clock hours; first executable close at/after cutoff",
+    "post_cutoff_bar_range_used_for_barrier": false,
     "bid_ask_spread_source": "observed Dukascopy executable-side candles",
     "midpoint_fallback_permitted": false,
     "slippage_points_per_side": 0.1,
@@ -36,7 +39,9 @@
   "stopping_rule": {
     "design": "fixed-horizon-no-peek-pilot",
     "calendar_weeks": 26,
-    "evaluate_once_at_utc": "2027-01-16T22:35:57Z",
+    "assignment_cutoff_at_utc": "2027-01-16T23:04:38Z",
+    "evaluate_once_at_utc": "2027-01-23T23:04:38Z",
+    "fixed_maturity_buffer_days": 7,
     "candidate_count_is_not_a_stopping_rule": true,
     "interim_performance_evaluation_permitted": false,
     "operational_health_monitoring_permitted": true,
@@ -44,11 +49,11 @@
   },
   "power_disclosure": {
     "historical_weekly_cluster_reference_rows": 1086,
-    "historical_weekly_clusters": 207,
-    "historical_mean_net_return_per_candidate_pct": 0.07955,
-    "historical_cluster_robust_standard_error_pct": 0.04861,
-    "estimated_power_at_26_weeks_for_historical_mean": 0.144,
-    "power_report": "data/research/forward_power_plan_v1.json",
+    "historical_weekly_clusters": 208,
+    "historical_mean_net_return_per_candidate_pct": 0.074297,
+    "historical_cluster_robust_standard_error_pct": 0.042345,
+    "estimated_power_at_26_weeks_for_historical_mean": 0.152794,
+    "power_report": "data/research/forward_power_plan_v2.json",
     "interpretation": "A null is inconclusive and a positive point estimate is exploratory; separately power any later confirmatory experiment."
   },
   "variants": {

@@ -17,13 +17,15 @@ Current research state at handoff:
 - Raw account-free Dukascopy XAUUSD bid/ask history contains 154,709 15-minute
   bars from 2020-01-01 through 2026-07-17. It is local research data and is not
   committed to Git.
-- Canonical candidate dataset is
-  `data/research/xauusd_smc_candidates_v3.csv`: 40,792 candidates, 40,623
-  bid/ask-labelled outcomes, 168 ambiguous outcomes and one unmatured outcome.
-  Dataset SHA-256 is
-  `8d0444dd86d10bb87f6532711b310c06753892afdb34bbe4a81600d0b045a77e`.
+- Canonical candidate/target dataset is
+  `data/research/xauusd_smc_candidates_v4.csv`: the same 40,792 frozen SMC
+  candidates, with 40,623 matured unambiguous bid/ask outcomes, 156 ambiguous
+  outcomes and 13 unmatured outcomes. Dataset SHA-256 is
+  `0b74895cbd58917e485043acaee470815b1149a7d1647a662d93f08cda919520`.
+  It also contains registered 1h/4h/12h/48h after-cost return and MFE/MAE
+  targets.
 - The purged/calibrated walk-forward result is `REJECT_MODEL`: overall ROC-AUC
-  0.490 and Brier score worse than its prevalence baseline. No model artifact
+  0.489 and Brier score worse than its prevalence baseline. No model artifact
   was created or deployed. Never rename this result as validated ML.
 - Like-for-like prevalence, direction-only, SMC-score logistic, all-feature
   logistic and XGBoost baselines all have dependence-aware AUC intervals that
@@ -31,14 +33,14 @@ Current research state at handoff:
   localizes the failure to the tested information/target rather than showing
   that a more fashionable model class will fix it.
 - The lifecycle portfolio diagnostic opens 2,695 positions from 40,792 raw
-  candidates after cooldown/risk gates. It returns -0.41%, profit factor 0.999
-  and maximum drawdown 34.55%. BUY contributes +$1,396.99; SELL contributes
-  -$1,437.82. This is a rejected development result, not an edge.
-- Overlap-aware evidence reduces the 11,843 eligible labels to Kish effective
-  sample size about 5,478 (summed uniqueness about 2,898). BUY-only returns
-  +22.53% developmentally, but its weekly-bootstrap 95% interval includes a
-  large loss (-28.09% to +80.77%) and drawdown is 25.25%. SELL-only returns
-  -14.72%. Liquidity sweep is only a forward hypothesis; it is not validated.
+  candidates after cooldown/risk gates. It returns -2.33%, profit factor 0.992
+  and maximum drawdown 36.42%. BUY contributes +$1,576.10; SELL contributes
+  -$1,809.12. This is a rejected development result, not an edge.
+- Overlap-aware evidence reduces the 11,844 eligible labels to Kish effective
+  sample size about 5,614 (summed uniqueness about 2,996). BUY-only returns
+  +20.02% developmentally, but its weekly-bootstrap 95% interval includes a
+  large loss (-24.98% to +72.13%) and drawdown is 23.84%. SELL-only returns
+  -18.09%. Liquidity sweep is only a forward hypothesis; it is not validated.
 - Runtime paper controls now use a four-hour same-direction/nearby-entry
   cooldown and account-level realized-USD daily/weekly loss caps.
 - Historical 2020-2026 results have influenced research decisions and can
@@ -53,14 +55,20 @@ Current research state at handoff:
 - Forward pilot collection covers both directions. ML remains required for
   approval and unavailable, so no candidate can become an approved paper
   signal merely because Claude likes it.
-- Prospective experiment `forward-pilot-20260719-v2` is frozen in
+- A timing audit found the old “48-hour” historical label meant 192 traded
+  candles: 4,019 labels exceeded 48 UTC hours and 1,071 comparable labels
+  changed after correction. Runtime and research now monitor barriers only to
+  the fixed cutoff, liquidate at the first executable close at/after it and
+  purge folds using actual label exit times.
+- Prospective experiment `forward-pilot-20260719-v3` is frozen in
   `config/research_variants.json` (SHA-256
-  `8e7e6155b89fb893cc1b12218229a8f1e5f0f5ce87f682465278642f2bd75a83`). It
+  `1af9f22e4fe21bacbc6766d85911a65c206fb857a512c782888133b8c1dfdcba`). It
   compares the unchanged BUY/SELL baseline with a BUY + point-in-time 1H
   liquidity-sweep shadow variant. It has a single 26-week cutoff at
-  2027-01-16 22:35:57 UTC, no interim performance evaluation and no
-  confirmatory edge claim. Assignments cannot approve a paper trade, send
-  Telegram or select/train a model.
+  2027-01-16 23:04:38 UTC assignment cutoff and one fixed evaluation after its
+  maturity buffer at 2027-01-23 23:04:38 UTC. There is no interim performance
+  evaluation or confirmatory edge claim. Assignments cannot approve a paper
+  trade, send Telegram or select/train a model.
 
 Resume in this order:
 
@@ -175,17 +183,17 @@ gold strategy. It rejects one specific experiment: a fixed XGBoost classifier
 trained primarily on 33 correlated SMC, OHLC, indicator and calendar features
 to predict the existing bid/ask execution-aware barrier label.
 
-The completed like-for-like benchmark in
-`data/research/candidate_model_benchmarks_v1.json` localizes the failure:
+The corrected like-for-like benchmark in
+`data/research/candidate_model_benchmarks_v2.json` localizes the failure:
 
-- all-feature XGBoost: overall ROC-AUC 0.4899, Brier 0.1971 and selected mean
-  after-cost return -0.0093%;
-- all-feature logistic regression: overall ROC-AUC 0.5093, Brier 0.1970 and
-  selected mean after-cost return +0.0023%;
-- direction-only logistic regression: overall ROC-AUC 0.5109 and selected mean
-  after-cost return -0.0048%;
+- all-feature XGBoost: overall ROC-AUC 0.4888, Brier 0.2062 and selected mean
+  after-cost return -0.0143%;
+- all-feature logistic regression: overall ROC-AUC 0.5052, Brier 0.2052 and
+  selected mean after-cost return +0.0045%;
+- direction-only logistic regression: overall ROC-AUC 0.5029 and selected mean
+  after-cost return +0.0016%;
 - XGBoost weekly-block-bootstrap 95% intervals include both chance for ROC-AUC
-  (0.4541 to 0.5269) and zero for selected return (-0.0602% to +0.0480%).
+  (0.4547 to 0.5234) and zero for selected return (-0.0632% to +0.0403%).
 
 Therefore a model-class substitution alone is not the next experiment. XGBoost
 is a legitimate professional baseline for a medium-sized tabular dataset.
@@ -441,12 +449,14 @@ registered there before evaluation.
 
 ## Next research milestones
 
-1. Collect `forward-pilot-20260719-v2` unchanged until its fixed
-   2027-01-16 22:35:57 UTC cutoff; monitor only operational integrity and counts.
+1. Collect `forward-pilot-20260719-v3` unchanged until its fixed assignment
+   cutoff at 2027-01-16 23:04:38 UTC; monitor only operational integrity/counts.
 2. Do not inspect interim pilot performance and do not stop at a convenient
-   candidate count. Allow the final assigned candidates 48 hours to mature.
+   candidate count. Evaluate once at 2027-01-23 23:04:38 UTC after the fixed
+   maturity buffer.
 3. Treat the pilot as feed/plumbing/event-rate/variance evidence. Its estimated
-   power for the historical +0.08% per-candidate effect is only about 14%; it
+   power for the corrected historical +0.074% per-candidate effect is only
+   about 15.3%; it
    cannot by itself confirm profitability.
 4. Continue independent research now: construct new point-in-time context
    features and economic targets under separately named protocols.
@@ -459,8 +469,9 @@ registered there before evaluation.
 ### Validation decision rule
 
 `research/validate_walk_forward.py` performs expanding-year walk-forward
-evaluation with a 48-hour purge around train/calibration/test boundaries and a
-separate chronological probability-calibration slice. Development gates require
+evaluation with actual-label-exit purging around train/calibration/test
+boundaries and a separate chronological probability-calibration slice.
+Development gates require
 overall ROC-AUC >= 0.55, Brier score better than the prevalence baseline, no
 year-fold ROC-AUC below 0.45, and positive selected expectancy for BUY and SELL.
 Failure means **no model artifact is created or deployed**. Passing these gates
@@ -489,8 +500,9 @@ python -m research.download_dukascopy_xauusd \
   --start 2020-01-01 --end 2026-07-18
 ```
 
-Then build candidates from its midpoint OHLC while retaining bid/ask columns
-for later execution-cost research:
+Then build frozen candidates from midpoint OHLC while retaining bid/ask columns
+for execution-cost research, and relabel them with fixed-clock executable-side
+targets:
 
 ```bash
 python -m research.build_historical_dataset \
@@ -498,6 +510,12 @@ python -m research.build_historical_dataset \
   data/research/xauusd_smc_candidates_v3.csv \
   --timestamp-is open --scan-minutes 15 --expiry-hours 48 \
   --spread-points 0.83 --slippage-points 0.10
+
+python -m research.relabel_candidate_targets \
+  data/research/xauusd_smc_candidates_v3.csv \
+  data/raw/dukascopy_xauusd_15m_2020_2026.csv \
+  data/research/xauusd_smc_candidates_v4.csv \
+  --timestamp-is open --expiry-hours 48 --slippage-points 0.10
 ```
 
 Costs above are explicit research assumptions, not universal broker facts, and
