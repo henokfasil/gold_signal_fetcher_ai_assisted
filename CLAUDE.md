@@ -129,7 +129,7 @@ no broker order method is present.
 ## Verification
 
 ```bash
-python -m compileall -q .
+python -m compileall -q agent config main.py main_orchestrator.py dashboard.py send_daily_metrics.py
 python -m unittest discover -s tests -v
 python validate_code.py
 ```
