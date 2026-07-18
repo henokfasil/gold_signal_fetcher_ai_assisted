@@ -7,10 +7,12 @@ import logging
 import os
 import json
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from html import escape
 from flask import Flask, render_template_string
 from pathlib import Path
 from config import settings
+from agent.liquidity_manager import is_market_closed
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -18,6 +20,86 @@ logger = logging.getLogger(__name__)
 SYSTEM_A_CSV = settings.SYSTEM_A_CSV
 SYSTEM_C_CSV = settings.PAPER_TRADES_CSV
 STARTING_CAPITAL = settings.PAPER_ACCOUNT_SIZE
+
+
+def _tail_text(path, max_bytes=65536):
+    """Read only the tail of a log file; dashboard requests stay constant-cost."""
+    path = Path(path)
+    if not path.exists():
+        return ""
+    with path.open("rb") as handle:
+        size = handle.seek(0, os.SEEK_END)
+        handle.seek(max(0, size - max_bytes))
+        return handle.read().decode("utf-8", errors="replace")
+
+
+def get_feed_health(snapshot_path=None, log_path=None):
+    """Return feed/scanner health using existing files only—no network calls."""
+    snapshot_path = Path(snapshot_path or settings.TRADINGVIEW_SNAPSHOT_PATH)
+    log_path = Path(log_path or settings.LOG_FILE)
+    health = {
+        "status": "UNAVAILABLE", "status_class": "bad", "provider": "—",
+        "symbol": "—", "captured_at": "—", "age": "—", "timeframes": {},
+        "last_scan": "No completed scan found", "market": "CLOSED" if is_market_closed() else "OPEN",
+        "paper_mode": "ENFORCED" if settings.PAPER_TRADING else "MISCONFIGURED",
+    }
+    try:
+        payload = json.loads(snapshot_path.read_text())
+        captured = datetime.fromisoformat(payload["captured_at"].replace("Z", "+00:00"))
+        captured = captured.replace(tzinfo=timezone.utc) if captured.tzinfo is None else captured.astimezone(timezone.utc)
+        age_seconds = max(0, int((datetime.now(timezone.utc) - captured).total_seconds()))
+        frames = payload.get("timeframes", {})
+        health.update({
+            "provider": payload.get("provider", "—"), "symbol": payload.get("symbol", "—"),
+            "captured_at": captured.strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "age": f"{age_seconds // 60}m {age_seconds % 60}s",
+            "timeframes": {name: int(data.get("bar_count", len(data.get("bars", []))))
+                           for name, data in frames.items()},
+        })
+        complete = all(health["timeframes"].get(name, 0) >= 200
+                       for name in ("1W", "1D", "4H", "1H", "15M"))
+        # Allow for the 15-minute schedule plus chart-settling time. The scanner
+        # itself retains the stricter SNAPSHOT_MAX_AGE_SECONDS gate.
+        fresh = age_seconds <= settings.DASHBOARD_FEED_MAX_AGE_SECONDS
+        exact = health["symbol"] == "OANDA:XAUUSD"
+        health["status"] = "HEALTHY" if fresh and complete and exact else "DEGRADED"
+        health["status_class"] = "good" if health["status"] == "HEALTHY" else "warn"
+    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+        pass
+
+    for line in reversed(_tail_text(log_path).splitlines()):
+        marker = "[ORCHESTRATOR] Result:"
+        if marker in line:
+            health["last_scan"] = line.split(marker, 1)[1].strip()
+            break
+    return health
+
+
+def build_feed_health_html(health):
+    tf = " ".join(
+        f'<span class="tf-chip">{escape(name)}: {count}</span>'
+        for name, count in health["timeframes"].items()
+    ) or '<span class="muted">No timeframe data</span>'
+    fields = [
+        ("Provider", health["provider"]), ("Exact symbol", health["symbol"]),
+        ("Snapshot age", health["age"]), ("Captured", health["captured_at"]),
+        ("Last scan result", health["last_scan"]), ("Market", health["market"]),
+        ("Paper mode", health["paper_mode"]), ("Schedule", "Every 15 minutes"),
+    ]
+    cards = "".join(
+        f'<div class="health-item"><div class="metric-label">{escape(label)}</div>'
+        f'<div class="health-value">{escape(str(value))}</div></div>'
+        for label, value in fields
+    )
+    return (
+        '<section class="health-panel"><div class="health-heading">'
+        '<h2>TradingView Data Feed Health</h2>'
+        f'<span class="status-pill {health["status_class"]}">{escape(health["status"])}</span>'
+        f'</div><div class="health-grid">{cards}</div>'
+        f'<div class="timeframes"><div class="metric-label">Validated bars</div>{tf}</div>'
+        '<p class="health-note">File-based monitoring only: this panel makes no TradingView or MCP calls.</p>'
+        '</section>'
+    )
 
 
 def load_trades(csv_path):
@@ -233,6 +315,7 @@ def dashboard():
 
     trades_a = build_trade_rows_html(SYSTEM_A_CSV)
     trades_c = build_trade_rows_html(SYSTEM_C_CSV)
+    feed_health = build_feed_health_html(get_feed_health())
 
     html = '''
     <!DOCTYPE html>
@@ -241,7 +324,7 @@ def dashboard():
         <title>Gold Signal Fetcher - Dashboard</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta http-equiv="refresh" content="10">
+        <meta http-equiv="refresh" content="60">
         <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -275,6 +358,22 @@ def dashboard():
                 gap: 20px;
                 margin-bottom: 30px;
             }
+            .health-panel {
+                background: #1e293b; border: 2px solid #0ea5e9; border-radius: 8px;
+                padding: 20px; margin-bottom: 30px;
+            }
+            .health-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
+            .health-heading h2 { color:#38bdf8; font-size:17px; }
+            .status-pill { padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700; }
+            .status-pill.good { color:#052e16; background:#22c55e; }
+            .status-pill.warn { color:#422006; background:#f59e0b; }
+            .status-pill.bad { color:#450a0a; background:#ef4444; }
+            .health-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; }
+            .health-item { background:rgba(0,0,0,.3); padding:12px; border-radius:4px; }
+            .health-value { margin-top:5px; font-size:14px; font-weight:600; overflow-wrap:anywhere; }
+            .timeframes { margin-top:15px; }
+            .tf-chip { display:inline-block; margin:7px 7px 0 0; padding:6px 9px; background:#0f172a; border:1px solid #334155; border-radius:4px; font-size:12px; }
+            .health-note, .muted { color:#64748b; font-size:11px; margin-top:12px; }
             .capital-box {
                 background: #1e293b;
                 border: 2px solid #334155;
@@ -402,6 +501,10 @@ def dashboard():
                 font-size: 12px;
                 margin-top: 20px;
             }
+            @media (max-width: 800px) {
+                .health-grid { grid-template-columns:1fr 1fr; }
+                .capital-section, .metrics-grid, .trades-section { grid-template-columns:1fr; }
+            }
         </style>
     </head>
     <body>
@@ -411,6 +514,7 @@ def dashboard():
         </div>
 
         <div class="container">
+            ''' + feed_health + '''
             <!-- Capital Performance -->
             <div class="capital-section">
                 <div class="capital-box">

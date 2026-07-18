@@ -66,6 +66,7 @@ TRADINGVIEW_SNAPSHOT_PATH = Path(
 )
 MACRO_SNAPSHOT_PATH = Path(os.getenv('MACRO_SNAPSHOT_PATH', '/tmp/gold_macro_snapshot.json'))
 SNAPSHOT_MAX_AGE_SECONDS = int(os.getenv('SNAPSHOT_MAX_AGE_SECONDS', '900'))
+DASHBOARD_FEED_MAX_AGE_SECONDS = int(os.getenv('DASHBOARD_FEED_MAX_AGE_SECONDS', '1200'))
 
 
 def strategy_value(section: str, key: str, default):

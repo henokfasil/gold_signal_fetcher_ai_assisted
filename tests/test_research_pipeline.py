@@ -9,6 +9,7 @@ from agent.claude_analyst import AITradingDecider
 from agent.gold_correlations import GoldCorrelationValidator
 from agent.ml_signal_generator import MLSignalGenerator
 from agent.smc_gold_scanner import _candles_to_df, _run_from_tradingview_snapshot
+from dashboard import get_feed_health
 
 
 class FakeClaude:
@@ -23,6 +24,23 @@ class FakeClaude:
 
 
 class ResearchPipelineTests(unittest.TestCase):
+    def test_dashboard_reports_healthy_complete_snapshot_without_network(self):
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot = Path(directory) / "tv.json"
+            log = Path(directory) / "scanner.log"
+            snapshot.write_text(json.dumps({
+                "captured_at": datetime.now(timezone.utc).isoformat(),
+                "provider": "tradingview-mcp", "symbol": "OANDA:XAUUSD",
+                "timeframes": {name: {"bar_count": 200}
+                               for name in ("1W", "1D", "4H", "1H", "15M")},
+            }))
+            log.write_text("x [ORCHESTRATOR] Result: NO_CANDIDATE\n")
+            with patch("dashboard.is_market_closed", return_value=False):
+                health = get_feed_health(snapshot, log)
+            self.assertEqual(health["status"], "HEALTHY")
+            self.assertEqual(health["last_scan"], "NO_CANDIDATE")
+            self.assertEqual(health["market"], "OPEN")
+
     def test_tradingview_unix_timestamps_are_parsed_as_seconds(self):
         candles = [{"time": 1_700_000_000 + i * 3600, "open": 2000,
                     "high": 2002, "low": 1998, "close": 2001, "volume": 10}
