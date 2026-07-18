@@ -182,6 +182,17 @@ forward paper trading and stable performance across regimes.
 7. Freeze a research revision and forward paper trade it for 3–6 months before
    considering any live-capital design.
 
+### Validation decision rule
+
+`research/validate_walk_forward.py` performs expanding-year walk-forward
+evaluation with a 48-hour purge around train/calibration/test boundaries and a
+separate chronological probability-calibration slice. Development gates require
+overall ROC-AUC >= 0.55, Brier score better than the prevalence baseline, no
+year-fold ROC-AUC below 0.45, and positive selected expectancy for BUY and SELL.
+Failure means **no model artifact is created or deployed**. Passing these gates
+would still not prove an edge because 2020-2026 influenced development; only a
+frozen future paper test can provide final confirmation.
+
 ## Dataset and forward evidence workflow
 
 Historical source files must be exact XAUUSD OHLCV with UTC timestamps and
