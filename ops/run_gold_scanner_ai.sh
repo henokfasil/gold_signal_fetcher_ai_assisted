@@ -27,4 +27,20 @@ if ! flock -n 9; then
   exit 0
 fi
 
+if [[ "${PRICE_DATA_PROVIDER:-tradingview}" == "tradingview" ]]; then
+  COLLECTOR="/usr/local/lib/gold-signal-fetcher/collect_tradingview_snapshot.py"
+  SNAPSHOT="${TRADINGVIEW_SNAPSHOT_PATH:-/tmp/tradingview_snapshot.json}"
+  if [[ ! -x "${COLLECTOR}" ]]; then
+    echo "TradingView collector missing: ${COLLECTOR}" >> "${LOG_FILE}"
+    exit 1
+  fi
+  if ! runuser -u tvfetcher -- env \
+      TRADINGVIEW_SNAPSHOT_PATH="${SNAPSHOT}" \
+      TRADINGVIEW_MCP_ROOT="${TRADINGVIEW_MCP_ROOT:-/opt/tradingview-mcp}" \
+      /usr/bin/python3 "${COLLECTOR}" >> "${LOG_FILE}" 2>&1; then
+    echo "TradingView collection failed; paper scan aborted" >> "${LOG_FILE}"
+    exit 1
+  fi
+fi
+
 exec "${PYTHON_BIN}" "${PROJECT_DIR}/main_orchestrator.py" >> "${LOG_FILE}" 2>&1

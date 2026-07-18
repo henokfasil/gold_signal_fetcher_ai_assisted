@@ -13,7 +13,13 @@ MCP_ROOT = Path(os.getenv("TRADINGVIEW_MCP_ROOT", "/opt/tradingview-mcp"))
 OUTPUT = Path(os.getenv("TRADINGVIEW_SNAPSHOT_PATH", "/tmp/tradingview_snapshot.json"))
 TV = ["node", str(MCP_ROOT / "src/cli/index.js")]
 SYMBOL = "OANDA:XAUUSD"
-TIMEFRAMES = {"1W": "W", "1D": "D", "4H": "240", "1H": "60", "15M": "15"}
+TIMEFRAMES = {
+    "1W": ("W", {"W", "1W"}),
+    "1D": ("D", {"D", "1D"}),
+    "4H": ("240", {"240", "4H"}),
+    "1H": ("60", {"60", "1H"}),
+    "15M": ("15", {"15", "15M"}),
+}
 
 
 def call(*args):
@@ -43,11 +49,11 @@ def main():
     call("symbol", SYMBOL)
     time.sleep(3)
     frames = {}
-    for name, tv_resolution in TIMEFRAMES.items():
+    for name, (tv_resolution, accepted_resolutions) in TIMEFRAMES.items():
         call("timeframe", tv_resolution)
         time.sleep(3)
         state = call("state")
-        if state.get("symbol") != SYMBOL or str(state.get("resolution")) != tv_resolution:
+        if state.get("symbol") != SYMBOL or str(state.get("resolution")) not in accepted_resolutions:
             raise ValueError(f"chart state mismatch for {name}: {state}")
         data = call("ohlcv", "--count", "200")
         validate_bars(data["bars"], name)
