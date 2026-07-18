@@ -101,7 +101,7 @@ def validate(path: Path) -> dict:
             "by_direction": by_direction,
             "limitations": ["2020-2026 influenced feature development; not a final untouched test.",
                             "Candidate returns overlap and do not simulate portfolio capacity.",
-                            "Dukascopy history differs from runtime OANDA TradingView feed.",
+                            "Historical and future Dukascopy collection windows can still differ in feed state and regimes.",
                             "Final acceptance requires frozen forward paper evidence."]}
 
 

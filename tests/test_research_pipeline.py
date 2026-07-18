@@ -12,7 +12,8 @@ from agent.gold_correlations import GoldCorrelationValidator
 from agent.ml_signal_generator import MLSignalGenerator
 from agent.notifier import Notifier
 from agent.smc_gold_scanner import (
-    _build_smc_signal, _candles_to_df, _run_from_tradingview_snapshot,
+    _build_smc_signal, _candles_to_df, _run_from_price_snapshot,
+    _run_from_tradingview_snapshot,
     detect_bos_down,
 )
 from dashboard import get_feed_health, get_shadow_variants
@@ -116,7 +117,8 @@ class ResearchPipelineTests(unittest.TestCase):
             self.assertEqual(row["direction_encoded"], names.index("direction_encoded"))
 
     def test_rejected_candidate_can_receive_shadow_outcome(self):
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory() as directory, \
+             patch("config.settings.PRICE_DATA_PROVIDER", "tradingview"):
             journal = ForwardOutcomeJournal(Path(directory) / "outcomes.csv")
             signal = {"direction": "SELL", "entry": 100, "stop_loss": 102,
                       "take_profit": 96}
@@ -128,6 +130,33 @@ class ResearchPipelineTests(unittest.TestCase):
             self.assertEqual(updated, 1)
             self.assertEqual(row["status"], "TP")
             self.assertEqual(row["label_profitable"], "1")
+
+    def test_forward_buy_outcome_uses_ask_entry_and_bid_bar(self):
+        with tempfile.TemporaryDirectory() as directory, \
+             patch("config.settings.PRICE_DATA_PROVIDER", "dukascopy"):
+            journal = ForwardOutcomeJournal(Path(directory) / "outcomes.csv")
+            signal = {
+                "direction": "BUY", "entry": 100, "stop_loss": 98,
+                "take_profit": 102, "decision_bid_close": 100.0,
+                "decision_ask_close": 100.5,
+                "execution_quote_source": "DUKASCOPY_BID_ASK",
+            }
+            started = datetime(2026, 1, 2, 10, 0, tzinfo=timezone.utc)
+            journal.append("ABC", started.isoformat(), signal)
+            not_executable = {
+                "high": 103, "low": 99, "close": 102,
+                "bid_high": 101.9, "bid_low": 99, "bid_close": 101.8,
+                "ask_high": 102.5, "ask_low": 99.5, "ask_close": 102.3,
+            }
+            self.assertEqual(journal.update(not_executable, started + timedelta(minutes=15)), 0)
+            executable = dict(not_executable, bid_high=102.0)
+            self.assertEqual(journal.update(executable, started + timedelta(minutes=30)), 1)
+            row = journal.load().iloc[0]
+            self.assertEqual(row["status"], "TP")
+            self.assertAlmostEqual(float(row["entry"]), 100.5)
+            expected = (102 - 100.5 - 0.2) / 100.5 * 100
+            self.assertAlmostEqual(float(row["net_return_pct"]), expected, places=7)
+            self.assertIn("BID_ASK", row["label_note"])
 
     def test_forward_variant_membership_is_point_in_time_and_directional(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -157,9 +186,9 @@ class ResearchPipelineTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "hash mismatch"):
                 ForwardVariantJournal(Path(directory) / "rows.csv", contract)
 
-    def test_forward_variant_refuses_runtime_cost_drift(self):
+    def test_forward_variant_refuses_runtime_slippage_drift(self):
         with tempfile.TemporaryDirectory() as directory, \
-             patch("config.settings.RESEARCH_SPREAD_POINTS", 0.50):
+             patch("config.settings.RESEARCH_SLIPPAGE_POINTS", 0.50):
             with self.assertRaisesRegex(RuntimeError, "runtime settings"):
                 ForwardVariantJournal(Path(directory) / "rows.csv")
 
@@ -171,7 +200,7 @@ class ResearchPipelineTests(unittest.TestCase):
             feature_row.update({name: 0.0 for name in GoldFeatureEngineer.FEATURE_COLS})
             pd.DataFrame([feature_row]).to_csv(root / "features.csv", index=False)
             pd.DataFrame([{
-                "candidate_id": "ABC", "experiment_version": "forward-shadow-20260718-v1",
+                "candidate_id": "ABC", "experiment_version": "forward-pilot-20260719-v2",
                 "contract_sha256": ForwardVariantJournal.EXPECTED_CONTRACT_SHA256,
                 "baseline_v1": 1, "buy_liquidity_v1": 1, "min_rr_eligible": 1,
                 "liquidity_sweep_1h_present": 1, "paper_trading": True,
@@ -190,7 +219,7 @@ class ResearchPipelineTests(unittest.TestCase):
                             root / "assignments.csv")
             self.assertEqual(len(joined), 1)
             self.assertEqual(joined.iloc[0]["experiment_version"],
-                             "forward-shadow-20260718-v1")
+                             "forward-pilot-20260719-v2")
             self.assertEqual(str(joined.iloc[0]["buy_liquidity_v1"]), "1")
 
     def test_dashboard_shadow_panel_counts_only_eligible_matured_members(self):
@@ -198,10 +227,10 @@ class ResearchPipelineTests(unittest.TestCase):
             root = Path(directory)
             pd.DataFrame([
                 {"candidate_id": "BUY1", "timestamp": "2026-07-18T21:20:00Z",
-                 "experiment_version": "forward-shadow-20260718-v1", "baseline_v1": 1,
+                 "experiment_version": "forward-pilot-20260719-v2", "baseline_v1": 1,
                  "buy_liquidity_v1": 1, "min_rr_eligible": 1},
                 {"candidate_id": "SELL1", "timestamp": "2026-07-18T21:35:00Z",
-                 "experiment_version": "forward-shadow-20260718-v1", "baseline_v1": 1,
+                 "experiment_version": "forward-pilot-20260719-v2", "baseline_v1": 1,
                  "buy_liquidity_v1": 0, "min_rr_eligible": 1},
             ]).to_csv(root / "assignments.csv", index=False)
             pd.DataFrame([
@@ -221,7 +250,7 @@ class ResearchPipelineTests(unittest.TestCase):
             log = Path(directory) / "scanner.log"
             cadences = {"1W": 604800, "1D": 86400, "4H": 14400,
                         "1H": 3600, "15M": 900}
-            last_time = int(datetime.now(timezone.utc).timestamp() // 900 * 900)
+            last_time = int(datetime.now(timezone.utc).timestamp() // 900 * 900) - 900
             frames = {}
             for name, cadence in cadences.items():
                 bars = [{"time": last_time - (199 - i) * cadence, "open": 2000,
@@ -235,11 +264,56 @@ class ResearchPipelineTests(unittest.TestCase):
                 "timeframes": frames,
             }))
             log.write_text("x [ORCHESTRATOR] Result: NO_CANDIDATE\n")
-            with patch("dashboard.is_market_closed", return_value=False):
+            with patch("config.settings.PRICE_DATA_PROVIDER", "tradingview"), \
+                 patch("dashboard.is_market_closed", return_value=False):
                 health = get_feed_health(snapshot, log)
             self.assertEqual(health["status"], "HEALTHY")
             self.assertEqual(health["last_scan"], "NO_CANDIDATE")
             self.assertEqual(health["market"], "OPEN")
+
+    def test_dukascopy_snapshot_requires_and_preserves_bid_ask_quotes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot = Path(directory) / "dukascopy.json"
+            cadences = {"1W": 604800, "1D": 86400, "4H": 14400,
+                        "1H": 3600, "15M": 900}
+            last_time = int(datetime.now(timezone.utc).timestamp() // 900 * 900) - 900
+            frames = {}
+            for offset, (name, cadence) in enumerate(cadences.items()):
+                bars = []
+                for i in range(200):
+                    close = 2001 + offset * 0.01
+                    bars.append({
+                        "time": last_time - (199 - i) * cadence,
+                        "open": 2000 + offset * 0.01, "high": 2002 + offset * 0.01,
+                        "low": 1998 + offset * 0.01, "close": close, "volume": 10,
+                        "bid_open": 1999.9, "bid_high": 2001.9,
+                        "bid_low": 1997.9, "bid_close": close - 0.1,
+                        "ask_open": 2000.1, "ask_high": 2002.1,
+                        "ask_low": 1998.1, "ask_close": close + 0.1,
+                    })
+                frames[name] = {"resolution": name, "bar_count": 200, "bars": bars}
+            snapshot.write_text(json.dumps({
+                "schema_version": 2,
+                "captured_at": datetime.now(timezone.utc).isoformat(),
+                "provider": "dukascopy-public", "symbol": "DUKASCOPY:XAUUSD",
+                "timeframes": frames,
+            }))
+            with patch("config.settings.PRICE_DATA_PROVIDER", "dukascopy"), \
+                 patch("config.settings.DUKASCOPY_SNAPSHOT_PATH", snapshot), \
+                 patch("dashboard.is_market_closed", return_value=False):
+                health = get_feed_health(snapshot, Path(directory) / "missing.log")
+            self.assertEqual(health["status"], "HEALTHY")
+            self.assertTrue(all(frame["quotes"] for frame in health["frames"].values()))
+
+            fake_signal = {"direction": "BUY"}
+            with patch("config.settings.PRICE_DATA_PROVIDER", "dukascopy"), \
+                 patch("config.settings.DUKASCOPY_SNAPSHOT_PATH", snapshot), \
+                 patch("agent.smc_gold_scanner.check_news_guard", return_value=(False, "clear")), \
+                 patch("agent.smc_gold_scanner._run_smc_analysis", return_value=fake_signal):
+                result = _run_from_price_snapshot()
+            self.assertEqual(result["execution_quote_source"], "DUKASCOPY_BID_ASK")
+            self.assertAlmostEqual(result["decision_ask_close"],
+                                   frames["15M"]["bars"][-1]["ask_close"])
 
     def test_duplicate_15m_payloads_cannot_claim_multitimeframe_health(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -255,12 +329,14 @@ class ResearchPipelineTests(unittest.TestCase):
                 "timeframes": {name: {"resolution": name, "bars": bars}
                                for name in ("1W", "1D", "4H", "1H", "15M")},
             }))
-            with patch("dashboard.is_market_closed", return_value=False):
+            with patch("config.settings.PRICE_DATA_PROVIDER", "tradingview"), \
+                 patch("dashboard.is_market_closed", return_value=False):
                 health = get_feed_health(snapshot, Path(directory) / "missing.log")
             self.assertEqual(health["status"], "DEGRADED")
             self.assertEqual(health["integrity"], "FAIL")
             self.assertFalse(health["frames"]["1W"]["cadence"])
-            with patch("config.settings.TRADINGVIEW_SNAPSHOT_PATH", snapshot), \
+            with patch("config.settings.PRICE_DATA_PROVIDER", "tradingview"), \
+                 patch("config.settings.TRADINGVIEW_SNAPSHOT_PATH", snapshot), \
                  patch("agent.smc_gold_scanner.check_news_guard", return_value=(False, "clear")):
                 self.assertIsNone(_run_from_tradingview_snapshot())
 
@@ -308,7 +384,8 @@ class ResearchPipelineTests(unittest.TestCase):
                 "captured_at": (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
                 "symbol": "OANDA:XAUUSD", "timeframes": {},
             }))
-            with patch("config.settings.TRADINGVIEW_SNAPSHOT_PATH", snapshot), \
+            with patch("config.settings.PRICE_DATA_PROVIDER", "tradingview"), \
+                 patch("config.settings.TRADINGVIEW_SNAPSHOT_PATH", snapshot), \
                  patch("config.settings.SNAPSHOT_MAX_AGE_SECONDS", 900), \
                  patch("agent.smc_gold_scanner.check_news_guard", return_value=(False, "clear")):
                 self.assertIsNone(_run_from_tradingview_snapshot())

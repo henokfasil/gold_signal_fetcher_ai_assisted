@@ -34,7 +34,7 @@ TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN') or os.getenv('TELEGRAM_TOKE
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 METAAPI_TOKEN = os.getenv('METAAPI_TOKEN')
 METAAPI_ACCOUNT_ID = os.getenv('METAAPI_ACCOUNT_ID')
-PRICE_DATA_PROVIDER = os.getenv('PRICE_DATA_PROVIDER', 'tradingview').lower()
+PRICE_DATA_PROVIDER = os.getenv('PRICE_DATA_PROVIDER', 'dukascopy').lower()
 
 # ML Model Configuration
 ML_CONFIDENCE_THRESHOLD = float(os.getenv('ML_CONFIDENCE_THRESHOLD', '0.35'))
@@ -87,9 +87,33 @@ SYSTEM_A_CSV = Path(os.getenv('SYSTEM_A_CSV', '/root/Gold_Signal_Fetcher/data/pa
 TRADINGVIEW_SNAPSHOT_PATH = Path(
     os.getenv('TRADINGVIEW_SNAPSHOT_PATH', '/tmp/tradingview_snapshot.json')
 )
+DUKASCOPY_SNAPSHOT_PATH = Path(
+    os.getenv('DUKASCOPY_SNAPSHOT_PATH', '/tmp/dukascopy_snapshot.json')
+)
 MACRO_SNAPSHOT_PATH = Path(os.getenv('MACRO_SNAPSHOT_PATH', '/tmp/gold_macro_snapshot.json'))
 SNAPSHOT_MAX_AGE_SECONDS = int(os.getenv('SNAPSHOT_MAX_AGE_SECONDS', '900'))
 DASHBOARD_FEED_MAX_AGE_SECONDS = int(os.getenv('DASHBOARD_FEED_MAX_AGE_SECONDS', '1200'))
+PRICE_BAR_MAX_LAG_SECONDS = int(os.getenv('PRICE_BAR_MAX_LAG_SECONDS', '1800'))
+
+
+def price_snapshot_contract(provider=None):
+    """Return the file and exact source identity for snapshot providers."""
+    selected = (provider or PRICE_DATA_PROVIDER).lower()
+    contracts = {
+        'tradingview': {
+            'path': TRADINGVIEW_SNAPSHOT_PATH,
+            'provider': 'tradingview-mcp',
+            'symbol': 'OANDA:XAUUSD',
+        },
+        'dukascopy': {
+            'path': DUKASCOPY_SNAPSHOT_PATH,
+            'provider': 'dukascopy-public',
+            'symbol': 'DUKASCOPY:XAUUSD',
+        },
+    }
+    if selected not in contracts:
+        raise ValueError(f'provider {selected!r} does not use an OHLC snapshot')
+    return contracts[selected]
 
 
 def strategy_value(section: str, key: str, default):

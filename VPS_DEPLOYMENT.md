@@ -6,13 +6,12 @@ The only active deployment is `187.55.229.4` in
 ## Runtime
 
 - Dashboard: `gold-signal-fetcher.service`, port `8502`.
-- TradingView display: `tradingview-display.service`.
-- TradingView Desktop: `tradingview-session.service` under `tvfetcher`.
-- CDP: `127.0.0.1:9222` only.
-- VNC: maintenance only, disabled and normally stopped.
+- TradingView desktop/MCP: optional interactive legacy research only.
+- CDP and maintenance VNC, if enabled, remain localhost-only.
 - Paper scan: `ops/run_gold_scanner_ai.sh` at minutes 5/20/35/50.
-- Price source: TradingView MCP, exact `OANDA:XAUUSD`.
-- Snapshot: `/tmp/tradingview_snapshot.json`, 200 bars each for W/D/4H/1H/15M.
+- Price source: Dukascopy public feed, exact XAUUSD bid/ask.
+- Snapshot: `/tmp/dukascopy_snapshot.json`, 200 complete bars each for
+  1W/1D/4H/1H/15M.
 
 The locked wrapper collects and validates a fresh atomic snapshot before every
 scan. Collection failure aborts the scan. `PAPER_TRADING=true` is forced by the
@@ -25,8 +24,11 @@ cd /root/gold_signal_fetcher_ai_assisted
 git pull --ff-only
 venv/bin/python -m unittest discover -s tests -v
 venv/bin/python validate_code.py
-install -m 0755 ops/collect_tradingview_snapshot.py \
-  /usr/local/lib/gold-signal-fetcher/collect_tradingview_snapshot.py
+install -m 0755 ops/collect_dukascopy_snapshot.py \
+  /usr/local/lib/gold-signal-fetcher/collect_dukascopy_snapshot.py
+# Preserve secrets and edit only these source selectors in .env:
+# PRICE_DATA_PROVIDER=dukascopy
+# DUKASCOPY_SNAPSHOT_PATH=/tmp/dukascopy_snapshot.json
 systemctl restart gold-signal-fetcher.service
 ```
 
@@ -36,16 +38,16 @@ paper ledger during deployment.
 ## Verify
 
 ```bash
-systemctl is-active gold-signal-fetcher.service \
-  tradingview-display.service tradingview-session.service
-ss -lntp | grep -E ':(8502|9222)[[:space:]]'
+systemctl is-active gold-signal-fetcher.service
+ss -lntp | grep -E ':(8502)[[:space:]]'
 crontab -l
 curl -fsS http://127.0.0.1:8502/ >/dev/null
 tail -50 logs/gold_scanner_ai.log
 ```
 
-Expected: dashboard HTTP 200, CDP on localhost only, VNC absent, scanner cron
-present, and the dashboard feed panel HEALTHY.
+Expected: dashboard HTTP 200, scanner cron present, and the dashboard feed
+panel HEALTHY with five cadence and bid/ask checks passing. During the weekend,
+the latest bar may be old while the panel correctly reports market CLOSED.
 
 ## Telegram
 

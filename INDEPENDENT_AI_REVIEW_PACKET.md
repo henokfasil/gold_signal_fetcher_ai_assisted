@@ -1,5 +1,11 @@
 # Independent AI Review Packet — Gold Signal Fetcher
 
+> Historical review snapshot. The implemented response, corrected power design
+> and replacement data contract are recorded in
+> `RESEARCH_REVIEW_ACTIONS_2026-07-19.md`. The v1 forward contract below never
+> began valid collection because the TradingView multi-timeframe payload failed
+> cadence/duplication checks; it has been superseded by the hash-locked v2 pilot.
+
 Prepared: 2026-07-18
 
 Repository revision: `9114ce76e2a1d94825f9c7a932cd7ab1a50e4959`

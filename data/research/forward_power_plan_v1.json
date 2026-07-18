@@ -1,0 +1,112 @@
+{
+  "status": "PLANNING_ONLY_NOT_EDGE_EVIDENCE",
+  "population": "BUY + point-in-time 1H liquidity sweep after lifecycle gates",
+  "primary_estimand": "mean after-cost net_return_pct per eligible candidate",
+  "test": "one-sided weekly-cluster-robust mean greater than zero, alpha=0.05",
+  "target_power": 0.8,
+  "historical_variance_reference": {
+    "weeks": 207,
+    "rows": 1086,
+    "mean_net_return_pct": 0.07955338817286976,
+    "cluster_robust_standard_error": 0.048610821580948885,
+    "average_candidates_per_week": 5.246376811594203
+  },
+  "historical_portfolio_reference": {
+    "starting_capital": 10000.0,
+    "ending_capital": 14319.748977786794,
+    "net_pnl_usd": 4319.748977786794,
+    "return_pct": 43.19748977786795,
+    "opened": 1086,
+    "rejected": 16610,
+    "max_concurrent": 14,
+    "max_drawdown_pct": 14.010526683858906,
+    "profit_factor": 1.373696050791724,
+    "by_direction": {
+      "BUY": {
+        "trades": 1086,
+        "win_rate": 0.289134438305709,
+        "pnl_usd": 4319.748977786828,
+        "mean_net_return_pct": 0.07955338817286976
+      }
+    },
+    "rejection_reasons": {
+      "SETUP_COOLDOWN": 13192,
+      "MIN_RR_NOT_MET": 3388,
+      "UNMATURED_OR_AMBIGUOUS": 19,
+      "DAILY_LOSS_CAP": 11
+    },
+    "limitations": [
+      "Development history, not untouched evidence.",
+      "Fixed paper notional; no broker execution or financing costs.",
+      "Portfolio outcomes use Dukascopy historical bid/ask labels."
+    ]
+  },
+  "effect_scenarios": {
+    "0.030_pct_per_candidate": {
+      "minimum_effect_net_return_pct": 0.03,
+      "weeks_for_80pct_power": 3360.1750580185108,
+      "months_for_80pct_power": 773.3429362528218,
+      "candidates_for_80pct_power": 17628.744507285523,
+      "power_at_fixed_26_week_pilot": {
+        "weeks": 26.0,
+        "expected_candidates": 136.40579710144928,
+        "projected_standard_error": 0.13716125809515559,
+        "one_sided_power": 0.07691498123671503
+      },
+      "power_at_200_candidates": {
+        "weeks": 38.12154696132597,
+        "expected_candidates": 200.00000000000003,
+        "projected_standard_error": 0.1132746883598777,
+        "one_sided_power": 0.08379167516046726
+      }
+    },
+    "0.050_pct_per_candidate": {
+      "minimum_effect_net_return_pct": 0.05,
+      "weeks_for_80pct_power": 1209.6630208866638,
+      "months_for_80pct_power": 278.40345705101583,
+      "candidates_for_80pct_power": 6346.3480226227875,
+      "power_at_fixed_26_week_pilot": {
+        "weeks": 26.0,
+        "expected_candidates": 136.40579710144928,
+        "projected_standard_error": 0.13716125809515559,
+        "one_sided_power": 0.10021644812675956
+      },
+      "power_at_200_candidates": {
+        "weeks": 38.12154696132597,
+        "expected_candidates": 200.00000000000003,
+        "projected_standard_error": 0.1132746883598777,
+        "one_sided_power": 0.11440135646293326
+      }
+    },
+    "0.080_pct_per_candidate": {
+      "minimum_effect_net_return_pct": 0.08,
+      "weeks_for_80pct_power": 472.5246175338531,
+      "months_for_80pct_power": 108.75135041055307,
+      "candidates_for_80pct_power": 2479.0421963370263,
+      "power_at_fixed_26_week_pilot": {
+        "weeks": 26.0,
+        "expected_candidates": 136.40579710144928,
+        "projected_standard_error": 0.13716125809515559,
+        "one_sided_power": 0.14420898589519227
+      },
+      "power_at_200_candidates": {
+        "weeks": 38.12154696132597,
+        "expected_candidates": 200.00000000000003,
+        "projected_standard_error": 0.1132746883598777,
+        "one_sided_power": 0.1739665812374872
+      }
+    }
+  },
+  "recommendation": {
+    "design": "fixed 26-week pilot with no interim outcome analysis",
+    "purpose": "falsification and forward variance estimation, not guaranteed validation",
+    "primary_cutoff_rule": "include candidates assigned at or before the fixed cutoff; allow 48 hours for maturity; never extend because the observed result is inconvenient",
+    "next_confirmation": "use pilot variance to preregister a separately versioned, adequately powered test"
+  },
+  "limitations": [
+    "Variance and weekly dependence are estimated from contaminated Dukascopy history.",
+    "Normal cluster approximation can be inaccurate with regime shifts.",
+    "Historical candidate frequency may not transfer to the future Dukascopy runtime window.",
+    "Power does not correct hypothesis selection from inspected history."
+  ]
+}

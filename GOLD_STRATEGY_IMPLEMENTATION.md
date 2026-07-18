@@ -1,5 +1,10 @@
 # Gold Trading Strategy - ETH-Adapted Implementation
 
+> Archived early implementation proposal. Its readiness and expected-return
+> claims are invalid and must not guide the current system. The tested ML model
+> was rejected and no profitable edge is established. Use `CLAUDE.md` and
+> `RESEARCH_PROTOCOL.md`.
+
 **Status:** Ready for Deployment  
 **Based On:** ETH System A+C (50% WR, +16.77% in 7 days)  
 **Target Market:** XAUUSD (Gold)  

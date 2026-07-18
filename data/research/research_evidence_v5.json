@@ -1,0 +1,1518 @@
+{
+  "status": "DEVELOPMENT_DIAGNOSTIC_ONLY",
+  "eligible_rows": 11843,
+  "dependence": {
+    "rows": 11843,
+    "sum_uniqueness": 2897.5104580775533,
+    "kish_effective_sample_size": 5478.109302507098,
+    "median_uniqueness": 0.13091590689639346,
+    "p05_uniqueness": 0.03838625497562414,
+    "max_label_concurrency": 50
+  },
+  "directional_portfolios": {
+    "BUY": {
+      "portfolio": {
+        "starting_capital": 10000.0,
+        "ending_capital": 12252.907594269813,
+        "net_pnl_usd": 2252.9075942698128,
+        "return_pct": 22.529075942698128,
+        "opened": 1488,
+        "rejected": 21007,
+        "max_concurrent": 13,
+        "max_drawdown_pct": 25.250122179779794,
+        "profit_factor": 1.1322870338592874,
+        "by_direction": {
+          "BUY": {
+            "trades": 1488,
+            "win_rate": 0.26948924731182794,
+            "pnl_usd": 2252.90759426985,
+            "mean_net_return_pct": 0.030281016052014106
+          }
+        },
+        "rejection_reasons": {
+          "SETUP_COOLDOWN": 16839,
+          "MIN_RR_NOT_MET": 4132,
+          "UNMATURED_OR_AMBIGUOUS": 21,
+          "DAILY_LOSS_CAP": 15
+        },
+        "limitations": [
+          "Development history, not untouched evidence.",
+          "Fixed paper notional; no broker execution or financing costs.",
+          "Portfolio outcomes use Dukascopy historical bid/ask labels."
+        ]
+      },
+      "weekly_block_bootstrap": {
+        "samples": 2000,
+        "weeks": 213,
+        "seed": 42,
+        "return_pct": {
+          "median": 21.427133105904524,
+          "lower_95": -28.087958606255718,
+          "upper_95": 80.76528876577473
+        },
+        "profit_factor": {
+          "median": 1.126290065725748,
+          "lower_95": 0.8390134543102375,
+          "upper_95": 1.4726271650542953
+        },
+        "max_drawdown_pct": {
+          "median": 15.717075072850154,
+          "lower_95": 7.001376147846343,
+          "upper_95": 39.26101208788846
+        },
+        "mean_pnl_usd_per_trade": {
+          "median": 1.441654476384838,
+          "lower_95": -1.9370629759028202,
+          "upper_95": 5.22292049501352
+        }
+      }
+    },
+    "SELL": {
+      "portfolio": {
+        "starting_capital": 10000.0,
+        "ending_capital": 8527.862432149015,
+        "net_pnl_usd": -1472.1375678509849,
+        "return_pct": -14.721375678509851,
+        "opened": 1238,
+        "rejected": 17059,
+        "max_concurrent": 12,
+        "max_drawdown_pct": 38.28268170340937,
+        "profit_factor": 0.9023254119359486,
+        "by_direction": {
+          "SELL": {
+            "trades": 1238,
+            "win_rate": 0.22617124394184168,
+            "pnl_usd": -1472.1375678510203,
+            "mean_net_return_pct": -0.023782513212455884
+          }
+        },
+        "rejection_reasons": {
+          "SETUP_COOLDOWN": 13740,
+          "MIN_RR_NOT_MET": 3296,
+          "UNMATURED_OR_AMBIGUOUS": 23
+        },
+        "limitations": [
+          "Development history, not untouched evidence.",
+          "Fixed paper notional; no broker execution or financing costs.",
+          "Portfolio outcomes use Dukascopy historical bid/ask labels."
+        ]
+      },
+      "weekly_block_bootstrap": {
+        "samples": 2000,
+        "weeks": 195,
+        "seed": 42,
+        "return_pct": {
+          "median": -15.865025570534176,
+          "lower_95": -55.36876460990298,
+          "upper_95": 28.072903262057505
+        },
+        "profit_factor": {
+          "median": 0.8929896926352884,
+          "lower_95": 0.6471549150425205,
+          "upper_95": 1.195964986707301
+        },
+        "max_drawdown_pct": {
+          "median": 26.592161427511826,
+          "lower_95": 9.999244142195797,
+          "upper_95": 60.024980853525776
+        },
+        "mean_pnl_usd_per_trade": {
+          "median": -1.2978966271638646,
+          "lower_95": -4.533675848612272,
+          "upper_95": 2.340220131897397
+        }
+      }
+    }
+  },
+  "smc_ablations": {
+    "structure_baseline": {
+      "overall": {
+        "starting_capital": 10000.0,
+        "ending_capital": 9959.161706367124,
+        "net_pnl_usd": -40.83829363287623,
+        "return_pct": -0.4083829363287661,
+        "opened": 2695,
+        "rejected": 38097,
+        "max_concurrent": 12,
+        "max_drawdown_pct": 34.55394306746833,
+        "profit_factor": 0.9987131461725778,
+        "by_direction": {
+          "BUY": {
+            "trades": 1463,
+            "win_rate": 0.265892002734108,
+            "pnl_usd": 1396.9862069663563,
+            "mean_net_return_pct": 0.019097555802684303
+          },
+          "SELL": {
+            "trades": 1232,
+            "win_rate": 0.22646103896103897,
+            "pnl_usd": -1437.8245005992271,
+            "mean_net_return_pct": -0.02334130682790953
+          }
+        },
+        "rejection_reasons": {
+          "SETUP_COOLDOWN": 30579,
+          "MIN_RR_NOT_MET": 7428,
+          "UNMATURED_OR_AMBIGUOUS": 44,
+          "WEEKLY_LOSS_CAP": 31,
+          "DAILY_LOSS_CAP": 15
+        },
+        "limitations": [
+          "Development history, not untouched evidence.",
+          "Fixed paper notional; no broker execution or financing costs.",
+          "Portfolio outcomes use Dukascopy historical bid/ask labels."
+        ]
+      },
+      "weekly_block_bootstrap": {
+        "samples": 2000,
+        "weeks": 285,
+        "seed": 42,
+        "return_pct": {
+          "median": -1.8577025850758895,
+          "lower_95": -58.83902163577815,
+          "upper_95": 65.06921332194646
+        },
+        "profit_factor": {
+          "median": 0.9940594765857177,
+          "lower_95": 0.8150884878474497,
+          "upper_95": 1.21367221107504
+        },
+        "max_drawdown_pct": {
+          "median": 30.17882226495344,
+          "lower_95": 11.982274355073448,
+          "upper_95": 68.35554911749038
+        },
+        "mean_pnl_usd_per_trade": {
+          "median": -0.07025468939629176,
+          "lower_95": -2.225118762117073,
+          "upper_95": 2.5061769282660538
+        }
+      },
+      "by_direction": {
+        "BUY": {
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 12252.907594269813,
+            "net_pnl_usd": 2252.9075942698128,
+            "return_pct": 22.529075942698128,
+            "opened": 1488,
+            "rejected": 21007,
+            "max_concurrent": 13,
+            "max_drawdown_pct": 25.250122179779794,
+            "profit_factor": 1.1322870338592874,
+            "by_direction": {
+              "BUY": {
+                "trades": 1488,
+                "win_rate": 0.26948924731182794,
+                "pnl_usd": 2252.90759426985,
+                "mean_net_return_pct": 0.030281016052014106
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 16839,
+              "MIN_RR_NOT_MET": 4132,
+              "UNMATURED_OR_AMBIGUOUS": 21,
+              "DAILY_LOSS_CAP": 15
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_bootstrap": {
+            "samples": 2000,
+            "weeks": 213,
+            "seed": 42,
+            "return_pct": {
+              "median": 21.427133105904524,
+              "lower_95": -28.087958606255718,
+              "upper_95": 80.76528876577473
+            },
+            "profit_factor": {
+              "median": 1.126290065725748,
+              "lower_95": 0.8390134543102375,
+              "upper_95": 1.4726271650542953
+            },
+            "max_drawdown_pct": {
+              "median": 15.717075072850154,
+              "lower_95": 7.001376147846343,
+              "upper_95": 39.26101208788846
+            },
+            "mean_pnl_usd_per_trade": {
+              "median": 1.441654476384838,
+              "lower_95": -1.9370629759028202,
+              "upper_95": 5.22292049501352
+            }
+          }
+        },
+        "SELL": {
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 8527.862432149015,
+            "net_pnl_usd": -1472.1375678509849,
+            "return_pct": -14.721375678509851,
+            "opened": 1238,
+            "rejected": 17059,
+            "max_concurrent": 12,
+            "max_drawdown_pct": 38.28268170340937,
+            "profit_factor": 0.9023254119359486,
+            "by_direction": {
+              "SELL": {
+                "trades": 1238,
+                "win_rate": 0.22617124394184168,
+                "pnl_usd": -1472.1375678510203,
+                "mean_net_return_pct": -0.023782513212455884
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 13740,
+              "MIN_RR_NOT_MET": 3296,
+              "UNMATURED_OR_AMBIGUOUS": 23
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_bootstrap": {
+            "samples": 2000,
+            "weeks": 195,
+            "seed": 42,
+            "return_pct": {
+              "median": -15.865025570534176,
+              "lower_95": -55.36876460990298,
+              "upper_95": 28.072903262057505
+            },
+            "profit_factor": {
+              "median": 0.8929896926352884,
+              "lower_95": 0.6471549150425205,
+              "upper_95": 1.195964986707301
+            },
+            "max_drawdown_pct": {
+              "median": 26.592161427511826,
+              "lower_95": 9.999244142195797,
+              "upper_95": 60.024980853525776
+            },
+            "mean_pnl_usd_per_trade": {
+              "median": -1.2978966271638646,
+              "lower_95": -4.533675848612272,
+              "upper_95": 2.340220131897397
+            }
+          }
+        }
+      },
+      "yearly": {
+        "2021": {
+          "opened": 396,
+          "return_pct": -10.602666998585008,
+          "profit_factor": 0.7444791243603668,
+          "max_drawdown_pct": 10.653826121633546,
+          "buy_pnl_usd": -341.0622755710939,
+          "sell_pnl_usd": -719.2044242873926
+        },
+        "2022": {
+          "opened": 499,
+          "return_pct": -17.439564517022376,
+          "profit_factor": 0.7008487316197124,
+          "max_drawdown_pct": 21.057632153742745,
+          "buy_pnl_usd": -1692.528547198609,
+          "sell_pnl_usd": -51.42790450363498
+        },
+        "2023": {
+          "opened": 483,
+          "return_pct": 12.745764444832709,
+          "profit_factor": 1.3058142052085575,
+          "max_drawdown_pct": 7.270894935997596,
+          "buy_pnl_usd": 917.3518072469543,
+          "sell_pnl_usd": 357.22463723630193
+        },
+        "2024": {
+          "opened": 388,
+          "return_pct": -16.444232168402085,
+          "profit_factor": 0.5816965068438105,
+          "max_drawdown_pct": 19.643888893700424,
+          "buy_pnl_usd": -181.54951110992573,
+          "sell_pnl_usd": -1462.873705730271
+        },
+        "2025": {
+          "opened": 526,
+          "return_pct": 6.451879677518546,
+          "profit_factor": 1.1026458640080754,
+          "max_drawdown_pct": 9.225214522737305,
+          "buy_pnl_usd": 1580.0817731198488,
+          "sell_pnl_usd": -934.8938053679996
+        },
+        "2026": {
+          "opened": 401,
+          "return_pct": 24.99163467269543,
+          "profit_factor": 1.3395510711504757,
+          "max_drawdown_pct": 8.689131135541361,
+          "buy_pnl_usd": 1114.6929604791824,
+          "sell_pnl_usd": 1384.4705067903626
+        }
+      },
+      "positive_years": 3,
+      "evaluated_years": 6
+    },
+    "structure_plus_liquidity_sweep": {
+      "overall": {
+        "starting_capital": 10000.0,
+        "ending_capital": 13439.71126234633,
+        "net_pnl_usd": 3439.711262346331,
+        "return_pct": 34.3971126234633,
+        "opened": 2139,
+        "rejected": 30882,
+        "max_concurrent": 14,
+        "max_drawdown_pct": 19.260891549700474,
+        "profit_factor": 1.145228026770605,
+        "by_direction": {
+          "BUY": {
+            "trades": 1086,
+            "win_rate": 0.289134438305709,
+            "pnl_usd": 4319.748977786828,
+            "mean_net_return_pct": 0.07955338817286976
+          },
+          "SELL": {
+            "trades": 1053,
+            "win_rate": 0.2336182336182336,
+            "pnl_usd": -880.0377154404891,
+            "mean_net_return_pct": -0.016714866390132747
+          }
+        },
+        "rejection_reasons": {
+          "SETUP_COOLDOWN": 24648,
+          "MIN_RR_NOT_MET": 6181,
+          "UNMATURED_OR_AMBIGUOUS": 42,
+          "DAILY_LOSS_CAP": 11
+        },
+        "limitations": [
+          "Development history, not untouched evidence.",
+          "Fixed paper notional; no broker execution or financing costs.",
+          "Portfolio outcomes use Dukascopy historical bid/ask labels."
+        ]
+      },
+      "weekly_block_bootstrap": {
+        "samples": 2000,
+        "weeks": 282,
+        "seed": 42,
+        "return_pct": {
+          "median": 33.56657589920704,
+          "lower_95": -25.018752407281255,
+          "upper_95": 101.51569709283451
+        },
+        "profit_factor": {
+          "median": 1.1440124934509848,
+          "lower_95": 0.8977520985810838,
+          "upper_95": 1.4253985932782083
+        },
+        "max_drawdown_pct": {
+          "median": 16.75792785166046,
+          "lower_95": 7.559534043928231,
+          "upper_95": 41.06448554662966
+        },
+        "mean_pnl_usd_per_trade": {
+          "median": 1.5766462648574016,
+          "lower_95": -1.1722560068711017,
+          "upper_95": 4.64083623939899
+        }
+      },
+      "by_direction": {
+        "BUY": {
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 14319.748977786794,
+            "net_pnl_usd": 4319.748977786794,
+            "return_pct": 43.19748977786795,
+            "opened": 1086,
+            "rejected": 16610,
+            "max_concurrent": 14,
+            "max_drawdown_pct": 14.010526683858906,
+            "profit_factor": 1.373696050791724,
+            "by_direction": {
+              "BUY": {
+                "trades": 1086,
+                "win_rate": 0.289134438305709,
+                "pnl_usd": 4319.748977786828,
+                "mean_net_return_pct": 0.07955338817286976
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 13192,
+              "MIN_RR_NOT_MET": 3388,
+              "UNMATURED_OR_AMBIGUOUS": 19,
+              "DAILY_LOSS_CAP": 11
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_bootstrap": {
+            "samples": 2000,
+            "weeks": 207,
+            "seed": 42,
+            "return_pct": {
+              "median": 40.85241221291926,
+              "lower_95": -5.76015879298784,
+              "upper_95": 101.28475158383844
+            },
+            "profit_factor": {
+              "median": 1.3504372470888562,
+              "lower_95": 0.9498826274041245,
+              "upper_95": 1.8627529051341554
+            },
+            "max_drawdown_pct": {
+              "median": 9.039130871740163,
+              "lower_95": 4.266907092278288,
+              "upper_95": 21.454660135660934
+            },
+            "mean_pnl_usd_per_trade": {
+              "median": 3.741855932932654,
+              "lower_95": -0.5930249343179835,
+              "upper_95": 8.964154067932862
+            }
+          }
+        },
+        "SELL": {
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 9119.962284559546,
+            "net_pnl_usd": -880.0377154404541,
+            "return_pct": -8.800377154404536,
+            "opened": 1053,
+            "rejected": 14272,
+            "max_concurrent": 10,
+            "max_drawdown_pct": 32.33448949261869,
+            "profit_factor": 0.9274218111725611,
+            "by_direction": {
+              "SELL": {
+                "trades": 1053,
+                "win_rate": 0.2336182336182336,
+                "pnl_usd": -880.0377154404891,
+                "mean_net_return_pct": -0.016714866390132747
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 11456,
+              "MIN_RR_NOT_MET": 2793,
+              "UNMATURED_OR_AMBIGUOUS": 23
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_bootstrap": {
+            "samples": 2000,
+            "weeks": 192,
+            "seed": 42,
+            "return_pct": {
+              "median": -9.186123715840093,
+              "lower_95": -43.67904799367895,
+              "upper_95": 32.66268996895982
+            },
+            "profit_factor": {
+              "median": 0.9227532419190232,
+              "lower_95": 0.6576174656278687,
+              "upper_95": 1.2801628745727942
+            },
+            "max_drawdown_pct": {
+              "median": 21.12449147737689,
+              "lower_95": 8.28102886500786,
+              "upper_95": 46.96694425741682
+            },
+            "mean_pnl_usd_per_trade": {
+              "median": -0.8722225725781327,
+              "lower_95": -4.175080830726589,
+              "upper_95": 3.0338354943365635
+            }
+          }
+        }
+      },
+      "yearly": {
+        "2021": {
+          "opened": 313,
+          "return_pct": -6.368413652175697,
+          "profit_factor": 0.7963421170080295,
+          "max_drawdown_pct": 7.007991756702412,
+          "buy_pnl_usd": 27.024939660505467,
+          "sell_pnl_usd": -663.8663048780727
+        },
+        "2022": {
+          "opened": 414,
+          "return_pct": -6.611035024211431,
+          "profit_factor": 0.8488993150184561,
+          "max_drawdown_pct": 13.211321337844723,
+          "buy_pnl_usd": -987.0634925842996,
+          "sell_pnl_usd": 325.95999016315034
+        },
+        "2023": {
+          "opened": 389,
+          "return_pct": 13.945637937106014,
+          "profit_factor": 1.4348412393644072,
+          "max_drawdown_pct": 5.597209250562281,
+          "buy_pnl_usd": 897.4809644374751,
+          "sell_pnl_usd": 497.082829273119
+        },
+        "2024": {
+          "opened": 290,
+          "return_pct": -12.645396364367423,
+          "profit_factor": 0.5596525122614101,
+          "max_drawdown_pct": 14.30777063721494,
+          "buy_pnl_usd": -135.4396471669279,
+          "sell_pnl_usd": -1129.0999892698019
+        },
+        "2025": {
+          "opened": 403,
+          "return_pct": 18.339879289126483,
+          "profit_factor": 1.3865335440846298,
+          "max_drawdown_pct": 7.028763719796478,
+          "buy_pnl_usd": 2651.9976737009742,
+          "sell_pnl_usd": -818.009744788318
+        },
+        "2026": {
+          "opened": 328,
+          "return_pct": 27.84763848535132,
+          "profit_factor": 1.520705705208578,
+          "max_drawdown_pct": 7.3182272326733075,
+          "buy_pnl_usd": 1865.7485397391006,
+          "sell_pnl_usd": 919.0153087960273
+        }
+      },
+      "positive_years": 3,
+      "evaluated_years": 6
+    },
+    "structure_plus_order_block": {
+      "overall": {
+        "starting_capital": 10000.0,
+        "ending_capital": 7439.743929306831,
+        "net_pnl_usd": -2560.256070693169,
+        "return_pct": -25.602560706931687,
+        "opened": 2737,
+        "rejected": 27837,
+        "max_concurrent": 12,
+        "max_drawdown_pct": 41.98677072161691,
+        "profit_factor": 0.9118278494669719,
+        "by_direction": {
+          "BUY": {
+            "trades": 1594,
+            "win_rate": 0.2691342534504391,
+            "pnl_usd": 861.6284554074327,
+            "mean_net_return_pct": 0.010810896554672936
+          },
+          "SELL": {
+            "trades": 1143,
+            "win_rate": 0.22397200349956256,
+            "pnl_usd": -3421.88452610057,
+            "mean_net_return_pct": -0.059875494769913745
+          }
+        },
+        "rejection_reasons": {
+          "SETUP_COOLDOWN": 22479,
+          "MIN_RR_NOT_MET": 5313,
+          "UNMATURED_OR_AMBIGUOUS": 42,
+          "DAILY_LOSS_CAP": 3
+        },
+        "limitations": [
+          "Development history, not untouched evidence.",
+          "Fixed paper notional; no broker execution or financing costs.",
+          "Portfolio outcomes use Dukascopy historical bid/ask labels."
+        ]
+      },
+      "weekly_block_bootstrap": {
+        "samples": 2000,
+        "weeks": 286,
+        "seed": 42,
+        "return_pct": {
+          "median": -27.704999948782994,
+          "lower_95": -74.02476586707171,
+          "upper_95": 31.458223169152877
+        },
+        "profit_factor": {
+          "median": 0.905098850115824,
+          "lower_95": 0.745840349145574,
+          "upper_95": 1.1127313693622427
+        },
+        "max_drawdown_pct": {
+          "median": 39.60566261544871,
+          "lower_95": 14.299719859062131,
+          "upper_95": 77.05759880562569
+        },
+        "mean_pnl_usd_per_trade": {
+          "median": -1.0071383471242932,
+          "lower_95": -2.7071479100495863,
+          "upper_95": 1.1761975668407152
+        }
+      },
+      "by_direction": {
+        "BUY": {
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 10861.628455407394,
+            "net_pnl_usd": 861.6284554073936,
+            "return_pct": 8.616284554073928,
+            "opened": 1594,
+            "rejected": 15366,
+            "max_concurrent": 11,
+            "max_drawdown_pct": 24.287782869085113,
+            "profit_factor": 1.0512058490202285,
+            "by_direction": {
+              "BUY": {
+                "trades": 1594,
+                "win_rate": 0.2691342534504391,
+                "pnl_usd": 861.6284554074327,
+                "mean_net_return_pct": 0.010810896554672936
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 12439,
+              "MIN_RR_NOT_MET": 2905,
+              "UNMATURED_OR_AMBIGUOUS": 19,
+              "DAILY_LOSS_CAP": 3
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_bootstrap": {
+            "samples": 2000,
+            "weeks": 224,
+            "seed": 42,
+            "return_pct": {
+              "median": 5.9467871779851365,
+              "lower_95": -35.944370759714126,
+              "upper_95": 58.71929428209977
+            },
+            "profit_factor": {
+              "median": 1.0369056169320183,
+              "lower_95": 0.7944156976493751,
+              "upper_95": 1.3541222943355435
+            },
+            "max_drawdown_pct": {
+              "median": 17.377289643327956,
+              "lower_95": 7.348232842134746,
+              "upper_95": 42.69791450931397
+            },
+            "mean_pnl_usd_per_trade": {
+              "median": 0.37965251344972795,
+              "lower_95": -2.297448391037514,
+              "upper_95": 3.570069038916873
+            }
+          }
+        },
+        "SELL": {
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 6578.115473899449,
+            "net_pnl_usd": -3421.884526100551,
+            "return_pct": -34.218845261005505,
+            "opened": 1143,
+            "rejected": 12471,
+            "max_concurrent": 12,
+            "max_drawdown_pct": 39.35681925164729,
+            "profit_factor": 0.7197532676423756,
+            "by_direction": {
+              "SELL": {
+                "trades": 1143,
+                "win_rate": 0.22397200349956256,
+                "pnl_usd": -3421.88452610057,
+                "mean_net_return_pct": -0.059875494769913745
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 10040,
+              "MIN_RR_NOT_MET": 2408,
+              "UNMATURED_OR_AMBIGUOUS": 23
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_bootstrap": {
+            "samples": 2000,
+            "weeks": 199,
+            "seed": 42,
+            "return_pct": {
+              "median": -34.30711660704276,
+              "lower_95": -55.949122949882614,
+              "upper_95": -10.043182055442886
+            },
+            "profit_factor": {
+              "median": 0.7192106931564823,
+              "lower_95": 0.5557646731294252,
+              "upper_95": 0.912966813017565
+            },
+            "max_drawdown_pct": {
+              "median": 36.65169535285247,
+              "lower_95": 17.798525835663373,
+              "upper_95": 56.955665015244456
+            },
+            "mean_pnl_usd_per_trade": {
+              "median": -3.002609794896501,
+              "lower_95": -4.99634397930224,
+              "upper_95": -0.883921771139928
+            }
+          }
+        }
+      },
+      "yearly": {
+        "2021": {
+          "opened": 392,
+          "return_pct": -10.09885107413827,
+          "profit_factor": 0.728720032926106,
+          "max_drawdown_pct": 11.35040529506014,
+          "buy_pnl_usd": -358.1556344009874,
+          "sell_pnl_usd": -651.7294730128222
+        },
+        "2022": {
+          "opened": 508,
+          "return_pct": -16.430366145745023,
+          "profit_factor": 0.6930892707296081,
+          "max_drawdown_pct": 18.496267551847424,
+          "buy_pnl_usd": -1644.7826212496589,
+          "sell_pnl_usd": 1.7460066751587533
+        },
+        "2023": {
+          "opened": 500,
+          "return_pct": 7.000579248117211,
+          "profit_factor": 1.1775490094813406,
+          "max_drawdown_pct": 6.537264556811782,
+          "buy_pnl_usd": 921.9125770282346,
+          "sell_pnl_usd": -221.8546522165293
+        },
+        "2024": {
+          "opened": 373,
+          "return_pct": -17.069415319066515,
+          "profit_factor": 0.5206115463500995,
+          "max_drawdown_pct": 19.1962049468027,
+          "buy_pnl_usd": -460.4350197429968,
+          "sell_pnl_usd": -1246.50651216364
+        },
+        "2025": {
+          "opened": 584,
+          "return_pct": 18.935823347004856,
+          "profit_factor": 1.3093383686538427,
+          "max_drawdown_pct": 6.452928021290309,
+          "buy_pnl_usd": 2554.985866869628,
+          "sell_pnl_usd": -661.4035321691517
+        },
+        "2026": {
+          "opened": 377,
+          "return_pct": -7.737692864379264,
+          "profit_factor": 0.8774839620282052,
+          "max_drawdown_pct": 13.408150221496513,
+          "buy_pnl_usd": -151.8967130967867,
+          "sell_pnl_usd": -621.8725733411435
+        }
+      },
+      "positive_years": 2,
+      "evaluated_years": 6
+    },
+    "structure_plus_fvg": {
+      "overall": {
+        "starting_capital": 10000.0,
+        "ending_capital": 7569.708156814487,
+        "net_pnl_usd": -2430.2918431855132,
+        "return_pct": -24.302918431855137,
+        "opened": 1313,
+        "rejected": 18682,
+        "max_concurrent": 12,
+        "max_drawdown_pct": 31.920661352061902,
+        "profit_factor": 0.847386657144082,
+        "by_direction": {
+          "BUY": {
+            "trades": 813,
+            "win_rate": 0.23985239852398524,
+            "pnl_usd": -985.0452961489465,
+            "mean_net_return_pct": -0.024232356608830177
+          },
+          "SELL": {
+            "trades": 500,
+            "win_rate": 0.216,
+            "pnl_usd": -1445.2465470365455,
+            "mean_net_return_pct": -0.057809861881461824
+          }
+        },
+        "rejection_reasons": {
+          "SETUP_COOLDOWN": 14867,
+          "MIN_RR_NOT_MET": 3797,
+          "UNMATURED_OR_AMBIGUOUS": 17,
+          "DAILY_LOSS_CAP": 1
+        },
+        "limitations": [
+          "Development history, not untouched evidence.",
+          "Fixed paper notional; no broker execution or financing costs.",
+          "Portfolio outcomes use Dukascopy historical bid/ask labels."
+        ]
+      },
+      "weekly_block_bootstrap": {
+        "samples": 2000,
+        "weeks": 233,
+        "seed": 42,
+        "return_pct": {
+          "median": -24.70763835275138,
+          "lower_95": -55.746685539868196,
+          "upper_95": 6.341501646452281
+        },
+        "profit_factor": {
+          "median": 0.8428178871629519,
+          "lower_95": 0.6625131610060645,
+          "upper_95": 1.0431976878953997
+        },
+        "max_drawdown_pct": {
+          "median": 30.583035003712062,
+          "lower_95": 12.093373614754215,
+          "upper_95": 57.41906548230607
+        },
+        "mean_pnl_usd_per_trade": {
+          "median": -1.8812895682715034,
+          "lower_95": -4.249903217478215,
+          "upper_95": 0.4946558918320025
+        }
+      },
+      "by_direction": {
+        "BUY": {
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 9014.954703851017,
+            "net_pnl_usd": -985.0452961489827,
+            "return_pct": -9.85045296148983,
+            "opened": 813,
+            "rejected": 10754,
+            "max_concurrent": 9,
+            "max_drawdown_pct": 18.73875982916822,
+            "profit_factor": 0.8925204094198479,
+            "by_direction": {
+              "BUY": {
+                "trades": 813,
+                "win_rate": 0.23985239852398524,
+                "pnl_usd": -985.0452961489465,
+                "mean_net_return_pct": -0.024232356608830177
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 8632,
+              "MIN_RR_NOT_MET": 2111,
+              "UNMATURED_OR_AMBIGUOUS": 10,
+              "DAILY_LOSS_CAP": 1
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_bootstrap": {
+            "samples": 2000,
+            "weeks": 148,
+            "seed": 42,
+            "return_pct": {
+              "median": -9.503177001551228,
+              "lower_95": -33.483198794174996,
+              "upper_95": 14.851229776280048
+            },
+            "profit_factor": {
+              "median": 0.8962297831813442,
+              "lower_95": 0.6441233090799593,
+              "upper_95": 1.1746693369373837
+            },
+            "max_drawdown_pct": {
+              "median": 16.613630496816555,
+              "lower_95": 6.382002597717985,
+              "upper_95": 35.780607961110434
+            },
+            "mean_pnl_usd_per_trade": {
+              "median": -1.1710903349277655,
+              "lower_95": -4.191039106889051,
+              "upper_95": 1.7617436876143975
+            }
+          }
+        },
+        "SELL": {
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 8554.753452963456,
+            "net_pnl_usd": -1445.2465470365441,
+            "return_pct": -14.45246547036544,
+            "opened": 500,
+            "rejected": 7928,
+            "max_concurrent": 12,
+            "max_drawdown_pct": 23.51474607720138,
+            "profit_factor": 0.7861919716402713,
+            "by_direction": {
+              "SELL": {
+                "trades": 500,
+                "win_rate": 0.216,
+                "pnl_usd": -1445.2465470365455,
+                "mean_net_return_pct": -0.057809861881461824
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 6235,
+              "MIN_RR_NOT_MET": 1686,
+              "UNMATURED_OR_AMBIGUOUS": 7
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_bootstrap": {
+            "samples": 2000,
+            "weeks": 123,
+            "seed": 42,
+            "return_pct": {
+              "median": -15.251243032576607,
+              "lower_95": -33.661469064505084,
+              "upper_95": 7.23570289142691
+            },
+            "profit_factor": {
+              "median": 0.7741302274382567,
+              "lower_95": 0.5016237704501405,
+              "upper_95": 1.1110309023473854
+            },
+            "max_drawdown_pct": {
+              "median": 19.39953887885568,
+              "lower_95": 7.73304886604515,
+              "upper_95": 35.031335632883724
+            },
+            "mean_pnl_usd_per_trade": {
+              "median": -3.064384258061053,
+              "lower_95": -6.770242903285319,
+              "upper_95": 1.3875721042951996
+            }
+          }
+        }
+      },
+      "yearly": {
+        "2021": {
+          "opened": 174,
+          "return_pct": -3.8593321755471144,
+          "profit_factor": 0.800376137125329,
+          "max_drawdown_pct": 7.88662473777806,
+          "buy_pnl_usd": -329.8406971711833,
+          "sell_pnl_usd": -56.09252038351002
+        },
+        "2022": {
+          "opened": 237,
+          "return_pct": -9.090851458574512,
+          "profit_factor": 0.6823486908084047,
+          "max_drawdown_pct": 13.454039575689341,
+          "buy_pnl_usd": -1048.6750913952371,
+          "sell_pnl_usd": 139.5899455377854
+        },
+        "2023": {
+          "opened": 236,
+          "return_pct": -3.827798426695539,
+          "profit_factor": 0.815231434699231,
+          "max_drawdown_pct": 8.267659699993674,
+          "buy_pnl_usd": -36.88983417858685,
+          "sell_pnl_usd": -345.89000849096146
+        },
+        "2024": {
+          "opened": 197,
+          "return_pct": -8.904827806905635,
+          "profit_factor": 0.5667872352326181,
+          "max_drawdown_pct": 12.007870504674925,
+          "buy_pnl_usd": -232.79876658334925,
+          "sell_pnl_usd": -657.6840141072115
+        },
+        "2025": {
+          "opened": 288,
+          "return_pct": -1.080804831377824,
+          "profit_factor": 0.9686077058080171,
+          "max_drawdown_pct": 6.545030682536979,
+          "buy_pnl_usd": 567.0334059891329,
+          "sell_pnl_usd": -675.1138891269135
+        },
+        "2026": {
+          "opened": 179,
+          "return_pct": 2.5718943146112894,
+          "profit_factor": 1.0724868595420878,
+          "max_drawdown_pct": 10.134317068364338,
+          "buy_pnl_usd": 96.12568719027715,
+          "sell_pnl_usd": 161.06374427085873
+        }
+      },
+      "positive_years": 1,
+      "evaluated_years": 6
+    },
+    "structure_plus_choch": {
+      "overall": {
+        "starting_capital": 10000.0,
+        "ending_capital": 7536.219534519389,
+        "net_pnl_usd": -2463.7804654806114,
+        "return_pct": -24.637804654806118,
+        "opened": 2479,
+        "rejected": 28239,
+        "max_concurrent": 12,
+        "max_drawdown_pct": 43.37484827423923,
+        "profit_factor": 0.9127821447926642,
+        "by_direction": {
+          "BUY": {
+            "trades": 1433,
+            "win_rate": 0.27076064200976974,
+            "pnl_usd": 145.51216708573065,
+            "mean_net_return_pct": 0.0020308746278538763
+          },
+          "SELL": {
+            "trades": 1046,
+            "win_rate": 0.2332695984703633,
+            "pnl_usd": -2609.2926325663193,
+            "mean_net_return_pct": -0.04989087251560839
+          }
+        },
+        "rejection_reasons": {
+          "SETUP_COOLDOWN": 22232,
+          "MIN_RR_NOT_MET": 5935,
+          "UNMATURED_OR_AMBIGUOUS": 37,
+          "WEEKLY_LOSS_CAP": 28,
+          "DAILY_LOSS_CAP": 7
+        },
+        "limitations": [
+          "Development history, not untouched evidence.",
+          "Fixed paper notional; no broker execution or financing costs.",
+          "Portfolio outcomes use Dukascopy historical bid/ask labels."
+        ]
+      },
+      "weekly_block_bootstrap": {
+        "samples": 2000,
+        "weeks": 283,
+        "seed": 42,
+        "return_pct": {
+          "median": -25.770925971824326,
+          "lower_95": -73.60598423352968,
+          "upper_95": 24.82771561944709
+        },
+        "profit_factor": {
+          "median": 0.9090996247868577,
+          "lower_95": 0.744607586549238,
+          "upper_95": 1.0906265713007077
+        },
+        "max_drawdown_pct": {
+          "median": 37.46917949342126,
+          "lower_95": 13.974258300453815,
+          "upper_95": 78.37396249152594
+        },
+        "mean_pnl_usd_per_trade": {
+          "median": -1.0398425108932239,
+          "lower_95": -3.001032108366505,
+          "upper_95": 1.0025244748548172
+        }
+      },
+      "by_direction": {
+        "BUY": {
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 11001.433554389181,
+            "net_pnl_usd": 1001.4335543891812,
+            "return_pct": 10.014335543891818,
+            "opened": 1458,
+            "rejected": 16279,
+            "max_concurrent": 11,
+            "max_drawdown_pct": 26.434627819444533,
+            "profit_factor": 1.061662104031602,
+            "by_direction": {
+              "BUY": {
+                "trades": 1458,
+                "win_rate": 0.27434842249657065,
+                "pnl_usd": 1001.4335543892232,
+                "mean_net_return_pct": 0.013737085794090855
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 12887,
+              "MIN_RR_NOT_MET": 3367,
+              "UNMATURED_OR_AMBIGUOUS": 18,
+              "DAILY_LOSS_CAP": 7
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_bootstrap": {
+            "samples": 2000,
+            "weeks": 212,
+            "seed": 42,
+            "return_pct": {
+              "median": 8.828156588007804,
+              "lower_95": -32.43545784248621,
+              "upper_95": 58.48559962239083
+            },
+            "profit_factor": {
+              "median": 1.055469391792284,
+              "lower_95": 0.8058931467912668,
+              "upper_95": 1.3671312743590143
+            },
+            "max_drawdown_pct": {
+              "median": 16.68379909402334,
+              "lower_95": 7.089208000983287,
+              "upper_95": 39.237060404720296
+            },
+            "mean_pnl_usd_per_trade": {
+              "median": 0.6138442677047862,
+              "lower_95": -2.28920550234588,
+              "upper_95": 3.8671114549539145
+            }
+          }
+        },
+        "SELL": {
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 7447.4832941965515,
+            "net_pnl_usd": -2552.5167058034485,
+            "return_pct": -25.52516705803448,
+            "opened": 1049,
+            "rejected": 11932,
+            "max_concurrent": 12,
+            "max_drawdown_pct": 34.81323084007659,
+            "profit_factor": 0.7927691226932618,
+            "by_direction": {
+              "SELL": {
+                "trades": 1049,
+                "win_rate": 0.23546234509056244,
+                "pnl_usd": -2552.5167058034795,
+                "mean_net_return_pct": -0.04866571412399389
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 9345,
+              "MIN_RR_NOT_MET": 2568,
+              "UNMATURED_OR_AMBIGUOUS": 19
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_bootstrap": {
+            "samples": 2000,
+            "weeks": 196,
+            "seed": 42,
+            "return_pct": {
+              "median": -25.46225200388356,
+              "lower_95": -53.65990790534285,
+              "upper_95": 3.050078169411054
+            },
+            "profit_factor": {
+              "median": 0.7897325538430036,
+              "lower_95": 0.5899418713511511,
+              "upper_95": 1.0248439944644225
+            },
+            "max_drawdown_pct": {
+              "median": 30.2805107019629,
+              "lower_95": 11.427142612193858,
+              "upper_95": 55.338904662362495
+            },
+            "mean_pnl_usd_per_trade": {
+              "median": -2.4592439250258495,
+              "lower_95": -5.0455644567497195,
+              "upper_95": 0.2719016153254071
+            }
+          }
+        }
+      },
+      "yearly": {
+        "2021": {
+          "opened": 329,
+          "return_pct": -8.893970788981898,
+          "profit_factor": 0.7264203913824004,
+          "max_drawdown_pct": 10.51757745728001,
+          "buy_pnl_usd": -255.292767845507,
+          "sell_pnl_usd": -634.1043110526639
+        },
+        "2022": {
+          "opened": 477,
+          "return_pct": -16.96595420800222,
+          "profit_factor": 0.6856288769556605,
+          "max_drawdown_pct": 19.37570861430823,
+          "buy_pnl_usd": -1571.9974711003367,
+          "sell_pnl_usd": -124.59794969989673
+        },
+        "2023": {
+          "opened": 453,
+          "return_pct": 3.15706779082634,
+          "profit_factor": 1.086276864338572,
+          "max_drawdown_pct": 6.8076162033836125,
+          "buy_pnl_usd": 88.63977327123396,
+          "sell_pnl_usd": 227.06700581138278
+        },
+        "2024": {
+          "opened": 355,
+          "return_pct": -11.82361979853187,
+          "profit_factor": 0.64036499369451,
+          "max_drawdown_pct": 14.657626557081379,
+          "buy_pnl_usd": -185.398073907544,
+          "sell_pnl_usd": -996.9639059456453
+        },
+        "2025": {
+          "opened": 509,
+          "return_pct": -3.2493072655677357,
+          "profit_factor": 0.9473427955152349,
+          "max_drawdown_pct": 10.037009350626333,
+          "buy_pnl_usd": 924.5621749861892,
+          "sell_pnl_usd": -1249.4929015429586
+        },
+        "2026": {
+          "opened": 354,
+          "return_pct": 13.285900761604562,
+          "profit_factor": 1.2053953541282794,
+          "max_drawdown_pct": 10.222232934570261,
+          "buy_pnl_usd": 1144.9985316816949,
+          "sell_pnl_usd": 183.5915444787696
+        }
+      },
+      "positive_years": 2,
+      "evaluated_years": 6
+    },
+    "full_smc_candidate_universe": {
+      "overall": {
+        "starting_capital": 10000.0,
+        "ending_capital": 9959.161706367124,
+        "net_pnl_usd": -40.83829363287623,
+        "return_pct": -0.4083829363287661,
+        "opened": 2695,
+        "rejected": 38097,
+        "max_concurrent": 12,
+        "max_drawdown_pct": 34.55394306746833,
+        "profit_factor": 0.9987131461725778,
+        "by_direction": {
+          "BUY": {
+            "trades": 1463,
+            "win_rate": 0.265892002734108,
+            "pnl_usd": 1396.9862069663563,
+            "mean_net_return_pct": 0.019097555802684303
+          },
+          "SELL": {
+            "trades": 1232,
+            "win_rate": 0.22646103896103897,
+            "pnl_usd": -1437.8245005992271,
+            "mean_net_return_pct": -0.02334130682790953
+          }
+        },
+        "rejection_reasons": {
+          "SETUP_COOLDOWN": 30579,
+          "MIN_RR_NOT_MET": 7428,
+          "UNMATURED_OR_AMBIGUOUS": 44,
+          "WEEKLY_LOSS_CAP": 31,
+          "DAILY_LOSS_CAP": 15
+        },
+        "limitations": [
+          "Development history, not untouched evidence.",
+          "Fixed paper notional; no broker execution or financing costs.",
+          "Portfolio outcomes use Dukascopy historical bid/ask labels."
+        ]
+      },
+      "weekly_block_bootstrap": {
+        "samples": 2000,
+        "weeks": 285,
+        "seed": 42,
+        "return_pct": {
+          "median": -1.8577025850758895,
+          "lower_95": -58.83902163577815,
+          "upper_95": 65.06921332194646
+        },
+        "profit_factor": {
+          "median": 0.9940594765857177,
+          "lower_95": 0.8150884878474497,
+          "upper_95": 1.21367221107504
+        },
+        "max_drawdown_pct": {
+          "median": 30.17882226495344,
+          "lower_95": 11.982274355073448,
+          "upper_95": 68.35554911749038
+        },
+        "mean_pnl_usd_per_trade": {
+          "median": -0.07025468939629176,
+          "lower_95": -2.225118762117073,
+          "upper_95": 2.5061769282660538
+        }
+      },
+      "by_direction": {
+        "BUY": {
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 12252.907594269813,
+            "net_pnl_usd": 2252.9075942698128,
+            "return_pct": 22.529075942698128,
+            "opened": 1488,
+            "rejected": 21007,
+            "max_concurrent": 13,
+            "max_drawdown_pct": 25.250122179779794,
+            "profit_factor": 1.1322870338592874,
+            "by_direction": {
+              "BUY": {
+                "trades": 1488,
+                "win_rate": 0.26948924731182794,
+                "pnl_usd": 2252.90759426985,
+                "mean_net_return_pct": 0.030281016052014106
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 16839,
+              "MIN_RR_NOT_MET": 4132,
+              "UNMATURED_OR_AMBIGUOUS": 21,
+              "DAILY_LOSS_CAP": 15
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_bootstrap": {
+            "samples": 2000,
+            "weeks": 213,
+            "seed": 42,
+            "return_pct": {
+              "median": 21.427133105904524,
+              "lower_95": -28.087958606255718,
+              "upper_95": 80.76528876577473
+            },
+            "profit_factor": {
+              "median": 1.126290065725748,
+              "lower_95": 0.8390134543102375,
+              "upper_95": 1.4726271650542953
+            },
+            "max_drawdown_pct": {
+              "median": 15.717075072850154,
+              "lower_95": 7.001376147846343,
+              "upper_95": 39.26101208788846
+            },
+            "mean_pnl_usd_per_trade": {
+              "median": 1.441654476384838,
+              "lower_95": -1.9370629759028202,
+              "upper_95": 5.22292049501352
+            }
+          }
+        },
+        "SELL": {
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 8527.862432149015,
+            "net_pnl_usd": -1472.1375678509849,
+            "return_pct": -14.721375678509851,
+            "opened": 1238,
+            "rejected": 17059,
+            "max_concurrent": 12,
+            "max_drawdown_pct": 38.28268170340937,
+            "profit_factor": 0.9023254119359486,
+            "by_direction": {
+              "SELL": {
+                "trades": 1238,
+                "win_rate": 0.22617124394184168,
+                "pnl_usd": -1472.1375678510203,
+                "mean_net_return_pct": -0.023782513212455884
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 13740,
+              "MIN_RR_NOT_MET": 3296,
+              "UNMATURED_OR_AMBIGUOUS": 23
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_bootstrap": {
+            "samples": 2000,
+            "weeks": 195,
+            "seed": 42,
+            "return_pct": {
+              "median": -15.865025570534176,
+              "lower_95": -55.36876460990298,
+              "upper_95": 28.072903262057505
+            },
+            "profit_factor": {
+              "median": 0.8929896926352884,
+              "lower_95": 0.6471549150425205,
+              "upper_95": 1.195964986707301
+            },
+            "max_drawdown_pct": {
+              "median": 26.592161427511826,
+              "lower_95": 9.999244142195797,
+              "upper_95": 60.024980853525776
+            },
+            "mean_pnl_usd_per_trade": {
+              "median": -1.2978966271638646,
+              "lower_95": -4.533675848612272,
+              "upper_95": 2.340220131897397
+            }
+          }
+        }
+      },
+      "yearly": {
+        "2021": {
+          "opened": 396,
+          "return_pct": -10.602666998585008,
+          "profit_factor": 0.7444791243603668,
+          "max_drawdown_pct": 10.653826121633546,
+          "buy_pnl_usd": -341.0622755710939,
+          "sell_pnl_usd": -719.2044242873926
+        },
+        "2022": {
+          "opened": 499,
+          "return_pct": -17.439564517022376,
+          "profit_factor": 0.7008487316197124,
+          "max_drawdown_pct": 21.057632153742745,
+          "buy_pnl_usd": -1692.528547198609,
+          "sell_pnl_usd": -51.42790450363498
+        },
+        "2023": {
+          "opened": 483,
+          "return_pct": 12.745764444832709,
+          "profit_factor": 1.3058142052085575,
+          "max_drawdown_pct": 7.270894935997596,
+          "buy_pnl_usd": 917.3518072469543,
+          "sell_pnl_usd": 357.22463723630193
+        },
+        "2024": {
+          "opened": 388,
+          "return_pct": -16.444232168402085,
+          "profit_factor": 0.5816965068438105,
+          "max_drawdown_pct": 19.643888893700424,
+          "buy_pnl_usd": -181.54951110992573,
+          "sell_pnl_usd": -1462.873705730271
+        },
+        "2025": {
+          "opened": 526,
+          "return_pct": 6.451879677518546,
+          "profit_factor": 1.1026458640080754,
+          "max_drawdown_pct": 9.225214522737305,
+          "buy_pnl_usd": 1580.0817731198488,
+          "sell_pnl_usd": -934.8938053679996
+        },
+        "2026": {
+          "opened": 401,
+          "return_pct": 24.99163467269543,
+          "profit_factor": 1.3395510711504757,
+          "max_drawdown_pct": 8.689131135541361,
+          "buy_pnl_usd": 1114.6929604791824,
+          "sell_pnl_usd": 1384.4705067903626
+        }
+      },
+      "positive_years": 3,
+      "evaluated_years": 6
+    }
+  },
+  "limitations": [
+    "2020-2026 influenced development and is not untouched.",
+    "Ablations filter the existing candidate universe; they do not regenerate omitted setups.",
+    "Bootstrap resamples calendar weeks and does not remove feed mismatch.",
+    "No result in this report authorizes a model or live trading."
+  ]
+}

@@ -27,7 +27,7 @@ if ! flock -n 9; then
   exit 0
 fi
 
-if [[ "${PRICE_DATA_PROVIDER:-tradingview}" == "tradingview" ]]; then
+if [[ "${PRICE_DATA_PROVIDER:-dukascopy}" == "tradingview" ]]; then
   COLLECTOR="/usr/local/lib/gold-signal-fetcher/collect_tradingview_snapshot.py"
   SNAPSHOT="${TRADINGVIEW_SNAPSHOT_PATH:-/tmp/tradingview_snapshot.json}"
   if [[ ! -x "${COLLECTOR}" ]]; then
@@ -39,6 +39,18 @@ if [[ "${PRICE_DATA_PROVIDER:-tradingview}" == "tradingview" ]]; then
       TRADINGVIEW_MCP_ROOT="${TRADINGVIEW_MCP_ROOT:-/opt/tradingview-mcp}" \
       /usr/bin/python3 "${COLLECTOR}" >> "${LOG_FILE}" 2>&1; then
     echo "TradingView collection failed; paper scan aborted" >> "${LOG_FILE}"
+    exit 1
+  fi
+elif [[ "${PRICE_DATA_PROVIDER:-dukascopy}" == "dukascopy" ]]; then
+  COLLECTOR="/usr/local/lib/gold-signal-fetcher/collect_dukascopy_snapshot.py"
+  SNAPSHOT="${DUKASCOPY_SNAPSHOT_PATH:-/tmp/dukascopy_snapshot.json}"
+  if [[ ! -x "${COLLECTOR}" ]]; then
+    echo "Dukascopy collector missing: ${COLLECTOR}" >> "${LOG_FILE}"
+    exit 1
+  fi
+  if ! DUKASCOPY_SNAPSHOT_PATH="${SNAPSHOT}" \
+      "${PYTHON_BIN}" "${COLLECTOR}" >> "${LOG_FILE}" 2>&1; then
+    echo "Dukascopy collection failed; paper scan aborted" >> "${LOG_FILE}"
     exit 1
   fi
 fi

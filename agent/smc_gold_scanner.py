@@ -147,7 +147,8 @@ def check_killzone(as_of: Optional[datetime] = None) -> Tuple[bool, str]:
 # Candle fetching (identical to gold_scanner)
 # ---------------------------------------------------------------------------
 
-def _candles_to_df(candles: list, min_candles: int = 52) -> Optional[pd.DataFrame]:
+def _candles_to_df(candles: list, min_candles: int = 52,
+                   drop_incomplete_last: bool = True) -> Optional[pd.DataFrame]:
     if not candles or len(candles) < min_candles:
         logger.warning(f"Insufficient candles: {len(candles) if candles else 0} (need {min_candles})")
         return None
@@ -174,7 +175,9 @@ def _candles_to_df(candles: list, min_candles: int = 52) -> Optional[pd.DataFram
         return None
 
     df = pd.DataFrame(records).sort_values("timestamp").reset_index(drop=True)
-    return df.iloc[:-1]  # Drop incomplete last candle
+    # Broker/API calls may include a forming last candle. Atomic snapshot
+    # collectors explicitly exclude forming bars, so retain their final row.
+    return df.iloc[:-1] if drop_incomplete_last else df
 
 
 async def _resolve_symbol(account) -> Optional[str]:
@@ -1219,20 +1222,23 @@ async def _run_gold_scanner_async(metaapi_token: str, metaapi_account_id: str) -
                 pass
 
 
-def _run_from_tradingview_snapshot() -> Optional[dict]:
-    """Analyze one atomic, fresh TradingView OHLCV snapshot or fail closed."""
+def _run_from_price_snapshot() -> Optional[dict]:
+    """Analyze one atomic, fresh, source-identified OHLCV snapshot or fail closed."""
     news_blocked, news_reason = check_news_guard()
     if news_blocked:
         logger.info("SMC scanner: %s — skipping scan", news_reason)
         return None
 
     try:
-        payload = json.loads(settings.TRADINGVIEW_SNAPSHOT_PATH.read_text())
+        contract = settings.price_snapshot_contract()
+        payload = json.loads(contract["path"].read_text())
         captured_at = pd.to_datetime(payload["captured_at"], utc=True)
         age = (pd.Timestamp.now(tz="UTC") - captured_at).total_seconds()
         if age < 0 or age > settings.SNAPSHOT_MAX_AGE_SECONDS:
             raise ValueError(f"snapshot age {age:.0f}s is outside freshness limit")
-        if payload.get("symbol") != "OANDA:XAUUSD":
+        if payload.get("provider") != contract["provider"]:
+            raise ValueError(f"unexpected provider {payload.get('provider')!r}")
+        if payload.get("symbol") != contract["symbol"]:
             raise ValueError(f"unexpected symbol {payload.get('symbol')!r}")
         if payload.get("schema_version") != 2:
             raise ValueError("snapshot schema does not include cadence validation")
@@ -1245,6 +1251,19 @@ def _run_from_tradingview_snapshot() -> Optional[dict]:
             if frame.get("resolution") != name:
                 raise ValueError(f"resolution mismatch for {name}")
             bars = frame["bars"]
+            if contract["provider"] == "dukascopy-public":
+                required = [f"{side}_{field}" for side in ("bid", "ask")
+                            for field in ("open", "high", "low", "close")]
+                for bar in bars:
+                    if any(field not in bar for field in required):
+                        raise ValueError(f"{name} has no executable bid/ask OHLC")
+                    for side in ("bid", "ask"):
+                        o, h, low, close = (float(bar[f"{side}_{field}"])
+                                            for field in ("open", "high", "low", "close"))
+                        if min(o, h, low, close) <= 0 or h < max(o, close, low) or low > min(o, close, h):
+                            raise ValueError(f"{name} invalid {side} OHLC")
+                    if float(bar["ask_close"]) < float(bar["bid_close"]):
+                        raise ValueError(f"{name} negative close spread")
             times = [int(bar["time"]) for bar in bars]
             intervals = [later - earlier for earlier, later in zip(times, times[1:])]
             actual_cadence = float(median(intervals)) if intervals else 0
@@ -1254,19 +1273,41 @@ def _run_from_tradingview_snapshot() -> Optional[dict]:
                     f"{name} cadence {actual_cadence:.0f}s != {expected_cadence}s"
                 )
             fingerprints.add(json.dumps(bars, sort_keys=True, separators=(",", ":")))
-            frames[name] = _candles_to_df(frame["bars"], min_candles=minimum)
+            frames[name] = _candles_to_df(
+                frame["bars"], min_candles=minimum,
+                drop_incomplete_last=contract["provider"] != "dukascopy-public",
+            )
             if frames[name] is None:
                 raise ValueError(f"invalid or insufficient {name} bars")
         if len(fingerprints) != len(minimums):
             raise ValueError("cross-timeframe bar payloads are duplicated")
+        if contract["provider"] == "dukascopy-public":
+            latest_15m_close = pd.to_datetime(
+                payload["timeframes"]["15M"]["bars"][-1]["time"], unit="s", utc=True
+            ) + pd.Timedelta(minutes=15)
+            bar_lag = (captured_at - latest_15m_close).total_seconds()
+            if bar_lag < 0 or bar_lag > settings.PRICE_BAR_MAX_LAG_SECONDS:
+                raise ValueError(f"latest complete 15M bar lag {bar_lag:.0f}s is invalid")
 
-        return _run_smc_analysis(
+        signal = _run_smc_analysis(
             frames["1W"], frames["1D"], frames["4H"], frames["1H"],
             frames["15M"], payload["symbol"], news_reason,
         )
+        if signal:
+            decision_bar = payload["timeframes"]["15M"]["bars"][-1]
+            if "bid_close" in decision_bar and "ask_close" in decision_bar:
+                signal["decision_bid_close"] = float(decision_bar["bid_close"])
+                signal["decision_ask_close"] = float(decision_bar["ask_close"])
+                signal["execution_quote_source"] = "DUKASCOPY_BID_ASK"
+        return signal
     except Exception as exc:
-        logger.error("TradingView snapshot rejected: %s", exc)
+        logger.error("Price snapshot rejected: %s", exc)
         return None
+
+
+def _run_from_tradingview_snapshot() -> Optional[dict]:
+    """Backward-compatible test/diagnostic alias for the snapshot scanner."""
+    return _run_from_price_snapshot()
 
 
 # ---------------------------------------------------------------------------
@@ -1279,8 +1320,11 @@ def run_gold_scanner(metaapi_token: str, metaapi_account_id: str) -> Optional[di
     Drop-in replacement for gold_scanner.run_gold_scanner().
     Returns a signal dict if a qualifying setup is found, or None.
     """
-    if settings.PRICE_DATA_PROVIDER == "tradingview":
-        return _run_from_tradingview_snapshot()
+    if settings.PRICE_DATA_PROVIDER in {"tradingview", "dukascopy"}:
+        return _run_from_price_snapshot()
+    if settings.PRICE_DATA_PROVIDER != "metaapi":
+        logger.error("Unsupported PRICE_DATA_PROVIDER=%r", settings.PRICE_DATA_PROVIDER)
+        return None
     try:
         return asyncio.run(_run_gold_scanner_async(metaapi_token, metaapi_account_id))
     except Exception as e:

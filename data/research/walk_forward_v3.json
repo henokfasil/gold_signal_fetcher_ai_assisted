@@ -1,0 +1,158 @@
+{
+  "status": "REJECT_MODEL",
+  "scope": "DEVELOPMENT_ONLY_NOT_UNTOUCHED",
+  "acceptance_gates": {
+    "overall_auc_at_least_0_55": false,
+    "brier_beats_prevalence_baseline": false,
+    "no_fold_auc_below_0_45": true,
+    "buy_selected_expectancy_positive": true,
+    "sell_selected_expectancy_positive": false
+  },
+  "purge_hours": 48,
+  "features": [
+    "rsi_14",
+    "macd",
+    "macd_signal",
+    "macd_diff",
+    "adx_14",
+    "atr_14",
+    "bb_width",
+    "bb_position",
+    "close_above_bb_upper",
+    "close_above_bb_lower",
+    "close_above_ma20",
+    "close_above_ma50",
+    "price_momentum",
+    "volatility",
+    "volume_spike",
+    "session_hour_encoded",
+    "day_of_week_encoded",
+    "direction_encoded",
+    "rr_ratio",
+    "smc_score_encoded",
+    "atr_pct",
+    "structure_1w_encoded",
+    "structure_1d_encoded",
+    "structure_4h_encoded",
+    "structure_1h_encoded",
+    "bos_4h_present",
+    "choch_4h_present",
+    "bos_15m_present",
+    "choch_15m_present",
+    "liquidity_sweep_1h_present",
+    "price_at_ob",
+    "fvg_1h_present",
+    "premium_discount_position"
+  ],
+  "folds": [
+    {
+      "rows": 2144,
+      "prevalence": 0.24720149253731344,
+      "roc_auc": 0.5497568445909612,
+      "brier": 0.18971514701843262,
+      "brier_baseline": 0.18609291462463803,
+      "log_loss": 0.5712552666664124,
+      "year": 2022,
+      "train_rows": 1437,
+      "calibration_rows": 362,
+      "test_start": "2022-01-02T23:15:00+00:00",
+      "test_end": "2022-12-30T06:45:00+00:00"
+    },
+    {
+      "rows": 2517,
+      "prevalence": 0.27930075486690503,
+      "roc_auc": 0.5076769742527301,
+      "brier": 0.20196935534477234,
+      "brier_baseline": 0.20129184319768206,
+      "log_loss": 0.594092607498169,
+      "year": 2023,
+      "train_rows": 3164,
+      "calibration_rows": 796,
+      "test_start": "2023-01-02T23:15:00+00:00",
+      "test_end": "2023-12-29T21:45:00+00:00"
+    },
+    {
+      "rows": 1752,
+      "prevalence": 0.22945205479452055,
+      "roc_auc": 0.45780081076100976,
+      "brier": 0.1827857792377472,
+      "brier_baseline": 0.17680380934509288,
+      "log_loss": 0.5537949800491333,
+      "year": 2024,
+      "train_rows": 5178,
+      "calibration_rows": 1301,
+      "test_start": "2024-01-03T00:00:00+00:00",
+      "test_end": "2024-12-27T13:00:00+00:00"
+    },
+    {
+      "rows": 2220,
+      "prevalence": 0.3013513513513513,
+      "roc_auc": 0.48121805788059,
+      "brier": 0.2176700383424759,
+      "brier_baseline": 0.21053871439006575,
+      "log_loss": 0.6317945718765259,
+      "year": 2025,
+      "train_rows": 6577,
+      "calibration_rows": 1651,
+      "test_start": "2025-01-02T04:45:00+00:00",
+      "test_end": "2025-12-31T16:45:00+00:00"
+    },
+    {
+      "rows": 1370,
+      "prevalence": 0.23503649635036497,
+      "roc_auc": 0.5015765018254231,
+      "brier": 0.18460045754909515,
+      "brier_baseline": 0.17979434173370987,
+      "log_loss": 0.5570936799049377,
+      "year": 2026,
+      "train_rows": 8363,
+      "calibration_rows": 2095,
+      "test_start": "2026-01-02T12:45:00+00:00",
+      "test_end": "2026-07-17T14:45:00+00:00"
+    }
+  ],
+  "overall_oos": {
+    "rows": 10003,
+    "prevalence": 0.2625212436269119,
+    "roc_auc": 0.48989012596633014,
+    "brier": 0.1970885843038559,
+    "brier_baseline": 0.1936038402714915,
+    "log_loss": 0.5854396820068359
+  },
+  "economic_diagnostic": {
+    "selected_rows": 4573,
+    "selection_rate": 0.4571628511446566,
+    "mean_net_return_pct": -0.009273607632802525,
+    "win_rate": 0.22304832713754646
+  },
+  "by_direction": {
+    "BUY": {
+      "rows": 5596,
+      "prevalence": 0.29002859185132235,
+      "roc_auc": 0.4881730175294452,
+      "brier": 0.21119128167629242,
+      "brier_baseline": 0.20591200776006147,
+      "log_loss": 0.6165273189544678,
+      "selected_rows": 2520,
+      "selected_mean_net_return_pct": 0.0219823960036147,
+      "selected_win_rate": 0.2507936507936508
+    },
+    "SELL": {
+      "rows": 4407,
+      "prevalence": 0.22759246653051962,
+      "roc_auc": 0.4951775109454246,
+      "brier": 0.17918094992637634,
+      "brier_baseline": 0.17579413570907393,
+      "log_loss": 0.5459646582603455,
+      "selected_rows": 2053,
+      "selected_mean_net_return_pct": -0.04763947668481003,
+      "selected_win_rate": 0.1889917194349732
+    }
+  },
+  "limitations": [
+    "2020-2026 influenced feature development; not a final untouched test.",
+    "Candidate returns overlap and do not simulate portfolio capacity.",
+    "Dukascopy history differs from runtime OANDA TradingView feed.",
+    "Final acceptance requires frozen forward paper evidence."
+  ]
+}

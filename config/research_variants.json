@@ -1,15 +1,22 @@
 {
   "schema_version": 1,
-  "experiment_version": "forward-shadow-20260718-v1",
-  "frozen_at_utc": "2026-07-18T21:18:05Z",
+  "experiment_version": "forward-pilot-20260719-v2",
+  "frozen_at_utc": "2026-07-18T22:35:57Z",
   "paper_only": true,
+  "pilot_purpose": "No-peek plumbing, candidate-rate, feed-stability and variance-estimation pilot; not a confirmatory edge test",
   "source_contract": {
-    "provider": "tradingview-mcp",
-    "symbol": "OANDA:XAUUSD",
-    "decision_timeframe": "15M"
+    "provider": "dukascopy-public",
+    "symbol": "DUKASCOPY:XAUUSD",
+    "price_components": [
+      "bid",
+      "ask",
+      "midpoint"
+    ],
+    "decision_timeframe": "15M",
+    "forming_candles_excluded": true
   },
   "lineage": {
-    "implementation_parent_revision": "7d45349",
+    "implementation_parent_revision": "1a59bd3",
     "strategy_config_version": "3.0-research",
     "feature_schema_sha256": "8e567c3aa764cc894bf1892e6ceae8011aa4933b69a23f4e80bfaa996063e965",
     "model_state_at_freeze": "REJECT_MODEL_NO_ARTIFACT_DEPLOYED",
@@ -19,13 +26,30 @@
   "common_evaluation": {
     "minimum_risk_reward_ratio": 2.0,
     "outcome_expiry_hours": 48,
-    "spread_points": 0.35,
+    "bid_ask_spread_source": "observed Dukascopy executable-side candles",
+    "midpoint_fallback_permitted": false,
     "slippage_points_per_side": 0.1,
+    "execution_label": "direction-correct bid/ask barrier replay; midpoint fixed-spread fallback prohibited for this experiment",
     "setup_cooldown_hours": 4,
-    "minimum_calendar_months": 3,
-    "target_calendar_months": 6,
-    "minimum_matured_candidates_per_proposed_side": 200,
     "uncertainty_method": "weekly block bootstrap with label-overlap diagnostics"
+  },
+  "stopping_rule": {
+    "design": "fixed-horizon-no-peek-pilot",
+    "calendar_weeks": 26,
+    "evaluate_once_at_utc": "2027-01-16T22:35:57Z",
+    "candidate_count_is_not_a_stopping_rule": true,
+    "interim_performance_evaluation_permitted": false,
+    "operational_health_monitoring_permitted": true,
+    "confirmation_claim_permitted": false
+  },
+  "power_disclosure": {
+    "historical_weekly_cluster_reference_rows": 1086,
+    "historical_weekly_clusters": 207,
+    "historical_mean_net_return_per_candidate_pct": 0.07955,
+    "historical_cluster_robust_standard_error_pct": 0.04861,
+    "estimated_power_at_26_weeks_for_historical_mean": 0.144,
+    "power_report": "data/research/forward_power_plan_v1.json",
+    "interpretation": "A null is inconclusive and a positive point estimate is exploratory; separately power any later confirmatory experiment."
   },
   "variants": {
     "baseline_v1": {
@@ -50,5 +74,5 @@
     "may_train_or_select_model": false,
     "sell_is_collected_but_not_a_member_of_buy_liquidity_v1": true
   },
-  "reset_rule": "Any membership, feature, cost, lifecycle or evaluation change requires a new experiment version and resets the affected forward clock"
+  "reset_rule": "Any membership, source, feature, cost, lifecycle or evaluation change requires a new experiment version and resets the affected forward clock"
 }

@@ -93,7 +93,7 @@ def download(start: datetime, end: datetime, output: Path, chunk_days: int = 14)
         "mean_spread_close_points": float(result["spread_close"].mean()),
         "p95_spread_close_points": float(result["spread_close"].quantile(0.95)),
         "file_sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
-        "research_warning": "Dukascopy feed differs from runtime OANDA:TradingView feed; validate cross-feed stability.",
+        "research_warning": "Historical and runtime collection paths share Dukascopy but still require temporal/feed-state monitoring.",
     }
     output.with_suffix(output.suffix + ".manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest

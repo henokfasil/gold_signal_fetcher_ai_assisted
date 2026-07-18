@@ -8,7 +8,7 @@ Status: development research; no validated edge and no live execution.
   development set, never an untouched final test.
 - A rule change must be registered here with its rationale before another
   evaluation. Historical improvements are hypothesis evidence only.
-- Final confirmation requires a frozen revision and future OANDA/TradingView
+- Final confirmation requires a frozen revision and future executable-side
   paper observations that were unavailable when the revision was selected.
 - BUY and SELL are separate research tracks. Passing one side never validates
   the other.
@@ -62,28 +62,21 @@ session/hour and higher-timeframe alignment. Cutoffs are selected inside each
 training fold, calibrated on its later calibration slice, and applied unchanged
 to the following test fold.
 
-### 6. Frozen forward paper confirmation
+### 6. Frozen forward paper pilot and later confirmation
 
 Forward candidate features and shadow outcomes remain append-only and separate
 from historical data. Each record needs strategy, feature-schema, dataset/model
-and prompt versions. Before any final claim:
+and prompt versions. The current 26-week experiment is explicitly a pilot. A
+later confirmatory experiment must be powered from pilot variance and frozen
+under its own version before it begins. Candidate count is not an optional
+stopping rule.
 
-- minimum 3-6 calendar months;
-- minimum 200 matured candidates for the proposed side, with longer collection
-  if dependence reduces effective sample size;
-- bid/ask or conservative executable-cost treatment;
-- stable feed/source monitoring and cross-feed comparison;
-- no threshold or feature changes during the frozen evaluation;
-- positive block-bootstrap lower confidence bound for after-cost expectancy,
-  acceptable drawdown and no single regime dominating results.
+#### Frozen prospective pilot: `forward-pilot-20260719-v2`
 
-Any change resets the forward evaluation clock for the changed revision.
-
-#### Frozen prospective experiment: `forward-shadow-20260718-v1`
-
-Frozen at 2026-07-18 21:18:05 UTC. The binding machine-readable contract is
-`config/research_variants.json`, SHA-256
-`f2a9e6dd7880b10195fc3f2e0367ed9561e5354fa96af25c732887805287fff0`.
+Frozen at 2026-07-18 22:35:57 UTC and evaluated once after the fixed cutoff at
+2027-01-16 22:35:57 UTC, allowing the final assignments 48 hours to mature. The
+binding machine-readable contract is `config/research_variants.json`, SHA-256
+`8e7e6155b89fb893cc1b12218229a8f1e5f0f5ce87f682465278642f2bd75a83`.
 Runtime verifies this hash before collection and refuses a changed contract.
 
 - Candidate universe: unique SMC candidates recorded after the existing
@@ -93,20 +86,26 @@ Runtime verifies this hash before collection and refuses a changed contract.
   object existed using only candidate-time data.
 - Common eligibility: R/R >= 2.0. Membership and eligibility are stored
   separately so exclusions remain auditable.
-- Common lifecycle: 48-hour barrier/expiry horizon, 0.35 spread points, 0.10
-  slippage points per side and the same four-hour setup cooldown.
+- Source: Dukascopy public XAUUSD with independent 1W/1D/4H/1H/15M midpoint
+  analysis bars and retained bid/ask execution fields. Forming candles are
+  excluded.
+- Common lifecycle: 48-hour barrier/expiry horizon, executable ask entry/bid
+  barrier for BUY, executable bid entry/ask barrier for SELL, 0.10 slippage
+  points per side and the same four-hour setup cooldown. Midpoint fixed-spread
+  fallback is prohibited for this pilot.
 - SELL remains in the baseline and outcome collection but cannot be relabelled
   into the BUY variant.
 - Assignment has no effect on Claude/ML approval, the paper ledger status,
   Telegram or model training/selection.
 
 Assignments are appended once to `data/forward_variant_assignments.csv` and
-joined to immutable features/outcomes by `candidate_id`. The calendar clock
-starts at the first assignment after deployment—not at contract authoring—and
-continues unchanged for at least 3–6 months. Formal review additionally waits
-for at least 200 matured, R/R-eligible `buy_liquidity_v1` candidates and may
-require longer when label overlap reduces effective sample size. Until then the
-dashboard may show collection counts only, never an interim validation claim.
+joined to immutable features/outcomes by `candidate_id`. Operational health and
+counts may be monitored. Directional performance, expectancy, PF, win rate and
+variant comparisons must not be inspected before the fixed evaluation. The
+pilot's estimated power for the historically observed approximately +0.08%
+mean return per candidate is only 14.4%, so neither a null nor a positive point
+estimate is confirmatory. Its purpose is plumbing, feed stability, event-rate,
+falsification and forward variance estimation.
 
 ## Current model decision
 
@@ -114,6 +113,29 @@ The calibrated purged walk-forward XGBoost v3 result is `REJECT_MODEL`.
 No model artifact may be created or deployed from it. Hyperparameter search on
 the same years is prohibited until the event lifecycle, dependence weighting
 and directional research questions above are implemented.
+
+`research/benchmark_candidate_models.py` runs prevalence, direction-only,
+SMC-score-only logistic, all-feature logistic and XGBoost through the same
+folds, purge, calibration and selection rule. No model has an AUC interval
+excluding chance or a selected-return interval excluding zero. All-feature
+logistic reaches AUC 0.5093 and +0.0023% selected mean; XGBoost reaches AUC
+0.4899 and -0.0093%. This favors a feature/target research problem over model
+shopping. The original gates are development thresholds, not a pristine
+pre-registration: their code predates v3 but the local v2 artifact predates the
+gate commit.
+
+## Runtime source validity
+
+The TradingView MCP runtime attempt is rejected. All requested W/D/4H/1H/15M
+payloads were byte-identical 15-minute candles despite UI timeframe changes.
+The scanner and dashboard now fail closed on wrong cadence or duplicate frames.
+
+The frozen pilot uses the account-free Dukascopy public feed instead. Each scan
+collects exactly 200 complete bid/ask candles independently for all five
+timeframes and derives midpoint analysis candles. Exact source identity,
+cadence, ordering, uniqueness, OHLC, spread and open-market latest-bar lag are
+validated before SMC analysis. A local full bid+ask collection completed in
+about 3.3 seconds; this is engineering evidence only, not alpha.
 
 ## Lifecycle portfolio diagnostic v4
 
@@ -144,11 +166,12 @@ variant comparisons. Current development findings:
   return interval is -28.09% to +80.77%, so positive expectancy is not
   established;
 - SELL-only: -14.72%, PF 0.90, maximum drawdown 38.28%; it remains shadow-only;
-- structure + liquidity sweep: +34.40%, PF 1.15, drawdown 19.26%, but only 3/6
-  positive years and selected from contaminated development history;
+- BUY + liquidity sweep after lifecycle gates: +43.20%, PF 1.37 and 14.01%
+  drawdown across 1,086 opened candidates, but its weekly-bootstrap 95% return
+  interval is -5.76% to +101.28% and PF interval is 0.95 to 1.86;
 - order-block, FVG and CHoCH filtered variants have negative total development
   returns.
 
 Liquidity sweep is therefore a registered forward hypothesis, not an accepted
-edge. The bootstrap lower bound is negative, BUY drawdown remains excessive and
-no ablation result authorizes ML training or approval.
+edge. The bootstrap lower bound is negative and no ablation result authorizes
+ML training or approval.

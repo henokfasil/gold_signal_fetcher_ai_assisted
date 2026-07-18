@@ -109,8 +109,20 @@ def analyze(frame: pd.DataFrame) -> dict:
                                       "max_drawdown_pct": report["max_drawdown_pct"],
                                       "buy_pnl_usd": report["by_direction"].get("BUY", {}).get("pnl_usd", 0),
                                       "sell_pnl_usd": report["by_direction"].get("SELL", {}).get("pnl_usd", 0)}
-        _, overall = opened_events(variant)
-        ablations[name] = {"overall": overall, "yearly": yearly,
+        opened, overall = opened_events(variant)
+        direction_bootstraps = {}
+        for direction in ("BUY", "SELL"):
+            direction_opened, direction_report = opened_events(
+                variant[variant.direction == direction]
+            )
+            direction_bootstraps[direction] = {
+                "portfolio": direction_report,
+                "weekly_block_bootstrap": weekly_block_bootstrap(direction_opened),
+            }
+        ablations[name] = {"overall": overall,
+                           "weekly_block_bootstrap": weekly_block_bootstrap(opened),
+                           "by_direction": direction_bootstraps,
+                           "yearly": yearly,
                            "positive_years": sum(v["return_pct"] > 0 for v in yearly.values()),
                            "evaluated_years": len(yearly)}
     return {"status": "DEVELOPMENT_DIAGNOSTIC_ONLY", "eligible_rows": len(eligible),

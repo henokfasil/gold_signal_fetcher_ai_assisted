@@ -8,6 +8,8 @@ import csv
 import hashlib
 import json
 import logging
+import math
+from statistics import median
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -26,6 +28,9 @@ logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL.upper(), logging.I
                     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+EXPECTED_CADENCE_SECONDS = {"1W": 604800, "1D": 86400, "4H": 14400,
+                            "1H": 3600, "15M": 900}
+
 LEDGER_COLUMNS = [
     "candidate_id", "timestamp", "pair", "direction", "entry", "stop_loss",
     "take_profit", "rr_ratio", "smc_score", "ml_available", "ml_confidence",
@@ -43,6 +48,61 @@ def utc_now() -> datetime:
 def parse_utc(value: str) -> datetime:
     parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed.astimezone(timezone.utc)
+
+
+def load_validated_price_snapshot() -> dict:
+    """Load the runtime snapshot only after the frozen integrity contract passes."""
+    contract = settings.price_snapshot_contract()
+    payload = json.loads(contract["path"].read_text())
+    if payload.get("schema_version") != 2:
+        raise ValueError("price snapshot schema mismatch")
+    if (payload.get("provider") != contract["provider"] or
+            payload.get("symbol") != contract["symbol"]):
+        raise ValueError("price snapshot source identity mismatch")
+    captured_at = parse_utc(payload["captured_at"])
+    age = (utc_now() - captured_at).total_seconds()
+    if age < 0 or age > settings.SNAPSHOT_MAX_AGE_SECONDS:
+        raise ValueError(f"price snapshot stale ({age:.0f}s)")
+    fingerprints = set()
+    for name, expected in EXPECTED_CADENCE_SECONDS.items():
+        bars = payload["timeframes"][name]["bars"]
+        if len(bars) < 200:
+            raise ValueError(f"{name} has fewer than 200 bars")
+        times = [int(bar["time"]) for bar in bars]
+        if times != sorted(times) or len(times) != len(set(times)):
+            raise ValueError(f"{name} timestamps are unordered or duplicated")
+        intervals = [later - earlier for earlier, later in zip(times, times[1:])]
+        actual = float(median(intervals)) if intervals else 0
+        if abs(actual - expected) > expected * .05:
+            raise ValueError(f"{name} cadence {actual:.0f}s != {expected}s")
+        fingerprints.add(json.dumps(bars, sort_keys=True, separators=(",", ":")))
+        if contract["provider"] == "dukascopy-public":
+            required = [f"{side}_{field}" for side in ("bid", "ask")
+                        for field in ("open", "high", "low", "close")]
+            if any(any(field not in bar for field in required) for bar in bars):
+                raise ValueError(f"{name} has no executable bid/ask OHLC")
+            for bar in bars:
+                for side in ("bid", "ask"):
+                    o, high, low, close = (float(bar[f"{side}_{field}"])
+                                           for field in ("open", "high", "low", "close"))
+                    if (not all(math.isfinite(v) and v > 0 for v in (o, high, low, close)) or
+                            high < max(o, close, low) or low > min(o, close, high)):
+                        raise ValueError(f"{name} invalid {side} OHLC")
+                if float(bar["ask_close"]) < float(bar["bid_close"]):
+                    raise ValueError(f"{name} negative close spread")
+    if len(fingerprints) != len(EXPECTED_CADENCE_SECONDS):
+        raise ValueError("cross-timeframe bar payloads are duplicated")
+    latest_15m_close = datetime.fromtimestamp(
+        int(payload["timeframes"]["15M"]["bars"][-1]["time"]) + 900,
+        tz=timezone.utc,
+    )
+    bar_lag = (captured_at - latest_15m_close).total_seconds()
+    if contract["provider"] == "dukascopy-public" and bar_lag < 0:
+        raise ValueError("Dukascopy snapshot contains a forming 15M candle")
+    if (not is_market_closed() and
+            bar_lag > settings.PRICE_BAR_MAX_LAG_SECONDS):
+        raise ValueError(f"latest complete 15M bar stale ({bar_lag:.0f}s)")
+    return payload
 
 
 class PaperLedger:
@@ -169,23 +229,31 @@ class ForwardOutcomeJournal:
         return frame[self.COLUMNS]
 
     def append(self, candidate_id: str, timestamp: str, signal: dict) -> None:
+        direction = signal["direction"]
+        if settings.PRICE_DATA_PROVIDER == "dukascopy" and not signal.get("execution_quote_source"):
+            raise RuntimeError("Dukascopy forward candidate has no executable bid/ask entry")
+        executable_entry = signal.get(
+            "decision_ask_close" if direction == "BUY" else "decision_bid_close",
+            signal["entry"],
+        )
+        quote_source = ("BID_ASK" if signal.get("execution_quote_source") else
+                        "MIDPOINT_COST_ASSUMPTION")
         exists = self.path.exists() and self.path.stat().st_size > 0
         with self.path.open("a", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=self.COLUMNS)
             if not exists:
                 writer.writeheader()
             writer.writerow({"candidate_id": candidate_id, "candidate_time": timestamp,
-                             "direction": signal["direction"], "entry": signal["entry"],
+                             "direction": direction, "entry": executable_entry,
                              "stop_loss": signal["stop_loss"], "take_profit": signal["take_profit"],
-                             "status": "TRACKING", "label_note": "SHADOW_RESEARCH_ONLY"})
+                             "status": "TRACKING",
+                             "label_note": f"SHADOW_RESEARCH_ONLY;{quote_source}"})
 
     def update(self, bar: dict, bar_time: datetime) -> int:
         frame = self.load()
         tracking = frame[frame["status"] == "TRACKING"]
         if tracking.empty:
             return 0
-        high, low, close = map(float, (bar["high"], bar["low"], bar["close"]))
-        cost = settings.RESEARCH_SPREAD_POINTS + 2 * settings.RESEARCH_SLIPPAGE_POINTS
         updated = 0
         for index, row in tracking.iterrows():
             candidate_time = parse_utc(row["candidate_time"])
@@ -193,6 +261,19 @@ class ForwardOutcomeJournal:
                 continue
             direction = row["direction"]
             entry, stop, target = map(float, (row["entry"], row["stop_loss"], row["take_profit"]))
+            has_quotes = all(
+                f"{side}_{field}" in bar for side in ("bid", "ask")
+                for field in ("high", "low", "close")
+            )
+            if settings.PRICE_DATA_PROVIDER == "dukascopy" and not has_quotes:
+                logger.error("Forward outcome bar has no frozen-contract bid/ask fields; label skipped")
+                continue
+            side = "bid" if direction == "BUY" else "ask"
+            high = float(bar[f"{side}_high"] if has_quotes else bar["high"])
+            low = float(bar[f"{side}_low"] if has_quotes else bar["low"])
+            close = float(bar[f"{side}_close"] if has_quotes else bar["close"])
+            cost = (2 * settings.RESEARCH_SLIPPAGE_POINTS if has_quotes else
+                    settings.RESEARCH_SPREAD_POINTS + 2 * settings.RESEARCH_SLIPPAGE_POINTS)
             hit_tp = high >= target if direction == "BUY" else low <= target
             hit_sl = low <= stop if direction == "BUY" else high >= stop
             status = exit_price = note = None
@@ -215,6 +296,9 @@ class ForwardOutcomeJournal:
                 frame.at[index, "exit_price"] = f"{exit_price:.5f}"
                 frame.at[index, "net_return_pct"] = f"{net / entry * 100:.8f}"
                 frame.at[index, "label_profitable"] = "1" if net > 0 else "0"
+                frame.at[index, "label_note"] = (
+                    f"{note};{'BID_ASK' if has_quotes else 'MIDPOINT_COST_ASSUMPTION'}"
+                )
             updated += 1
         if updated:
             temp = self.path.with_suffix(self.path.suffix + ".tmp")
@@ -226,7 +310,7 @@ class ForwardOutcomeJournal:
 class ForwardVariantJournal:
     """Append-only membership in the hash-locked prospective shadow test."""
 
-    EXPECTED_CONTRACT_SHA256 = "f2a9e6dd7880b10195fc3f2e0367ed9561e5354fa96af25c732887805287fff0"
+    EXPECTED_CONTRACT_SHA256 = "8e7e6155b89fb893cc1b12218229a8f1e5f0f5ce87f682465278642f2bd75a83"
     COLUMNS = [
         "candidate_id", "timestamp", "experiment_version", "contract_sha256",
         "strategy_config_version", "feature_schema_sha256", "ml_model_version",
@@ -253,10 +337,16 @@ class ForwardVariantJournal:
         ).encode()
         feature_schema_sha256 = hashlib.sha256(feature_schema).hexdigest()
         common = contract.get("common_evaluation", {})
+        source = contract.get("source_contract", {})
+        stopping = contract.get("stopping_rule", {})
         runtime_contract_matches = (
-            settings.PRICE_DATA_PROVIDER == "tradingview" and
+            settings.PRICE_DATA_PROVIDER == "dukascopy" and
+            source.get("provider") == "dukascopy-public" and
+            source.get("symbol") == "DUKASCOPY:XAUUSD" and
+            source.get("forming_candles_excluded") is True and
             int(common.get("outcome_expiry_hours", -1)) == settings.TRADE_EXPIRY_HOURS and
-            float(common.get("spread_points", -1)) == settings.RESEARCH_SPREAD_POINTS and
+            common.get("bid_ask_spread_source") == "observed Dukascopy executable-side candles" and
+            common.get("midpoint_fallback_permitted") is False and
             float(common.get("slippage_points_per_side", -1)) == settings.RESEARCH_SLIPPAGE_POINTS and
             float(common.get("minimum_risk_reward_ratio", -1)) == float(
                 settings.strategy_value("risk_gates", "min_risk_reward_ratio", settings.MIN_RR_RATIO)
@@ -265,7 +355,9 @@ class ForwardVariantJournal:
         if (contract.get("schema_version") != 1 or not contract.get("paper_only") or
                 set(contract.get("variants", {})) != required_variants or
                 contract.get("lineage", {}).get("feature_schema_sha256") != feature_schema_sha256 or
-                not runtime_contract_matches or
+                not runtime_contract_matches or stopping.get("design") != "fixed-horizon-no-peek-pilot" or
+                stopping.get("interim_performance_evaluation_permitted") is not False or
+                stopping.get("confirmation_claim_permitted") is not False or
                 contract.get("isolation", {}).get("may_approve_paper_trade") is not False or
                 contract.get("isolation", {}).get("may_send_telegram") is not False):
             raise RuntimeError("shadow experiment contract violates frozen research rules or runtime settings")
@@ -333,26 +425,18 @@ class AIAssistedOrchestrator:
         )
 
     def _fresh_price(self):
-        path = settings.TRADINGVIEW_SNAPSHOT_PATH
-        if not path.exists():
-            return None, "price snapshot missing"
         try:
-            data = json.loads(path.read_text())
-            timestamp_value = data.get("captured_at") or data.get("timestamp")
-            if not timestamp_value:
-                return None, "price snapshot has no timestamp"
-            age = (utc_now() - parse_utc(timestamp_value)).total_seconds()
-            if age < 0 or age > settings.SNAPSHOT_MAX_AGE_SECONDS:
-                return None, f"price snapshot stale ({age:.0f}s)"
+            contract = settings.price_snapshot_contract()
+            data = load_validated_price_snapshot()
             bars = data["timeframes"]["15M"]["bars"]
-            return float(bars[-1]["close"]), "fresh TradingView 15M close"
+            return float(bars[-1]["close"]), f"fresh {contract['provider']} 15M close"
         except (KeyError, ValueError, TypeError, OSError, json.JSONDecodeError) as exc:
             return None, f"invalid price snapshot: {exc}"
 
     def update_forward_outcomes(self) -> int:
         """Replay all completed snapshot bars newer than tracked candidates."""
         try:
-            payload = json.loads(settings.TRADINGVIEW_SNAPSHOT_PATH.read_text())
+            payload = load_validated_price_snapshot()
             captured_at = parse_utc(payload["captured_at"])
             updated = 0
             for bar in payload["timeframes"]["15M"]["bars"]:

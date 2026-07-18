@@ -1,5 +1,9 @@
 # Deployment Summary - July 6, 2026
 
+> Archived historical snapshot; not current deployment guidance. Its readiness
+> and performance claims were invalidated by the later research audit. Use
+> `CLAUDE.md`, `RESEARCH_PROTOCOL.md` and `VPS_DEPLOYMENT.md` instead.
+
 ## Status: ✅ FULLY OPERATIONAL - ALL SYSTEMS LIVE
 
 ---

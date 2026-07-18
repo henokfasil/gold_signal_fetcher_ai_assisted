@@ -111,16 +111,29 @@ def _tail_text(path, max_bytes=65536):
 def _validate_bars(bars, timeframe):
     if not isinstance(bars, list) or not bars:
         return {"count": 0, "ordered": False, "unique": False, "ohlc": False,
-                "cadence": False, "interval": "—", "latest": "—"}
-    times, valid_ohlc = [], True
+                "quotes": False, "cadence": False, "interval": "—", "latest": "—"}
+    times, valid_ohlc, valid_quotes = [], True, True
+    quote_fields_present = all(
+        all(f"{side}_{field}" in bar for side in ("bid", "ask")
+            for field in ("open", "high", "low", "close"))
+        for bar in bars
+    )
     for bar in bars:
         try:
             times.append(int(bar["time"]))
             o, h, low, c = (float(bar[key]) for key in ("open", "high", "low", "close"))
             valid_ohlc &= all(math.isfinite(v) and v > 0 for v in (o, h, low, c))
             valid_ohlc &= h >= max(o, c, low) and low <= min(o, c, h)
+            if quote_fields_present:
+                for side in ("bid", "ask"):
+                    qo, qh, ql, qc = (float(bar[f"{side}_{key}"])
+                                      for key in ("open", "high", "low", "close"))
+                    valid_quotes &= all(math.isfinite(v) and v > 0 for v in (qo, qh, ql, qc))
+                    valid_quotes &= qh >= max(qo, qc, ql) and ql <= min(qo, qc, qh)
+                valid_quotes &= float(bar["ask_close"]) >= float(bar["bid_close"])
         except (KeyError, TypeError, ValueError):
             valid_ohlc = False
+            valid_quotes = False
     latest = datetime.fromtimestamp(times[-1], timezone.utc).strftime("%m-%d %H:%M") if times else "—"
     intervals = [later - earlier for earlier, later in zip(times, times[1:])]
     actual_interval = float(median(intervals)) if intervals else 0
@@ -129,15 +142,20 @@ def _validate_bars(bars, timeframe):
                    abs(actual_interval - expected_interval) <= expected_interval * .05)
     return {"count": len(bars), "ordered": times == sorted(times),
             "unique": len(times) == len(set(times)), "ohlc": bool(valid_ohlc),
+            "quotes": bool(quote_fields_present and valid_quotes),
             "cadence": cadence, "interval": f"{actual_interval:.0f}s", "latest": latest}
 
 
 def get_feed_health(snapshot_path=None, log_path=None):
     """Validate the existing atomic snapshot; makes no network or MCP calls."""
-    snapshot_path = Path(snapshot_path or settings.TRADINGVIEW_SNAPSHOT_PATH)
+    try:
+        contract = settings.price_snapshot_contract()
+    except ValueError:
+        contract = {"path": settings.TRADINGVIEW_SNAPSHOT_PATH, "provider": "", "symbol": ""}
+    snapshot_path = Path(snapshot_path or contract["path"])
     health = {
         "status": "UNAVAILABLE", "status_class": "bad", "provider": "—", "symbol": "—",
-        "captured_at": "—", "age": "—", "frames": {}, "integrity": "FAILED",
+        "captured_at": "—", "age": "—", "bar_age": "—", "frames": {}, "integrity": "FAILED",
         "price_consistency": "—", "last_scan": "No completed scan", "market": "CLOSED" if is_market_closed() else "OPEN",
         "paper_mode": "ENFORCED" if settings.PAPER_TRADING else "MISCONFIGURED",
         "telegram": "CONFIGURED" if settings.TELEGRAM_BOT_TOKEN and settings.TELEGRAM_CHAT_ID else "NOT CONFIGURED",
@@ -155,19 +173,31 @@ def get_feed_health(snapshot_path=None, log_path=None):
                           for name in ("1W", "1D", "4H", "1H", "15M")
                           if name in payload.get("timeframes", {})]
         distinct_frames = len(frame_payloads) == 5 and len(set(frame_payloads)) == 5
+        quotes_required = contract["provider"] == "dukascopy-public"
         integrity = payload.get("schema_version") == 2 and distinct_frames and all(
                         frames.get(name, {}).get("count", 0) >= 200 and frames[name]["ordered"] and
-                        frames[name]["unique"] and frames[name]["ohlc"] and frames[name]["cadence"]
+                        frames[name]["unique"] and frames[name]["ohlc"] and frames[name]["cadence"] and
+                        (frames[name]["quotes"] or not quotes_required)
                         for name in ("1W", "1D", "4H", "1H", "15M"))
         fresh = age_seconds <= settings.DASHBOARD_FEED_MAX_AGE_SECONDS
-        exact = payload.get("symbol") == "OANDA:XAUUSD" and payload.get("provider") == "tradingview-mcp"
-        consistent = divergence <= 2.0
-        healthy = fresh and exact and integrity and consistent
+        latest_15m = int(payload["timeframes"]["15M"]["bars"][-1]["time"]) + 900
+        bar_age_seconds = max(0, int(datetime.now(timezone.utc).timestamp() - latest_15m))
+        market_closed = is_market_closed()
+        bar_fresh = market_closed or bar_age_seconds <= settings.PRICE_BAR_MAX_LAG_SECONDS
+        exact = (payload.get("symbol") == contract["symbol"] and
+                 payload.get("provider") == contract["provider"])
+        # Completed higher-timeframe candles naturally have different end
+        # times. Dispersion is informational; a broad sanity ceiling catches
+        # gross symbol/source corruption without rejecting normal weekly moves.
+        consistent = divergence <= 20.0
+        healthy = fresh and bar_fresh and exact and integrity and consistent
         health.update({
             "status": "HEALTHY" if healthy else "DEGRADED", "status_class": "good" if healthy else "warn",
             "provider": payload.get("provider", "—"), "symbol": payload.get("symbol", "—"),
             "captured_at": captured.strftime("%Y-%m-%d %H:%M:%S UTC"),
-            "age": f"{age_seconds // 60}m {age_seconds % 60}s", "frames": frames,
+            "age": f"{age_seconds // 60}m {age_seconds % 60}s",
+            "bar_age": f"{bar_age_seconds // 60}m {bar_age_seconds % 60}s",
+            "frames": frames,
             "integrity": "PASS" if integrity else "FAIL", "price_consistency": f"{divergence:.3f}% spread",
         })
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
@@ -184,6 +214,7 @@ def get_shadow_variants(assignments_path=None, outcomes_path=None, contract_path
     result = {
         "status": "FROZEN · COLLECTING", "status_class": "warn",
         "experiment": "—", "frozen_at": "—", "first_assignment": "Awaiting first candidate",
+        "evaluation_at": "—", "purpose": "Pilot diagnostics; no edge claim",
         "baseline_assigned": 0, "baseline_eligible": 0, "baseline_matured": 0,
         "liquidity_assigned": 0, "liquidity_eligible": 0, "liquidity_matured": 0,
         "effect": "None — research only",
@@ -192,6 +223,10 @@ def get_shadow_variants(assignments_path=None, outcomes_path=None, contract_path
         contract = json.loads(Path(contract_path or settings.RESEARCH_VARIANT_CONFIG).read_text())
         result["experiment"] = contract["experiment_version"]
         result["frozen_at"] = str(contract["frozen_at_utc"]).replace("T", " ").replace("Z", " UTC")
+        stopping = contract.get("stopping_rule", {})
+        result["evaluation_at"] = str(stopping.get("evaluate_once_at_utc", "—")).replace(
+            "T", " ").replace("Z", " UTC")
+        result["purpose"] = contract.get("pilot_purpose", result["purpose"])
         isolation = contract["isolation"]
         if (not contract.get("paper_only") or isolation.get("may_approve_paper_trade") is not False or
                 isolation.get("may_send_telegram") is not False):
@@ -245,16 +280,16 @@ TEMPLATE = """
 *{box-sizing:border-box}body{margin:0;background:#0b1220;color:#e5edf7;font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1380px;margin:auto;padding:24px}.header{display:flex;justify-content:space-between;align-items:end;margin-bottom:22px}.header h1{margin:0;color:#38d38a;font-size:27px}.muted{color:#7f8da3}.panel{background:#151f30;border:1px solid #2a3a51;border-radius:10px;padding:18px;margin-bottom:20px}.feed{border-color:#1597e5}.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.panel h2{font-size:16px;margin:0;color:#58bfff}.pill{padding:6px 12px;border-radius:999px;font-weight:800;font-size:11px}.good{background:#38c968;color:#061b0d}.warn{background:#f5a623;color:#2d1900}.bad{background:#ef5350;color:#2d0505}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:#0e1726;border-radius:6px;padding:13px;min-height:70px}.label{text-transform:uppercase;color:#718198;font-size:10px;font-weight:700}.value{font-size:17px;font-weight:750;margin-top:7px}.quality{width:100%;border-collapse:collapse;margin-top:14px}.quality th,.quality td{padding:8px;border-bottom:1px solid #26364c;text-align:left}.ok{color:#42d987}.no{color:#ff6b6b}.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}.metric{background:#151f30;border-left:3px solid #38d38a;border-radius:7px;padding:14px}.metric .value{font-size:19px}.capital{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.table-wrap{overflow:auto}table.trades{width:100%;border-collapse:collapse;min-width:1100px}table.trades th,table.trades td{padding:10px;border-bottom:1px solid #26364c;text-align:left;font-size:12px}table.trades th{color:#718198;text-transform:uppercase;font-size:10px}.BUY{color:#42d987;font-weight:800}.SELL{color:#ff7474;font-weight:800}.OPEN{color:#4db8ff}.WIN{color:#42d987}.LOSS{color:#ff6b6b}.REJECTED{color:#9aa8bb}.note{margin-top:12px;font-size:11px;color:#718198}@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:repeat(2,1fr)}.capital{grid-template-columns:1fr}.header{display:block}.header .muted{margin-top:8px}}
 </style></head><body><div class="wrap">
 <div class="header"><div><h1>Gold Signal Fetcher</h1><div class="muted">Unified SMC + ML validation gate + Claude review · research paper trading</div></div><div class="muted">Updated {{ now }} UTC</div></div>
-<section class="panel feed"><div class="panel-head"><h2>TradingView Data Quality</h2><span class="pill {{ feed.status_class }}">{{ feed.status }}</span></div>
+<section class="panel feed"><div class="panel-head"><h2>Market Data Quality</h2><span class="pill {{ feed.status_class }}">{{ feed.status }}</span></div>
 <div class="grid">
-{% for label,value in [('Provider',feed.provider),('Exact symbol',feed.symbol),('Snapshot age',feed.age),('Captured',feed.captured_at),('OHLC integrity',feed.integrity),('Cross-TF close variance',feed.price_consistency),('Last scan',feed.last_scan),('Market',feed.market),('Paper mode',feed.paper_mode),('Telegram',feed.telegram),('Schedule','Every 15 minutes'),('Execution','No broker orders')] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
-</div><table class="quality"><thead><tr><th>Timeframe</th><th>Bars</th><th>Ordered</th><th>Unique</th><th>OHLC valid</th><th>Cadence</th><th>Median interval</th><th>Latest bar UTC</th></tr></thead><tbody>{% for name,q in feed.frames.items() %}<tr><td>{{ name }}</td><td>{{ q.count }}</td><td class="{{ 'ok' if q.ordered else 'no' }}">{{ 'PASS' if q.ordered else 'FAIL' }}</td><td class="{{ 'ok' if q.unique else 'no' }}">{{ 'PASS' if q.unique else 'FAIL' }}</td><td class="{{ 'ok' if q.ohlc else 'no' }}">{{ 'PASS' if q.ohlc else 'FAIL' }}</td><td class="{{ 'ok' if q.cadence else 'no' }}">{{ 'PASS' if q.cadence else 'FAIL' }}</td><td>{{ q.interval }}</td><td>{{ q.latest }}</td></tr>{% endfor %}</tbody></table>
-<div class="note">File-only validation: page views do not call TradingView, MCP, Telegram, Claude, or the scanner.</div></section>
+{% for label,value in [('Provider',feed.provider),('Exact symbol',feed.symbol),('Snapshot age',feed.age),('Latest 15M close age',feed.bar_age),('Captured',feed.captured_at),('OHLC integrity',feed.integrity),('Latest-close dispersion',feed.price_consistency),('Last scan',feed.last_scan),('Market',feed.market),('Paper mode',feed.paper_mode),('Telegram',feed.telegram),('Schedule','Every 15 minutes'),('Execution','No broker orders')] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
+</div><table class="quality"><thead><tr><th>Timeframe</th><th>Bars</th><th>Ordered</th><th>Unique</th><th>OHLC valid</th><th>Bid/ask valid</th><th>Cadence</th><th>Median interval</th><th>Latest bar UTC</th></tr></thead><tbody>{% for name,q in feed.frames.items() %}<tr><td>{{ name }}</td><td>{{ q.count }}</td><td class="{{ 'ok' if q.ordered else 'no' }}">{{ 'PASS' if q.ordered else 'FAIL' }}</td><td class="{{ 'ok' if q.unique else 'no' }}">{{ 'PASS' if q.unique else 'FAIL' }}</td><td class="{{ 'ok' if q.ohlc else 'no' }}">{{ 'PASS' if q.ohlc else 'FAIL' }}</td><td class="{{ 'ok' if q.quotes else 'no' }}">{{ 'PASS' if q.quotes else 'N/A' }}</td><td class="{{ 'ok' if q.cadence else 'no' }}">{{ 'PASS' if q.cadence else 'FAIL' }}</td><td>{{ q.interval }}</td><td>{{ q.latest }}</td></tr>{% endfor %}</tbody></table>
+<div class="note">File-only validation: page views make no provider, Telegram, Claude, or scanner calls. Health includes exact source identity, independent cadence, OHLC, ordering, uniqueness and executable quote checks—not bar counts alone.</div></section>
 
 <section class="panel"><div class="panel-head"><h2>Prospective Shadow Variants</h2><span class="pill {{ variants.status_class }}">{{ variants.status }}</span></div>
 <div class="grid">
-{% for label,value in [('Experiment',variants.experiment),('Frozen at',variants.frozen_at),('First assignment',variants.first_assignment),('Decision / Telegram effect',variants.effect),('Baseline assigned',variants.baseline_assigned),('Baseline R/R eligible',variants.baseline_eligible),('Baseline matured',variants.baseline_matured),('BUY + 1H sweep assigned',variants.liquidity_assigned),('BUY + 1H sweep R/R eligible',variants.liquidity_eligible),('BUY + 1H sweep matured',variants.liquidity_matured),('Minimum before review','3–6 months'),('Target sample','200 matured BUY-variant candidates')] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
-</div><div class="note">Membership is assigned once at candidate time. This panel reports collection progress only; it does not claim validation, profitability, or model readiness.</div></section>
+{% for label,value in [('Experiment',variants.experiment),('Frozen at',variants.frozen_at),('Evaluate once at',variants.evaluation_at),('Purpose',variants.purpose),('First assignment',variants.first_assignment),('Decision / Telegram effect',variants.effect),('Baseline assigned',variants.baseline_assigned),('Baseline R/R eligible',variants.baseline_eligible),('Baseline matured',variants.baseline_matured),('BUY + 1H sweep assigned',variants.liquidity_assigned),('BUY + 1H sweep R/R eligible',variants.liquidity_eligible),('BUY + 1H sweep matured',variants.liquidity_matured)] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
+</div><div class="note">This fixed 26-week run is an underpowered no-peek pilot for plumbing, event rate, feed stability and variance estimation. It cannot by itself validate profitability. Membership is assigned once at candidate time and has no decision or Telegram effect.</div></section>
 
 <div class="capital"><div class="panel"><div class="label">Paper starting capital</div><div class="value">{{ m.starting_capital }}</div></div><div class="panel"><div class="label">Paper marked capital</div><div class="value">{{ m.current_capital }}</div></div><div class="panel"><div class="label">Realized paper P&amp;L</div><div class="value">{{ m.total_profit }} · {{ m.return_pct }}</div></div></div>
 <div class="metrics">

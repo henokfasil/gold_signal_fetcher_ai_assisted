@@ -1,0 +1,111 @@
+{
+  "status": "PRELIMINARY_PRICE_CONCORDANCE_ONLY",
+  "oanda_source": "TradingView MCP OANDA:XAUUSD 15M snapshot",
+  "dukascopy_source": "data/raw/dukascopy_xauusd_15m_2020_2026.csv",
+  "snapshot_captured_at": "2026-07-18T21:51:30.654560+00:00",
+  "overlap": {
+    "oanda_bars": 200,
+    "dukascopy_bars": 200,
+    "matched_bars": 200,
+    "match_rate_oanda": 1.0,
+    "start": "2026-07-15T17:00:00+00:00",
+    "end": "2026-07-17T20:45:00+00:00"
+  },
+  "15M": {
+    "open": {
+      "mean_absolute_difference_points": 0.10521250000000236,
+      "median_bias_points": 0.005000000000109139,
+      "max_absolute_difference_points": 1.7950000000000728,
+      "correlation": 0.9999760652784452
+    },
+    "high": {
+      "mean_absolute_difference_points": 0.10494500000001153,
+      "median_bias_points": -0.027499999999918145,
+      "max_absolute_difference_points": 2.5099999999997635,
+      "correlation": 0.9999645705227675
+    },
+    "low": {
+      "mean_absolute_difference_points": 0.08832999999998947,
+      "median_bias_points": 0.02500000000009095,
+      "max_absolute_difference_points": 0.5,
+      "correlation": 0.9999910965368916
+    },
+    "close": {
+      "mean_absolute_difference_points": 0.08372499999999718,
+      "median_bias_points": 0.009999999999990905,
+      "max_absolute_difference_points": 0.9049999999997453,
+      "correlation": 0.9999899438136155
+    },
+    "bar_direction_agreement": 0.99
+  },
+  "aggregated_from_matched_15M": {
+    "1H_FROM_15M": {
+      "matched_bars": 50,
+      "metrics": {
+        "open": {
+          "mean_absolute_difference_points": 0.13644999999999527,
+          "median_bias_points": -0.01749999999992724,
+          "max_absolute_difference_points": 1.7950000000000728,
+          "correlation": 0.9999458321146829
+        },
+        "high": {
+          "mean_absolute_difference_points": 0.17170000000000074,
+          "median_bias_points": -0.03749999999990905,
+          "max_absolute_difference_points": 2.5099999999997635,
+          "correlation": 0.9998840329167478
+        },
+        "low": {
+          "mean_absolute_difference_points": 0.10089999999997418,
+          "median_bias_points": 0.04500000000007276,
+          "max_absolute_difference_points": 0.4099999999998545,
+          "correlation": 0.9999899626525817
+        },
+        "close": {
+          "mean_absolute_difference_points": 0.1012999999999738,
+          "median_bias_points": -0.0025000000000545697,
+          "max_absolute_difference_points": 0.9049999999997453,
+          "correlation": 0.9999800831318951
+        },
+        "bar_direction_agreement": 0.98
+      }
+    },
+    "4H_FROM_15M": {
+      "matched_bars": 14,
+      "metrics": {
+        "open": {
+          "mean_absolute_difference_points": 0.08892857142859611,
+          "median_bias_points": -0.03000000000020009,
+          "max_absolute_difference_points": 0.18499999999994543,
+          "correlation": 0.9999932866821327
+        },
+        "high": {
+          "mean_absolute_difference_points": 0.32714285714285196,
+          "median_bias_points": -0.06750000000010914,
+          "max_absolute_difference_points": 2.5099999999997635,
+          "correlation": 0.9997181020414598
+        },
+        "low": {
+          "mean_absolute_difference_points": 0.07785714285712077,
+          "median_bias_points": -0.019999999999754436,
+          "max_absolute_difference_points": 0.24499999999989086,
+          "correlation": 0.9999950401966814
+        },
+        "close": {
+          "mean_absolute_difference_points": 0.08285714285713246,
+          "median_bias_points": -0.022499999999809006,
+          "max_absolute_difference_points": 0.23500000000012733,
+          "correlation": 0.9999928682309608
+        },
+        "bar_direction_agreement": 1.0
+      }
+    }
+  },
+  "true_multitimeframe_snapshot": false,
+  "candidate_membership_concordance": "NOT_EVALUABLE_MCP_RETURNED_DUPLICATED_15M_PAYLOADS",
+  "limitations": [
+    "Only 200 OANDA 15M bars are available in this snapshot.",
+    "Aggregated 1H/4H comparisons cover the same short 15M overlap, not 200 native bars.",
+    "Price correlation does not establish SMC candidate-membership agreement.",
+    "TradingView MCP currently returns duplicated 15M bars after timeframe changes."
+  ]
+}
