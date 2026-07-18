@@ -1,0 +1,23 @@
+[Unit]
+Description=TradingView Desktop paper-research session
+Requires=tradingview-display.service
+After=tradingview-display.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tvfetcher
+Environment=DISPLAY=:99
+Environment=XDG_RUNTIME_DIR=/run/tradingview-research
+RuntimeDirectory=tradingview-research
+RuntimeDirectoryMode=0700
+ExecStartPre=/bin/sleep 2
+ExecStart=/usr/local/lib/gold-signal-fetcher/tradingview_session.sh
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

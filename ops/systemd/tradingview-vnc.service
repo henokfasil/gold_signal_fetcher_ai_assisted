@@ -1,0 +1,17 @@
+[Unit]
+Description=Localhost-only VNC access for TradingView login and layout setup
+Requires=tradingview-display.service
+After=tradingview-display.service
+
+[Service]
+Type=simple
+User=tvfetcher
+Environment=DISPLAY=:99
+ExecStart=/usr/bin/x11vnc -display :99 -localhost -nopw -forever -shared
+Restart=on-failure
+RestartSec=3
+
+# This service is intentionally not enabled. Start it only for an interactive
+# login, connect through an SSH tunnel, then stop it.
+[Install]
+WantedBy=multi-user.target

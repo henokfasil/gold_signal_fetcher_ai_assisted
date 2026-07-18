@@ -19,13 +19,16 @@ Canonical VPS facts as of 2026-07-18:
 - Dashboard: `http://187.55.229.4:8502/` via
   `gold-signal-fetcher.service`.
 - Repository: `/root/gold_signal_fetcher_ai_assisted`.
-- Scheduled paper scanner: `ops/run_gold_scanner_ai.sh` through cron.
+- The paper scanner cron is paused until the TradingView session is signed in
+  and the five-timeframe snapshot contract passes end-to-end verification.
 - The former host `72.60.133.179` is not the canonical deployment and must
   remain inactive for System C.
+- TradingView Desktop 3.3.0 and `tradingview-mcp` run on the canonical VPS under
+  the unprivileged `tvfetcher` account. CDP is bound to `127.0.0.1:9222` only.
 - Before this revision, the migrated VPS had local changes using Yahoo Finance
   `GC=F`. That is a gold-futures proxy rather than broker XAUUSD, and its 4H and
-  15M interval adaptation was incomplete. System C now uses the configured
-  MetaApi/MT5 account for point-in-time XAUUSD candles.
+  15M interval adaptation was incomplete. The selected live research source is
+  now TradingView `OANDA:XAUUSD`; MetaApi is an optional legacy provider only.
 
 ## What “edge” means
 
@@ -37,7 +40,7 @@ an edge.
 ## Runtime pipeline
 
 ```text
-MetaApi point-in-time XAUUSD candles
+Atomic TradingView OANDA:XAUUSD snapshot (W/D/4H/1H/15M)
               ↓
 Bullish SMC candidate generator
               ↓
@@ -93,6 +96,22 @@ issue SELL candidates. Never relabel a non-bullish result as SELL.
 Missing, malformed or stale snapshots are reported as unavailable. The system
 must never replace them with invented constants. Macro thresholds are research
 hypotheses and must be estimated out of sample.
+
+## TradingView price snapshot contract
+
+`ops/collect_tradingview_snapshot.py` uses the installed TradingView MCP CLI to
+select the exact `OANDA:XAUUSD` symbol, collect 200 bars at W, D, 240, 60 and 15
+minute resolutions, validate OHLC and strictly increasing timestamps, and then
+atomically replace `/tmp/tradingview_snapshot.json`. The scanner rejects stale,
+malformed, short, wrong-symbol or wrong-resolution snapshots. It never falls
+back to Yahoo Finance or silently substitutes another timeframe.
+
+TradingView Desktop runs on a private Xvfb display using
+`ops/systemd/tradingview-display.service` and
+`ops/systemd/tradingview-session.service`. The optional VNC unit binds to
+localhost and must be accessed only through an SSH tunnel; it is not enabled at
+boot and should be stopped after login/layout maintenance. TradingView login
+state lives in `/home/tvfetcher`, outside the repository.
 
 ## Claude policy
 
@@ -157,6 +176,7 @@ forward paper trading and stable performance across regimes.
 - Never commit `.env`, API keys, Telegram tokens or account identifiers.
 - Preserve the paper ledger before deployment or schema migration.
 - Use a non-overlapping lock around scheduled runs.
+- Keep CDP (`9222`) and maintenance VNC (`5900`) bound to localhost only.
 - The canonical wrapper is `ops/run_gold_scanner_ai.sh`; it uses `flock`,
   forces `PAPER_TRADING=true`, and writes logs inside the project by default.
 - Keep System C stopped after deployment if resource or integrity checks fail.

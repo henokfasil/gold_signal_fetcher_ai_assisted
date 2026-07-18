@@ -8,6 +8,7 @@ from unittest.mock import patch
 from agent.claude_analyst import AITradingDecider
 from agent.gold_correlations import GoldCorrelationValidator
 from agent.ml_signal_generator import MLSignalGenerator
+from agent.smc_gold_scanner import _candles_to_df, _run_from_tradingview_snapshot
 
 
 class FakeClaude:
@@ -22,6 +23,25 @@ class FakeClaude:
 
 
 class ResearchPipelineTests(unittest.TestCase):
+    def test_tradingview_unix_timestamps_are_parsed_as_seconds(self):
+        candles = [{"time": 1_700_000_000 + i * 3600, "open": 2000,
+                    "high": 2002, "low": 1998, "close": 2001, "volume": 10}
+                   for i in range(53)]
+        frame = _candles_to_df(candles, min_candles=52)
+        self.assertEqual(frame.iloc[0]["timestamp"].year, 2023)
+
+    def test_stale_tradingview_snapshot_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot = Path(directory) / "tv.json"
+            snapshot.write_text(json.dumps({
+                "captured_at": (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
+                "symbol": "OANDA:XAUUSD", "timeframes": {},
+            }))
+            with patch("config.settings.TRADINGVIEW_SNAPSHOT_PATH", snapshot), \
+                 patch("config.settings.SNAPSHOT_MAX_AGE_SECONDS", 900), \
+                 patch("agent.smc_gold_scanner.check_news_guard", return_value=(False, "clear")):
+                self.assertIsNone(_run_from_tradingview_snapshot())
+
     def test_missing_model_never_creates_random_model(self):
         with tempfile.TemporaryDirectory() as directory, \
              patch("config.settings.ML_MODEL_PATH", Path(directory) / "missing.pkl"), \

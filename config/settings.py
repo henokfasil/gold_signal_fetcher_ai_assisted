@@ -34,6 +34,7 @@ TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 METAAPI_TOKEN = os.getenv('METAAPI_TOKEN')
 METAAPI_ACCOUNT_ID = os.getenv('METAAPI_ACCOUNT_ID')
+PRICE_DATA_PROVIDER = os.getenv('PRICE_DATA_PROVIDER', 'tradingview').lower()
 
 # ML Model Configuration
 ML_CONFIDENCE_THRESHOLD = float(os.getenv('ML_CONFIDENCE_THRESHOLD', '0.35'))
@@ -78,9 +79,9 @@ def validate_settings():
         'ANTHROPIC_API_KEY',
         'TELEGRAM_BOT_TOKEN',
         'TELEGRAM_CHAT_ID',
-        'METAAPI_TOKEN',
-        'METAAPI_ACCOUNT_ID',
     ]
+    if PRICE_DATA_PROVIDER == 'metaapi':
+        required_keys.extend(['METAAPI_TOKEN', 'METAAPI_ACCOUNT_ID'])
     missing = [k for k in required_keys if not globals().get(k)]
     if missing:
         import logging

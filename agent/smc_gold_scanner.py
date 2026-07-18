@@ -21,6 +21,7 @@ Public API mirrors gold_scanner.py:
 """
 
 import asyncio
+import json
 import logging
 from datetime import datetime, timezone
 from typing import List, Optional, Tuple
@@ -149,7 +150,10 @@ def _candles_to_df(candles: list, min_candles: int = 52) -> Optional[pd.DataFram
     for c in candles:
         try:
             records.append({
-                "timestamp": c["time"] if isinstance(c["time"], datetime) else pd.to_datetime(c["time"]),
+                "timestamp": c["time"] if isinstance(c["time"], datetime) else (
+                    pd.to_datetime(c["time"], unit="s", utc=True)
+                    if isinstance(c["time"], (int, float)) else pd.to_datetime(c["time"], utc=True)
+                ),
                 "open": float(c["open"]),
                 "high": float(c["high"]),
                 "low": float(c["low"]),
@@ -1081,6 +1085,41 @@ async def _run_gold_scanner_async(metaapi_token: str, metaapi_account_id: str) -
                 pass
 
 
+def _run_from_tradingview_snapshot() -> Optional[dict]:
+    """Analyze one atomic, fresh TradingView OHLCV snapshot or fail closed."""
+    news_blocked, news_reason = check_news_guard()
+    if news_blocked:
+        logger.info("SMC scanner: %s — skipping scan", news_reason)
+        return None
+
+    try:
+        payload = json.loads(settings.TRADINGVIEW_SNAPSHOT_PATH.read_text())
+        captured_at = pd.to_datetime(payload["captured_at"], utc=True)
+        age = (pd.Timestamp.now(tz="UTC") - captured_at).total_seconds()
+        if age < 0 or age > settings.SNAPSHOT_MAX_AGE_SECONDS:
+            raise ValueError(f"snapshot age {age:.0f}s is outside freshness limit")
+        if payload.get("symbol") != "OANDA:XAUUSD":
+            raise ValueError(f"unexpected symbol {payload.get('symbol')!r}")
+
+        frames = {}
+        minimums = {"1W": 52, "1D": 52, "4H": 52, "1H": 52, "15M": 20}
+        for name, minimum in minimums.items():
+            frame = payload["timeframes"][name]
+            if frame.get("resolution") != name:
+                raise ValueError(f"resolution mismatch for {name}")
+            frames[name] = _candles_to_df(frame["bars"], min_candles=minimum)
+            if frames[name] is None:
+                raise ValueError(f"invalid or insufficient {name} bars")
+
+        return _run_smc_analysis(
+            frames["1W"], frames["1D"], frames["4H"], frames["1H"],
+            frames["15M"], payload["symbol"], news_reason,
+        )
+    except Exception as exc:
+        logger.error("TradingView snapshot rejected: %s", exc)
+        return None
+
+
 # ---------------------------------------------------------------------------
 # Public entry point (identical signature to gold_scanner.py)
 # ---------------------------------------------------------------------------
@@ -1091,6 +1130,8 @@ def run_gold_scanner(metaapi_token: str, metaapi_account_id: str) -> Optional[di
     Drop-in replacement for gold_scanner.run_gold_scanner().
     Returns a signal dict if a qualifying setup is found, or None.
     """
+    if settings.PRICE_DATA_PROVIDER == "tradingview":
+        return _run_from_tradingview_snapshot()
     try:
         return asyncio.run(_run_gold_scanner_async(metaapi_token, metaapi_account_id))
     except Exception as e:
