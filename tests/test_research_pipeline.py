@@ -15,9 +15,13 @@ from agent.smc_gold_scanner import (
     _build_smc_signal, _candles_to_df, _run_from_tradingview_snapshot,
     detect_bos_down,
 )
-from dashboard import get_feed_health
-from main_orchestrator import AIAssistedOrchestrator, ForwardFeatureJournal, ForwardOutcomeJournal
+from dashboard import get_feed_health, get_shadow_variants
+from main_orchestrator import (
+    AIAssistedOrchestrator, ForwardFeatureJournal, ForwardOutcomeJournal,
+    ForwardVariantJournal,
+)
 from research.build_historical_dataset import label_candidate, load_ohlcv
+from research.export_forward_dataset import export
 from research.simulate_portfolio import simulate
 from research.analyze_research_evidence import label_uniqueness, weekly_block_bootstrap
 
@@ -124,6 +128,92 @@ class ResearchPipelineTests(unittest.TestCase):
             self.assertEqual(updated, 1)
             self.assertEqual(row["status"], "TP")
             self.assertEqual(row["label_profitable"], "1")
+
+    def test_forward_variant_membership_is_point_in_time_and_directional(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "assignments.csv"
+            journal = ForwardVariantJournal(path)
+            buy = {"direction": "BUY", "rr_ratio": 2.1,
+                   "mtf": {"smc": {"liquidity_sweep_1h": {"level": 100}}}}
+            sell = {"direction": "SELL", "rr_ratio": 1.9,
+                    "mtf": {"smc": {"liquidity_sweep_1h": {"level": 105}}}}
+            journal.append("BUY1", "2026-07-18T21:20:00+00:00", buy)
+            journal.append("SELL1", "2026-07-18T21:35:00+00:00", sell)
+            rows = pd.read_csv(path).set_index("candidate_id")
+            self.assertEqual(rows.loc["BUY1", "baseline_v1"], 1)
+            self.assertEqual(rows.loc["BUY1", "buy_liquidity_v1"], 1)
+            self.assertEqual(rows.loc["SELL1", "baseline_v1"], 1)
+            self.assertEqual(rows.loc["SELL1", "buy_liquidity_v1"], 0)
+            self.assertEqual(rows.loc["SELL1", "min_rr_eligible"], 0)
+            self.assertEqual(rows.loc["BUY1", "strategy_config_version"], "3.0-research")
+            self.assertEqual(rows.loc["BUY1", "ml_model_version"], "UNAVAILABLE")
+            self.assertIn("NO_APPROVAL_OR_TELEGRAM_EFFECT",
+                          rows.loc["BUY1", "assignment_note"])
+
+    def test_forward_variant_contract_is_hash_locked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            contract = Path(directory) / "changed.json"
+            contract.write_text('{"schema_version": 1, "paper_only": true}')
+            with self.assertRaisesRegex(RuntimeError, "hash mismatch"):
+                ForwardVariantJournal(Path(directory) / "rows.csv", contract)
+
+    def test_forward_variant_refuses_runtime_cost_drift(self):
+        with tempfile.TemporaryDirectory() as directory, \
+             patch("config.settings.RESEARCH_SPREAD_POINTS", 0.50):
+            with self.assertRaisesRegex(RuntimeError, "runtime settings"):
+                ForwardVariantJournal(Path(directory) / "rows.csv")
+
+    def test_forward_export_requires_and_preserves_frozen_assignment(self):
+        from agent.ml_feature_engineer_gold import GoldFeatureEngineer
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            feature_row = {"candidate_id": "ABC", "timestamp": "2026-07-18T21:20:00Z"}
+            feature_row.update({name: 0.0 for name in GoldFeatureEngineer.FEATURE_COLS})
+            pd.DataFrame([feature_row]).to_csv(root / "features.csv", index=False)
+            pd.DataFrame([{
+                "candidate_id": "ABC", "experiment_version": "forward-shadow-20260718-v1",
+                "contract_sha256": ForwardVariantJournal.EXPECTED_CONTRACT_SHA256,
+                "baseline_v1": 1, "buy_liquidity_v1": 1, "min_rr_eligible": 1,
+                "liquidity_sweep_1h_present": 1, "paper_trading": True,
+                "strategy_config_version": "3.0-research",
+                "feature_schema_sha256": "8e567c3aa764cc894bf1892e6ceae8011aa4933b69a23f4e80bfaa996063e965",
+                "ml_model_version": "UNAVAILABLE", "claude_model": "UNAVAILABLE",
+                "claude_prompt_version": "claude-review-v1",
+                "assignment_note": "SHADOW_RESEARCH_ONLY_NO_APPROVAL_OR_TELEGRAM_EFFECT",
+            }]).to_csv(root / "assignments.csv", index=False)
+            pd.DataFrame([{
+                "candidate_id": "ABC", "status": "TP", "exit_time": "2026-07-19T01:00:00Z",
+                "exit_price": 102, "net_return_pct": 0.5, "label_note": "BARRIER_OBSERVED_15M",
+                "label_profitable": 1,
+            }]).to_csv(root / "outcomes.csv", index=False)
+            joined = export(root / "features.csv", root / "outcomes.csv",
+                            root / "assignments.csv")
+            self.assertEqual(len(joined), 1)
+            self.assertEqual(joined.iloc[0]["experiment_version"],
+                             "forward-shadow-20260718-v1")
+            self.assertEqual(str(joined.iloc[0]["buy_liquidity_v1"]), "1")
+
+    def test_dashboard_shadow_panel_counts_only_eligible_matured_members(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            pd.DataFrame([
+                {"candidate_id": "BUY1", "timestamp": "2026-07-18T21:20:00Z",
+                 "experiment_version": "forward-shadow-20260718-v1", "baseline_v1": 1,
+                 "buy_liquidity_v1": 1, "min_rr_eligible": 1},
+                {"candidate_id": "SELL1", "timestamp": "2026-07-18T21:35:00Z",
+                 "experiment_version": "forward-shadow-20260718-v1", "baseline_v1": 1,
+                 "buy_liquidity_v1": 0, "min_rr_eligible": 1},
+            ]).to_csv(root / "assignments.csv", index=False)
+            pd.DataFrame([
+                {"candidate_id": "BUY1", "status": "TP"},
+                {"candidate_id": "SELL1", "status": "TRACKING"},
+            ]).to_csv(root / "outcomes.csv", index=False)
+            report = get_shadow_variants(root / "assignments.csv", root / "outcomes.csv")
+            self.assertEqual(report["baseline_assigned"], 2)
+            self.assertEqual(report["baseline_matured"], 1)
+            self.assertEqual(report["liquidity_assigned"], 1)
+            self.assertEqual(report["liquidity_matured"], 1)
+            self.assertEqual(report["effect"], "None — research only")
 
     def test_dashboard_reports_healthy_complete_snapshot_without_network(self):
         with tempfile.TemporaryDirectory() as directory:

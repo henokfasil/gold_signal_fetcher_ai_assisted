@@ -79,6 +79,35 @@ and prompt versions. Before any final claim:
 
 Any change resets the forward evaluation clock for the changed revision.
 
+#### Frozen prospective experiment: `forward-shadow-20260718-v1`
+
+Frozen at 2026-07-18 21:18:05 UTC. The binding machine-readable contract is
+`config/research_variants.json`, SHA-256
+`f2a9e6dd7880b10195fc3f2e0367ed9561e5354fa96af25c732887805287fff0`.
+Runtime verifies this hash before collection and refuses a changed contract.
+
+- Candidate universe: unique SMC candidates recorded after the existing
+  four-hour same-direction/nearby-entry cooldown.
+- `baseline_v1`: every BUY and SELL member of that candidate universe.
+- `buy_liquidity_v1`: BUY members for which the 1H downside liquidity-sweep
+  object existed using only candidate-time data.
+- Common eligibility: R/R >= 2.0. Membership and eligibility are stored
+  separately so exclusions remain auditable.
+- Common lifecycle: 48-hour barrier/expiry horizon, 0.35 spread points, 0.10
+  slippage points per side and the same four-hour setup cooldown.
+- SELL remains in the baseline and outcome collection but cannot be relabelled
+  into the BUY variant.
+- Assignment has no effect on Claude/ML approval, the paper ledger status,
+  Telegram or model training/selection.
+
+Assignments are appended once to `data/forward_variant_assignments.csv` and
+joined to immutable features/outcomes by `candidate_id`. The calendar clock
+starts at the first assignment after deployment—not at contract authoring—and
+continues unchanged for at least 3–6 months. Formal review additionally waits
+for at least 200 matured, R/R-eligible `buy_liquidity_v1` candidates and may
+require longer when label overlap reduces effective sample size. Until then the
+dashboard may show collection counts only, never an interim validation claim.
+
 ## Current model decision
 
 The calibrated purged walk-forward XGBoost v3 result is `REJECT_MODEL`.

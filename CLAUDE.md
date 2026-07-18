@@ -41,6 +41,12 @@ Current research state at handoff:
 - Forward shadow collection continues for both directions. ML remains required
   for approval and unavailable, so no candidate can become an approved paper
   signal merely because Claude likes it.
+- Prospective experiment `forward-shadow-20260718-v1` is frozen in
+  `config/research_variants.json` (SHA-256
+  `f2a9e6dd7880b10195fc3f2e0367ed9561e5354fa96af25c732887805287fff0`). It
+  compares the unchanged BUY/SELL candidate baseline with a BUY + point-in-time
+  1H liquidity-sweep shadow variant. Assignments cannot approve a paper trade,
+  send Telegram or select/train a model.
 
 Resume in this order:
 
@@ -105,7 +111,7 @@ an edge.
 ```text
 Atomic TradingView OANDA:XAUUSD snapshot (W/D/4H/1H/15M)
               ↓
-Bullish SMC candidate generator
+Directional BUY/SELL SMC candidate generator
               ↓
 Signal geometry and research risk gates
               ↓
@@ -242,17 +248,20 @@ registered there before evaluation.
 
 ## Next research milestones
 
-1. Evaluate BUY and SELL lifecycle portfolios separately.
-2. Add label-interval uniqueness weights and weekly block-bootstrap confidence
-   intervals to development validation.
-3. Run pre-registered walk-forward SMC component ablations against simple
-   structure-only and no-ML baselines.
-4. Add a runtime-aligned portfolio equity/risk panel to the research dashboard.
+1. Keep `forward-shadow-20260718-v1` unchanged and monitor assignment/outcome
+   integrity; the evaluation clock begins with its first recorded candidate.
+2. Collect at least 3–6 calendar months and 200 matured, R/R-eligible BUY + 1H
+   sweep candidates before formal review; extend if overlap reduces effective
+   sample size.
+3. Evaluate the baseline and BUY variant once, using the frozen costs/lifecycle,
+   label-overlap diagnostics and weekly block-bootstrap uncertainty.
+4. Add a runtime-aligned portfolio equity/risk panel only after enough frozen
+   outcomes exist to avoid presenting noise as performance.
 5. Build the DXY/real-yield/VIX snapshot producer with timestamp and source
    provenance.
 6. Add model/prompt/dataset lineage, drift and calibration monitoring.
-7. Freeze a research revision and forward paper trade it for 3–6 months before
-   considering any live-capital design.
+7. Do not design live-capital execution unless a later frozen forward test
+   passes the registered gates; this experiment remains paper-only.
 
 ### Validation decision rule
 
@@ -301,9 +310,13 @@ labels in chronological train/test partitions.
 
 Forward collection writes exact candidate-time features to
 `data/forward_candidate_features_v2.csv` and outcomes to
-`data/forward_candidate_outcomes.csv`. This shadow ledger follows every SMC
+`data/forward_candidate_outcomes.csv`. Frozen membership is written separately
+to `data/forward_variant_assignments.csv` under the hash-locked contract in
+`config/research_variants.json`. This shadow ledger follows every unique SMC
 candidate—including candidates rejected by unavailable ML or Claude—without
-approving a paper trade or sending Telegram. Export matured joins with:
+approving a paper trade or sending Telegram. Assignment records distinguish
+raw membership from minimum-R/R eligibility. Export matured, assigned joins
+with:
 
 ```bash
 python -m research.export_forward_dataset data/research/forward_matured.csv

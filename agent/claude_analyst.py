@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class ClaudeAnalyst:
+    PROMPT_VERSION = "claude-review-v1"
+
     def __init__(self, model: str = None):
         self.model = model or os.getenv("ANTHROPIC_REASONING_MODEL", "claude-sonnet-4-5")
         self.client = None
@@ -71,6 +73,7 @@ class ClaudeAnalyst:
                 "reasoning": str(parsed.get("reasoning", ""))[:1000],
                 "risks": [str(item)[:250] for item in parsed.get("risks", [])[:8]],
                 "model": self.model,
+                "prompt_version": self.PROMPT_VERSION,
             }
         except Exception as exc:
             logger.error("Claude analysis failed: %s", exc)
@@ -81,7 +84,8 @@ class ClaudeAnalyst:
         # Fail closed. The SMC candidate can still be recorded for research,
         # but it must not be represented as an AI-approved paper trade.
         return {"available": False, "should_trade": False, "confidence": None,
-                "reasoning": reason, "risks": ["AI_REVIEW_UNAVAILABLE"], "model": None}
+                "reasoning": reason, "risks": ["AI_REVIEW_UNAVAILABLE"], "model": None,
+                "prompt_version": ClaudeAnalyst.PROMPT_VERSION}
 
 
 class AITradingDecider:
@@ -131,6 +135,8 @@ class AITradingDecider:
             "claude_confidence": claude.get("confidence"),
             "claude_available": bool(claude.get("available")),
             "claude_reasoning": claude.get("reasoning"),
+            "claude_model": claude.get("model"),
+            "claude_prompt_version": claude.get("prompt_version"),
             "macro_available": bool(macro_result.get("available")),
             "macro_score": macro_result.get("score"),
             "vetoes": vetoes,

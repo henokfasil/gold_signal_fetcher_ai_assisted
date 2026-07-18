@@ -5,6 +5,7 @@ no random model or fabricated neutral score can approve a paper trade.
 """
 
 import csv
+import hashlib
 import json
 import logging
 import uuid
@@ -222,6 +223,98 @@ class ForwardOutcomeJournal:
         return updated
 
 
+class ForwardVariantJournal:
+    """Append-only membership in the hash-locked prospective shadow test."""
+
+    EXPECTED_CONTRACT_SHA256 = "f2a9e6dd7880b10195fc3f2e0367ed9561e5354fa96af25c732887805287fff0"
+    COLUMNS = [
+        "candidate_id", "timestamp", "experiment_version", "contract_sha256",
+        "strategy_config_version", "feature_schema_sha256", "ml_model_version",
+        "claude_model", "claude_prompt_version",
+        "direction", "baseline_v1", "buy_liquidity_v1", "min_rr_eligible",
+        "liquidity_sweep_1h_present", "rr_ratio", "paper_trading", "assignment_note",
+    ]
+
+    def __init__(self, path=settings.FORWARD_VARIANT_ASSIGNMENTS_CSV,
+                 contract_path=settings.RESEARCH_VARIANT_CONFIG):
+        self.path = path
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            raw_contract = contract_path.read_bytes()
+            digest = hashlib.sha256(raw_contract).hexdigest()
+            contract = json.loads(raw_contract)
+        except (OSError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"shadow experiment contract unavailable: {exc}") from exc
+        if digest != self.EXPECTED_CONTRACT_SHA256:
+            raise RuntimeError("shadow experiment contract hash mismatch; create a new version")
+        required_variants = {"baseline_v1", "buy_liquidity_v1"}
+        feature_schema = json.dumps(
+            GoldFeatureEngineer.FEATURE_COLS, separators=(",", ":"), ensure_ascii=True
+        ).encode()
+        feature_schema_sha256 = hashlib.sha256(feature_schema).hexdigest()
+        common = contract.get("common_evaluation", {})
+        runtime_contract_matches = (
+            settings.PRICE_DATA_PROVIDER == "tradingview" and
+            int(common.get("outcome_expiry_hours", -1)) == settings.TRADE_EXPIRY_HOURS and
+            float(common.get("spread_points", -1)) == settings.RESEARCH_SPREAD_POINTS and
+            float(common.get("slippage_points_per_side", -1)) == settings.RESEARCH_SLIPPAGE_POINTS and
+            float(common.get("minimum_risk_reward_ratio", -1)) == float(
+                settings.strategy_value("risk_gates", "min_risk_reward_ratio", settings.MIN_RR_RATIO)
+            )
+        )
+        if (contract.get("schema_version") != 1 or not contract.get("paper_only") or
+                set(contract.get("variants", {})) != required_variants or
+                contract.get("lineage", {}).get("feature_schema_sha256") != feature_schema_sha256 or
+                not runtime_contract_matches or
+                contract.get("isolation", {}).get("may_approve_paper_trade") is not False or
+                contract.get("isolation", {}).get("may_send_telegram") is not False):
+            raise RuntimeError("shadow experiment contract violates frozen research rules or runtime settings")
+        self.contract = contract
+        self.contract_sha256 = digest
+
+    def append(self, candidate_id: str, timestamp: str, signal: dict,
+               decision: dict = None) -> None:
+        decision = decision or {}
+        direction = str(signal.get("direction", "")).upper()
+        variants = self.contract["variants"]
+        sweep_present = bool(signal.get("mtf", {}).get("smc", {}).get("liquidity_sweep_1h"))
+        try:
+            rr_ratio = float(signal.get("rr_ratio") or 0)
+        except (TypeError, ValueError):
+            rr_ratio = 0.0
+        min_rr = float(self.contract["common_evaluation"]["minimum_risk_reward_ratio"])
+        baseline_member = direction in variants["baseline_v1"]["directions"]
+        buy_liquidity_member = (
+            direction in variants["buy_liquidity_v1"]["directions"] and sweep_present
+        )
+        row = {
+            "candidate_id": candidate_id,
+            "timestamp": timestamp,
+            "experiment_version": self.contract["experiment_version"],
+            "contract_sha256": self.contract_sha256,
+            "strategy_config_version": self.contract["lineage"]["strategy_config_version"],
+            "feature_schema_sha256": self.contract["lineage"]["feature_schema_sha256"],
+            "ml_model_version": decision.get("ml_model_version") or "UNAVAILABLE",
+            "claude_model": decision.get("claude_model") or "UNAVAILABLE",
+            "claude_prompt_version": (decision.get("claude_prompt_version") or
+                                      self.contract["lineage"]["claude_prompt_version"]),
+            "direction": direction,
+            "baseline_v1": int(baseline_member),
+            "buy_liquidity_v1": int(buy_liquidity_member),
+            "min_rr_eligible": int(rr_ratio >= min_rr),
+            "liquidity_sweep_1h_present": int(sweep_present),
+            "rr_ratio": rr_ratio,
+            "paper_trading": True,
+            "assignment_note": "SHADOW_RESEARCH_ONLY_NO_APPROVAL_OR_TELEGRAM_EFFECT",
+        }
+        exists = self.path.exists() and self.path.stat().st_size > 0
+        with self.path.open("a", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=self.COLUMNS)
+            if not exists:
+                writer.writeheader()
+            writer.writerow(row)
+
+
 class AIAssistedOrchestrator:
     def __init__(self):
         if not settings.PAPER_TRADING:
@@ -229,6 +322,7 @@ class AIAssistedOrchestrator:
         self.ledger = PaperLedger()
         self.forward_features = ForwardFeatureJournal()
         self.forward_outcomes = ForwardOutcomeJournal()
+        self.forward_variants = ForwardVariantJournal()
         self.ml_filter = MLSignalFilter()
         self.correlation = GoldCorrelationValidator()
         self.ai_decider = AITradingDecider()
@@ -395,6 +489,7 @@ class AIAssistedOrchestrator:
         })
         self.forward_features.append(candidate_id, timestamp, signal)
         self.forward_outcomes.append(candidate_id, timestamp, signal)
+        self.forward_variants.append(candidate_id, timestamp, signal, decision)
         return candidate_id
 
     def run_scan(self):

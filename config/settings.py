@@ -74,6 +74,13 @@ FORWARD_FEATURES_CSV = Path(
 FORWARD_OUTCOMES_CSV = Path(
     os.getenv('FORWARD_OUTCOMES_CSV', PROJECT_ROOT / 'data' / 'forward_candidate_outcomes.csv')
 )
+FORWARD_VARIANT_ASSIGNMENTS_CSV = Path(
+    os.getenv('FORWARD_VARIANT_ASSIGNMENTS_CSV',
+              PROJECT_ROOT / 'data' / 'forward_variant_assignments.csv')
+)
+RESEARCH_VARIANT_CONFIG = Path(
+    os.getenv('RESEARCH_VARIANT_CONFIG', PROJECT_ROOT / 'config' / 'research_variants.json')
+)
 RESEARCH_SPREAD_POINTS = float(os.getenv('RESEARCH_SPREAD_POINTS', '0.35'))
 RESEARCH_SLIPPAGE_POINTS = float(os.getenv('RESEARCH_SLIPPAGE_POINTS', '0.10'))
 SYSTEM_A_CSV = Path(os.getenv('SYSTEM_A_CSV', '/root/Gold_Signal_Fetcher/data/paper_trades.csv'))
