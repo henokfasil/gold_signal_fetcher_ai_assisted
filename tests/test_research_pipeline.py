@@ -60,6 +60,10 @@ from research.build_event_candidate_universe import (
     load_contract as load_event_universe_contract,
     stable_event_id,
 )
+from research.benchmark_event_candidate_universe import (
+    _stressed_target as stress_event_universe_target,
+    _validate_registered_evaluation as validate_event_universe_evaluation,
+)
 
 
 class FakeClaude:
@@ -388,6 +392,23 @@ class ResearchPipelineTests(unittest.TestCase):
         changed = list(args)
         changed[-1] = "2026-01-02T11:00:00Z"
         self.assertNotEqual(stable_event_id(*args), stable_event_id(*changed))
+
+    def test_event_universe_benchmark_refuses_unregistered_sampling(self):
+        contract, _ = load_event_universe_contract()
+        validate_event_universe_evaluation(contract, 500, 42)
+        with self.assertRaisesRegex(RuntimeError, "bootstrap samples"):
+            validate_event_universe_evaluation(contract, 499, 42)
+        with self.assertRaisesRegex(RuntimeError, "bootstrap seed"):
+            validate_event_universe_evaluation(contract, 500, 43)
+
+    def test_event_universe_cost_stress_is_two_sided_and_incremental(self):
+        frame = pd.DataFrame({
+            "target_4h_net_return_pct": [1.0], "executable_entry": [2000.0],
+        })
+        stressed = stress_event_universe_target(
+            frame, "target_4h_net_return_pct", 0.25,
+        )
+        self.assertAlmostEqual(stressed.iloc[0], 1.0 - 0.30 / 2000.0 * 100)
 
     @staticmethod
     def _event_universe_frames():
