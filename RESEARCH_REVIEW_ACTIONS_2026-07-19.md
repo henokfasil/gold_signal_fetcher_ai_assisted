@@ -98,3 +98,11 @@ Independent work therefore proceeds on a registered `gold_context` dataset and
 genuinely new point-in-time macro/related-market features. More complex models
 are considered only after new information beats simple baselines. Broker
 execution remains out of scope.
+
+That first `gold_context` experiment is now complete. Four precisely identified
+Dukascopy proxies were joined backward at their completed-candle availability
+times. Context-only Ridge improved selected excess over a constant control, but
+its primary 4h rank-IC and selected-return intervals still crossed zero. It
+therefore passed three of five gates and was rejected. BUY is a weak prospective
+hypothesis; SELL remains negative. The next engineering step is append-only
+prospective context capture, not retrospective threshold tuning.

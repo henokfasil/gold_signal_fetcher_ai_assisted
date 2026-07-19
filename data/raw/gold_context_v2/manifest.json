@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "contract_version": "gold-context-20260719-v2",
+  "contract_sha256": "a8d2f252ce2b4f06a0828a8b0639088e5fae216b8559134a79e89175e5462e50",
+  "provider": "dukascopy-public",
+  "timestamp_semantics": "candle open UTC",
+  "availability_semantics": "a 1H candle becomes observable only at open_time + 1 hour",
+  "requested_start": "2020-01-01T00:00:00+00:00",
+  "requested_end": "2026-07-18T00:00:00+00:00",
+  "instruments": {
+    "dollar_idx": {
+      "provider_symbol": "DOLLAR.IDX/USD",
+      "required_sides": [
+        "bid",
+        "ask"
+      ],
+      "price_input": "midpoint derived from matched bid and ask OHLC",
+      "rows": 35297,
+      "first_candle_open_utc": "2020-01-02T01:00:00+00:00",
+      "last_candle_open_utc": "2026-07-17T20:00:00+00:00",
+      "last_available_at_utc": "2026-07-17T21:00:00+00:00",
+      "median_gap_minutes": 60.0,
+      "max_gap_minutes_including_market_closures": 4740.0,
+      "file": "data/raw/gold_context_v2/dollar_idx_1h.csv",
+      "file_sha256": "7152ab3e79a1eb7ccbd146bc7e9ffd6cdf42bff83092235b8ce77c7496586666"
+    },
+    "silver": {
+      "provider_symbol": "XAG/USD",
+      "required_sides": [
+        "bid",
+        "ask"
+      ],
+      "price_input": "midpoint derived from matched bid and ask OHLC",
+      "rows": 38691,
+      "first_candle_open_utc": "2020-01-01T23:00:00+00:00",
+      "last_candle_open_utc": "2026-07-17T20:00:00+00:00",
+      "last_available_at_utc": "2026-07-17T21:00:00+00:00",
+      "median_gap_minutes": 60.0,
+      "max_gap_minutes_including_market_closures": 4620.0,
+      "file": "data/raw/gold_context_v2/silver_1h.csv",
+      "file_sha256": "baf5358a69c2d86d7f6ecb089bbbe8c55f6bcf13130a89bc51953c441ebd5609"
+    },
+    "volatility_idx": {
+      "provider_symbol": "VOL.IDX/USD",
+      "required_sides": [
+        "bid"
+      ],
+      "price_input": "bid OHLC only; source preflight returned no ask candles",
+      "rows": 19865,
+      "first_candle_open_utc": "2022-10-05T13:00:00+00:00",
+      "last_candle_open_utc": "2026-07-17T20:00:00+00:00",
+      "last_available_at_utc": "2026-07-17T21:00:00+00:00",
+      "median_gap_minutes": 60.0,
+      "max_gap_minutes_including_market_closures": 4680.0,
+      "file": "data/raw/gold_context_v2/volatility_idx_1h.csv",
+      "file_sha256": "5d1822191acaa3fd6b8b4a91298ee8071defcfb9a85166ef602c1a9d1f623a66"
+    },
+    "treasury_bond": {
+      "provider_symbol": "USTBOND.TR/USD",
+      "required_sides": [
+        "bid",
+        "ask"
+      ],
+      "price_input": "midpoint derived from matched bid and ask OHLC",
+      "rows": 38585,
+      "first_candle_open_utc": "2020-01-01T23:00:00+00:00",
+      "last_candle_open_utc": "2026-07-17T20:00:00+00:00",
+      "last_available_at_utc": "2026-07-17T21:00:00+00:00",
+      "median_gap_minutes": 60.0,
+      "max_gap_minutes_including_market_closures": 4620.0,
+      "file": "data/raw/gold_context_v2/treasury_bond_1h.csv",
+      "file_sha256": "867a50fcee7651b2fce16295f4b86b694194d24b35ea5384ee8681670d73f72d"
+    }
+  },
+  "commercial_rights_status": "NOT_REVIEWED_DO_NOT_RESELL_OR_REDISTRIBUTE_SOURCE_DATA",
+  "research_warning": "Inputs are development data and do not establish an edge."
+}

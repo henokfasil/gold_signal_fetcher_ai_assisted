@@ -28,6 +28,7 @@ from research.analyze_research_evidence import label_uniqueness, weekly_block_bo
 from research.relabel_candidate_targets import relabel
 from research.benchmark_return_targets import _prepare as prepare_return_target
 from research.download_gold_context import combine_sides, load_contract
+from research.build_gold_context_dataset import instrument_features
 
 
 class FakeClaude:
@@ -190,6 +191,22 @@ class ResearchPipelineTests(unittest.TestCase):
         bid_only = combine_sides({"bid": bid}, ["bid"])
         self.assertAlmostEqual(bid_only.iloc[0]["analysis_close"], 100.0)
         self.assertFalse(any(column.startswith("ask_") for column in bid_only.columns))
+
+    def test_gold_context_join_uses_only_values_available_before_candidate(self):
+        context = pd.DataFrame({
+            "available_at": pd.to_datetime([
+                "2026-01-01T09:00:00Z", "2026-01-01T10:00:00Z",
+                "2026-01-01T11:00:00Z",
+            ], utc=True),
+            "analysis_close": [100.0, 101.0, 999.0],
+            "realized_volatility_24h_pct": [0.1, 0.2, 99.0],
+        })
+        query = pd.Series(pd.to_datetime(["2026-01-01T10:30:00Z"], utc=True))
+        result = instrument_features(query, context, "test", 4320).iloc[0]
+        self.assertAlmostEqual(result["ctx_test_return_1h_pct"], 1.0)
+        self.assertAlmostEqual(result["ctx_test_realized_volatility_24h_pct"], 0.2)
+        self.assertEqual(result["ctx_test_staleness_minutes"], 30.0)
+        self.assertEqual(result["ctx_test_missing"], 0)
 
     def test_forward_journal_preserves_exact_candidate_features(self):
         from agent.ml_feature_engineer_gold import GoldFeatureEngineer

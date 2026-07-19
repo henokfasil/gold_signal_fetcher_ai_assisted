@@ -44,6 +44,10 @@ Important evidence already established:
   `a8d2f252ce2b4f06a0828a8b0639088e5fae216b8559134a79e89175e5462e50`.
   Preserve its exact instruments, timing, joins, features and gates or create a
   new version before inspecting affected outcomes.
+- Context v2 is complete and rejected. Context-only Ridge passed three of five
+  primary gates but failed rank-IC and selected-return lower bounds. Its BUY
+  selected return was +0.0226% with a 95% interval spanning zero; SELL was
+  negative. Do not tune or deploy this result.
 - No validated ML model exists. Do not create metadata claiming otherwise.
 - Lifecycle portfolio result: -2.33% return, profit factor 0.992, maximum
   drawdown 36.42%; BUY P&L positive and SELL P&L negative.
@@ -68,8 +72,8 @@ Continue with these objectives in order:
 
 1. Verify the active source snapshot, cron, dashboard, append-only pilot files
    and frozen contract hash without inspecting interim return performance.
-2. Build a versioned `gold_context` availability/source contract for new
-   point-in-time economic information.
+2. Preserve context v2 and implement prospective context capture without
+   changing approval or Telegram behavior.
 3. Use the existing registered multi-horizon after-cost return/MFE/MAE targets
    as diagnostics; do not rerun or tune them until genuinely new point-in-time
    information has been added.

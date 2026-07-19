@@ -40,8 +40,8 @@ Current research state at handoff:
   +0.114%, but its weekly 95% interval was -0.061% to +0.281% and selection
   collapsed to four rows in 2026; it is not a usable model.
 - Context contract v1 was rejected at source preflight because `VOL.IDX/USD`
-  returned no ask candles. No outcome was joined or inspected. The active next
-  information experiment is `gold-context-20260719-v2` in
+  returned no ask candles. No outcome was joined or inspected. The replacement
+  information experiment was registered as `gold-context-20260719-v2` in
   `config/gold_context_v2.json` (SHA-256
   `a8d2f252ce2b4f06a0828a8b0639088e5fae216b8559134a79e89175e5462e50`).
   It uses precise Dukascopy dollar-index, silver, volatility-index and
@@ -49,6 +49,17 @@ Current research state at handoff:
   backward-only as-of joins. Volatility is explicitly bid-only; the other
   three use matched bid/ask midpoints. Source-data commercial rights are not
   yet reviewed; do not redistribute or sell it.
+- Context v2 preserved all 40,792 candidates and added 26 backward-as-of
+  features. Dataset SHA-256 is
+  `6dd876a46b673edfbb02a172a3853ab105c148f1f21031f60cac9f0f83a806b0`.
+  Dollar, silver and Treasury missingness is below 0.06%; the volatility proxy
+  begins 2022-10-05 and is missing for 30.8% of candidates as registered.
+- Context v2 result is `REJECT_CONTEXT_MODELS`. On the primary 4h target, the
+  strongest context-only Ridge selected +0.0028% mean return and rank IC 0.036,
+  but their weekly 95% intervals were -0.028% to +0.035% and -0.003 to 0.073.
+  It passed three of five gates, not all five. BUY selected mean was +0.0226%
+  with interval -0.0132% to +0.0661%; SELL was negative. No context model
+  artifact may be created or deployed.
 - The lifecycle portfolio diagnostic opens 2,695 positions from 40,792 raw
   candidates after cooldown/risk gates. It returns -2.33%, profit factor 0.992
   and maximum drawdown 36.42%. BUY contributes +$1,576.10; SELL contributes
@@ -94,13 +105,15 @@ Resume in this order:
 2. Monitor snapshot cadence, latest-complete-bar lag and append-only pilot
    assignments/outcomes; operational monitoring must not reveal interim
    profitability.
-3. Build the separately versioned point-in-time `gold_context` source contract
-   and multi-horizon/utility targets. Do not modify the frozen pilot.
-4. Run new feature/target experiments through identical simple baselines,
+3. Preserve context v2 as a failed-but-informative experiment; do not tune its
+   features or thresholds on the same outcomes. Do not modify the frozen pilot.
+4. Capture registered context fields prospectively for every paper candidate,
+   without giving them approval or Telegram effect.
+5. Run genuinely new feature/target experiments through identical baselines,
    chronological folds, purge, calibration and dependence-aware uncertainty.
-5. Add causal regime/session diagnostics only inside chronological training
+6. Add causal regime/session diagnostics only inside chronological training
    folds. Register every proposed filter before examining its next-fold result.
-6. Freeze a revision only if the underlying non-ML baseline and any ML filter
+7. Freeze a revision only if the underlying non-ML baseline and any ML filter
    pass development gates. Final evidence must come from future forward paper
    observations with no mid-test changes.
 
@@ -475,12 +488,10 @@ registered there before evaluation.
    power for the corrected historical +0.074% per-candidate effect is only
    about 15.3%; it
    cannot by itself confirm profitability.
-4. Continue independent research now: construct new point-in-time context
-   features under a separately named protocol. The existing multi-horizon
-   return targets did not rescue the candidate-time feature set.
-5. Build the DXY/real-yield/VIX snapshot producer with timestamp and source
-   provenance only after respecting the registered `gold_context` identities:
-   the selected free feeds are proxies, not official DXY/VIX/real-yield data.
+4. Preserve the rejected context-v2 result; its weak BUY/context lead is
+   hypothesis-generating only and cannot be tuned on the same years.
+5. Build a runtime context snapshot using the registered proxy identities and
+   append it to prospective candidate records with no approval/Telegram effect.
 6. Add model/prompt/dataset lineage, drift and calibration monitoring.
 7. Do not design live-capital execution unless a later frozen forward test
    passes the registered gates; this experiment remains paper-only.
@@ -586,6 +597,26 @@ python -m research.download_gold_context data/raw/gold_context_v2 \
 candles and use midpoint analysis prices. `VOL.IDX/USD` is explicitly bid-only
 because the source returned no ask history. Raw files remain local and may not
 be redistributed or sold unless commercial rights are separately established.
+
+Join the frozen candidates with backward-only as-of features and run the
+registered comparison:
+
+```bash
+python -m research.build_gold_context_dataset \
+  data/research/xauusd_smc_candidates_v4.csv \
+  data/raw/dukascopy_xauusd_15m_2020_2026.csv \
+  data/raw/gold_context_v2 \
+  data/research/xauusd_smc_candidates_context_v2.csv
+
+python -m research.benchmark_gold_context \
+  data/research/xauusd_smc_candidates_context_v2.csv \
+  --output data/research/gold_context_benchmarks_v1.json \
+  --bootstrap-samples 500
+```
+
+The canonical result is `REJECT_CONTEXT_MODELS`. A weak context-only BUY lead
+does not pass selected-return uncertainty and may be used only to register a
+future hypothesis, never to deploy or retroactively relax the gates.
 
 ## Security and operations
 

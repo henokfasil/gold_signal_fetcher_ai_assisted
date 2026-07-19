@@ -96,6 +96,21 @@ instrument supplied bid and ask was false. The active contract is therefore
 feature, target and gate above while registering `VOL.IDX/USD` as a bid-only
 context series. No synthetic ask or midpoint is permitted for that proxy.
 
+Context v2 collection produced 35,297 dollar-index, 38,691 silver, 19,865
+volatility-proxy and 38,585 Treasury-bond 1H observations. The volatility proxy
+begins 2022-10-05, so its earlier values remain missing rather than backfilled.
+The joined dataset preserved all 40,792 frozen candidates and the exact
+registered 26-feature schema.
+
+The pre-registered primary 4h result is `REJECT_CONTEXT_MODELS`. Context-only
+Ridge achieved rank IC 0.036 and selected mean +0.0028%, but weekly-block 95%
+intervals were -0.003 to 0.073 and -0.028% to +0.035%. It passed selected
+excess, fold-count and paired-control gates, but failed rank-IC and absolute
+selected-return uncertainty. BUY selected mean was +0.0226% with interval
+-0.0132% to +0.0661%; SELL selected mean was negative. This is a possible
+future BUY hypothesis, not a model authorization. No threshold, feature or
+directional refit may be selected from these same outcomes under v2.
+
 ### 6. Frozen forward paper pilot and later confirmation
 
 Forward candidate features and shadow outcomes remain append-only and separate

@@ -42,7 +42,9 @@ def _fetch(symbol: str, start: datetime, end: datetime, side: str) -> pd.DataFra
         start, end, max_retries=5,
     )
     if frame is None or frame.empty:
-        raise RuntimeError(f"Dukascopy returned no {side} data for {symbol}: {start} to {end}")
+        empty = pd.DataFrame(columns=list(FIELDS))
+        empty.index = pd.DatetimeIndex([], tz="UTC", name="timestamp")
+        return empty
     frame = frame.copy()
     frame.index = pd.to_datetime(frame.index, utc=True)
     frame.index.name = "timestamp"
@@ -100,7 +102,7 @@ def _download_side(symbol: str, side: str, start: datetime, end: datetime,
         (result.timestamp + pd.Timedelta(hours=1) <= end)
     ]
     result = result.sort_values("timestamp").drop_duplicates("timestamp", keep="last")
-    if result.empty or result.timestamp.has_duplicates or not result.timestamp.is_monotonic_increasing:
+    if result.empty or not result.timestamp.is_unique or not result.timestamp.is_monotonic_increasing:
         raise RuntimeError(f"{symbol} {side} result is empty, duplicated or unordered")
     return result.set_index("timestamp")[list(FIELDS)]
 
