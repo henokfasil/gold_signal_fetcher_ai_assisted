@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "experiment_version": "forward-context-buy-20260719-v1",
+  "frozen_at_utc": "2026-07-19T12:49:25Z",
+  "implementation_parent_revision": "311ba611ec18bfad265cfec8c0b11f2baa3bfa5a",
+  "paper_only": true,
+  "purpose": "No-peek prospective context availability, stability and outcome observation; not a confirmatory edge test",
+  "hypothesis_provenance": {
+    "source_experiment": "gold-context-20260719-v2",
+    "source_result": "REJECT_CONTEXT_MODELS",
+    "development_contamination_disclosed": true,
+    "historical_buy_selected_mean_return_pct": 0.022602,
+    "historical_buy_selected_return_95_interval_pct": [-0.013247, 0.066119],
+    "interpretation": "Weak BUY hypothesis with absolute-return uncertainty spanning zero; no validated model exists."
+  },
+  "source_contract": {
+    "provider": "dukascopy-public",
+    "historical_context_contract": "gold-context-20260719-v2",
+    "historical_context_contract_sha256": "a8d2f252ce2b4f06a0828a8b0639088e5fae216b8559134a79e89175e5462e50",
+    "xau_source": "validated DUKASCOPY:XAUUSD runtime snapshot",
+    "raw_candle_interval": "1H",
+    "candle_timestamp_semantics": "open UTC; available only at open + 1 hour",
+    "forming_candles_excluded": true,
+    "instruments": {
+      "dollar_idx": {"symbol": "DOLLAR.IDX/USD", "required_sides": ["bid", "ask"], "analysis_price": "midpoint"},
+      "silver": {"symbol": "XAG/USD", "required_sides": ["bid", "ask"], "analysis_price": "midpoint"},
+      "volatility_idx": {"symbol": "VOL.IDX/USD", "required_sides": ["bid"], "analysis_price": "bid"},
+      "treasury_bond": {"symbol": "USTBOND.TR/USD", "required_sides": ["bid", "ask"], "analysis_price": "midpoint"}
+    }
+  },
+  "feature_contract": {
+    "schema_sha256": "4100208e9e086f5399dedf3f23a7165ed1444bd8994228b5492adc1525c320c6",
+    "feature_count": 26,
+    "maximum_staleness_minutes": 4320,
+    "join": "backward only; source available_at must not exceed candidate timestamp",
+    "missing_policy": "preserve null feature values and explicit per-instrument missing/staleness fields",
+    "raw_levels_recorded_for_audit_but_not_registered_model_features": true
+  },
+  "candidate_universe": "Every unique SMC paper candidate after the runtime four-hour same-direction nearby-entry cooldown, regardless of ML/Claude decision",
+  "assignments": {
+    "baseline_context_capture_v1": "all candidate directions",
+    "buy_context_hypothesis_v1": "BUY candidates only",
+    "sell_context_hypothesis": "not registered; SELL remains observational baseline only"
+  },
+  "stopping_rule": {
+    "design": "fixed-horizon-no-peek-observation-pilot",
+    "calendar_weeks": 26,
+    "assignment_cutoff_at_utc": "2027-01-17T12:49:25Z",
+    "evaluate_once_at_utc": "2027-01-24T12:49:25Z",
+    "fixed_maturity_buffer_days": 7,
+    "candidate_count_is_not_a_stopping_rule": true,
+    "interim_performance_evaluation_permitted": false,
+    "operational_health_and_missingness_monitoring_permitted": true,
+    "confirmation_claim_permitted": false
+  },
+  "isolation": {
+    "context_model_state": "REJECTED_NO_ARTIFACT",
+    "may_score_or_approve_paper_trade": false,
+    "may_change_ml_or_claude_decision": false,
+    "may_send_telegram": false,
+    "may_place_broker_order": false,
+    "may_train_or_select_model": false
+  },
+  "commercial_rights_status": "NOT_REVIEWED_DO_NOT_RESELL_OR_REDISTRIBUTE_SOURCE_DATA",
+  "reset_rule": "Any source, price-side, availability, feature, missingness, assignment or evaluation change requires a new contract version before affected collection."
+}

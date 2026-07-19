@@ -111,6 +111,22 @@ selected-return uncertainty. BUY selected mean was +0.0226% with interval
 future BUY hypothesis, not a model authorization. No threshold, feature or
 directional refit may be selected from these same outcomes under v2.
 
+#### Frozen prospective context observation: `forward-context-buy-20260719-v1`
+
+The machine-readable contract is
+`config/forward_context_observation_v1.json`. It records the registered 26
+context fields for every unique paper candidate and marks BUY candidates as a
+weak, development-mined hypothesis. It creates no model score and has no
+approval, Claude, Telegram, paper-ledger or broker effect. SELL is collected as
+an observational baseline and is not relabelled as a passing hypothesis.
+
+Assignments stop at 2027-01-17 12:49:25 UTC and evaluation occurs once after
+the fixed maturity buffer at 2027-01-24 12:49:25 UTC. Interim performance is
+forbidden; only source health, staleness, missingness and counts may be
+monitored. The historical BUY effect is too uncertain for this pilot to claim
+confirmation, so its purpose is prospective availability, stability and
+variance evidence.
+
 ### 6. Frozen forward paper pilot and later confirmation
 
 Forward candidate features and shadow outcomes remain append-only and separate
