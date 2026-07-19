@@ -170,7 +170,7 @@ def _data_quality(frame: pd.DataFrame, contract: dict, feature_manifest: dict) -
     directions = {"BUY", "SELL"}
     event_types = set(EVENT_TYPES)
     timestamps = pd.to_datetime(frame["timestamp"], utc=True)
-    source_times = pd.to_datetime(frame["source_event_time"], utc=True)
+    source_times = pd.to_datetime(frame["event_source_time"], utc=True)
     invalid = int((~frame.direction.isin(directions) | ~frame.event_type.isin(event_types)).sum())
     matured = frame[~frame.label_status.isin(["AMBIGUOUS_SAME_BAR", "UNMATURED"])].copy()
     gates = contract["dataset_quality_gates"]
