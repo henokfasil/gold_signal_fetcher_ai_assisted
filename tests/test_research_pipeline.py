@@ -54,6 +54,12 @@ from research.benchmark_candidate_generation import (
     load_contract as load_candidate_generation_contract,
     variant_masks as candidate_generation_variant_masks,
 )
+from research.build_event_candidate_universe import (
+    EVENT_FEATURES, current_events as current_event_candidates,
+    event_geometry as build_event_geometry,
+    load_contract as load_event_universe_contract,
+    stable_event_id,
+)
 
 
 class FakeClaude:
@@ -359,6 +365,83 @@ class ResearchPipelineTests(unittest.TestCase):
             validate_candidate_generation_evaluation(contract, 1999, 42)
         with self.assertRaisesRegex(RuntimeError, "bootstrap seed"):
             validate_candidate_generation_evaluation(contract, 2000, 43)
+
+    def test_event_universe_contract_and_geometry_schema_are_hash_locked(self):
+        contract, digest = load_event_universe_contract()
+        self.assertEqual(
+            digest,
+            "2b57fac00d70b60452a19e14b2daa8d264316016d89fc2425bebf3e05ad40c12",
+        )
+        self.assertEqual(
+            contract["geometry_feature_contract"]["registered_features"],
+            EVENT_FEATURES,
+        )
+        self.assertEqual(len(EVENT_FEATURES), 55)
+        self.assertFalse(contract["decision_rule"]["paper_approval_authorized"])
+
+    def test_event_universe_stable_id_deduplicates_repeated_scans(self):
+        args = (
+            "event-candidate-universe-20260719-v1", "DUKASCOPY:XAUUSD",
+            "BUY", "SWEEP_1H", "2026-01-02T10:00:00Z",
+        )
+        self.assertEqual(stable_event_id(*args), stable_event_id(*args))
+        changed = list(args)
+        changed[-1] = "2026-01-02T11:00:00Z"
+        self.assertNotEqual(stable_event_id(*args), stable_event_id(*changed))
+
+    @staticmethod
+    def _event_universe_frames():
+        as_of = pd.Timestamp("2026-01-05T12:00:00Z")
+
+        def make_frame(freq, end, periods=70):
+            index = pd.date_range(end=end, periods=periods, freq=freq, tz="UTC")
+            close = 100 + pd.RangeIndex(periods).to_numpy(dtype=float) * 0.01
+            frame = pd.DataFrame({
+                "open": close - 0.02, "high": close + 0.10,
+                "low": close - 0.10, "close": close, "volume": 10.0,
+            }, index=index)
+            return frame
+
+        frames = {
+            "1W": make_frame("7D", as_of - pd.Timedelta(days=2)),
+            "1D": make_frame("1D", as_of),
+            "4H": make_frame("4h", as_of - pd.Timedelta(hours=1)),
+            "1H": make_frame("1h", as_of),
+            "15M": make_frame("15min", as_of),
+        }
+        one_hour = frames["1H"]
+        one_hour.iloc[-3, one_hour.columns.get_loc("open")] = 100.0
+        one_hour.iloc[-3, one_hour.columns.get_loc("close")] = 100.0
+        one_hour.iloc[-3, one_hour.columns.get_loc("high")] = 100.2
+        one_hour.iloc[-3, one_hour.columns.get_loc("low")] = 99.8
+        one_hour.iloc[-2, one_hour.columns.get_loc("open")] = 100.3
+        one_hour.iloc[-2, one_hour.columns.get_loc("close")] = 102.0
+        one_hour.iloc[-2, one_hour.columns.get_loc("high")] = 102.1
+        one_hour.iloc[-2, one_hour.columns.get_loc("low")] = 100.2
+        one_hour.iloc[-1, one_hour.columns.get_loc("open")] = 101.5
+        one_hour.iloc[-1, one_hour.columns.get_loc("close")] = 102.5
+        one_hour.iloc[-1, one_hour.columns.get_loc("high")] = 103.0
+        one_hour.iloc[-1, one_hour.columns.get_loc("low")] = 101.0
+        return frames, as_of
+
+    def test_event_universe_emits_only_newly_confirmed_fvg_with_causal_geometry(self):
+        frames, as_of = self._event_universe_frames()
+        events = current_event_candidates(frames, as_of)
+        bullish_fvg = [
+            event for event in events
+            if event["event_type"] == "FVG_1H" and event["direction"] == "BUY"
+        ]
+        self.assertEqual(len(bullish_fvg), 1)
+        decision = pd.Series({
+            "open": 102.0, "high": 102.6, "low": 101.9, "close": 102.5,
+            "bid_close": 102.45, "ask_close": 102.55,
+        })
+        geometry = build_event_geometry(frames, bullish_fvg[0], as_of, decision)
+        self.assertEqual(list(geometry), EVENT_FEATURES)
+        self.assertEqual(geometry["event_type_fvg_1h"], 1.0)
+        self.assertEqual(geometry["event_direction_encoded"], 1.0)
+        self.assertEqual(geometry["fvg_present"], 1.0)
+        self.assertGreater(geometry["fvg_width_atr_1h"], 0)
 
     def test_portfolio_simulator_enforces_setup_cooldown(self):
         rows = pd.DataFrame([
