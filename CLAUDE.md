@@ -39,6 +39,13 @@ Current research state at handoff:
   exploratory gates. The strongest-looking 48h ridge point estimate selected
   +0.114%, but its weekly 95% interval was -0.061% to +0.281% and selection
   collapsed to four rows in 2026; it is not a usable model.
+- The next information experiment is pre-registered before historical joining
+  as `gold-context-20260719-v1` in `config/gold_context_v1.json` (SHA-256
+  `df70a9670eda2aa524a2ccc0f476ec3e8313a1b963021bc259b82a6387ecb118`).
+  It uses precise Dukascopy dollar-index, silver, volatility-index and
+  Treasury-bond CFD proxy identities with completed-candle availability and
+  backward-only as-of joins. Source-data commercial rights are not yet
+  reviewed; do not redistribute or sell it.
 - The lifecycle portfolio diagnostic opens 2,695 positions from 40,792 raw
   candidates after cooldown/risk gates. It returns -2.33%, profit factor 0.992
   and maximum drawdown 36.42%. BUY contributes +$1,576.10; SELL contributes
@@ -469,7 +476,8 @@ registered there before evaluation.
    features under a separately named protocol. The existing multi-horizon
    return targets did not rescue the candidate-time feature set.
 5. Build the DXY/real-yield/VIX snapshot producer with timestamp and source
-   provenance.
+   provenance only after respecting the registered `gold_context` identities:
+   the selected free feeds are proxies, not official DXY/VIX/real-yield data.
 6. Add model/prompt/dataset lineage, drift and calibration monitoring.
 7. Do not design live-capital execution unless a later frozen forward test
    passes the registered gates; this experiment remains paper-only.

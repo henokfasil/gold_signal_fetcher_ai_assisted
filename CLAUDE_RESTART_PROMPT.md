@@ -36,6 +36,11 @@ Important evidence already established:
   `NO_EXPLORATORY_SIGNAL` across constant, direction/SMC-score ridge,
   all-feature ridge and fixed XGBoost regressors. The 48h ridge's positive point
   estimate has an interval spanning zero and unstable fold selection.
+- The next experiment is pre-registered as `gold-context-20260719-v1` in
+  `config/gold_context_v1.json`, SHA-256
+  `df70a9670eda2aa524a2ccc0f476ec3e8313a1b963021bc259b82a6387ecb118`.
+  Preserve its exact instruments, timing, joins, features and gates or create a
+  new version before inspecting affected outcomes.
 - No validated ML model exists. Do not create metadata claiming otherwise.
 - Lifecycle portfolio result: -2.33% return, profit factor 0.992, maximum
   drawdown 36.42%; BUY P&L positive and SELL P&L negative.

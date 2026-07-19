@@ -64,6 +64,31 @@ session/hour and higher-timeframe alignment. Cutoffs are selected inside each
 training fold, calibrated on its later calibration slice, and applied unchanged
 to the following test fold.
 
+#### Registered context experiment: `gold-context-20260719-v1`
+
+The machine-readable pre-analysis contract is
+`config/gold_context_v1.json`. It registers four account-free Dukascopy
+cross-asset proxies before historical outcomes are joined: `DOLLAR.IDX/USD`,
+`XAG/USD`, `VOL.IDX/USD` and `USTBOND.TR/USD`. These are respectively a
+Dukascopy dollar-index CFD, silver, a volatility-index CFD and a Treasury-bond
+total-return CFD. They must not be relabelled as official ICE DXY, official
+CBOE VIX or real yields.
+
+Only completed 1H bid/ask candles are permitted. Candle-open timestamps become
+observable at open plus one hour; context is joined backward only when
+`available_at <= candidate_time`. Nearest/future joins are forbidden. Values
+older than 4,320 minutes remain missing, with explicit missingness and
+staleness features. The fixed features are 1h/4h/24h returns, 24h realized
+volatility and availability fields per instrument, plus 4h/24h gold-silver
+ratio returns. Raw nonstationary proxy levels are not model inputs.
+
+The primary target is the existing executable-side 4h after-cost return.
+Context models must improve on their matching no-context model under a paired
+weekly bootstrap in addition to the existing rank-IC, selected-return,
+selected-excess and fold-stability gates. Results on 2020-2026 remain
+development-contaminated even if every gate passes. Source-data commercial
+rights have not been reviewed, so raw data may not be redistributed or sold.
+
 ### 6. Frozen forward paper pilot and later confirmation
 
 Forward candidate features and shadow outcomes remain append-only and separate
