@@ -572,6 +572,21 @@ bootstrap intervals. The canonical report is
 `NO_EXPLORATORY_SIGNAL`. This is evidence against the present information set,
 not against ML in general.
 
+### Gold-context v2 collection
+
+The hash-locked downloader writes resumable local 1H inputs and a provenance
+manifest without accessing candidate outcomes:
+
+```bash
+python -m research.download_gold_context data/raw/gold_context_v2 \
+  --start 2020-01-01 --end 2026-07-18 --chunk-days 90
+```
+
+`DOLLAR.IDX/USD`, `XAG/USD` and `USTBOND.TR/USD` require matched bid/ask
+candles and use midpoint analysis prices. `VOL.IDX/USD` is explicitly bid-only
+because the source returned no ask history. Raw files remain local and may not
+be redistributed or sold unless commercial rights are separately established.
+
 ## Security and operations
 
 - Never commit `.env`, API keys, Telegram tokens or account identifiers.

@@ -27,6 +27,7 @@ from research.simulate_portfolio import simulate
 from research.analyze_research_evidence import label_uniqueness, weekly_block_bootstrap
 from research.relabel_candidate_targets import relabel
 from research.benchmark_return_targets import _prepare as prepare_return_target
+from research.download_gold_context import combine_sides, load_contract
 
 
 class FakeClaude:
@@ -165,6 +166,30 @@ class ResearchPipelineTests(unittest.TestCase):
                 prepared.iloc[0]["target_exit_time"],
                 pd.Timestamp("2026-01-04T22:15:00Z"),
             )
+
+    def test_gold_context_contract_is_hash_locked(self):
+        contract, digest = load_contract()
+        self.assertEqual(contract["contract_version"], "gold-context-20260719-v2")
+        self.assertEqual(
+            digest,
+            "a8d2f252ce2b4f06a0828a8b0639088e5fae216b8559134a79e89175e5462e50",
+        )
+
+    def test_gold_context_combines_registered_price_sides_without_fabrication(self):
+        index = pd.DatetimeIndex(["2026-01-01T00:00:00Z"])
+        bid = pd.DataFrame({
+            "open": [99.0], "high": [101.0], "low": [98.0],
+            "close": [100.0], "volume": [10.0],
+        }, index=index)
+        ask = pd.DataFrame({
+            "open": [100.0], "high": [102.0], "low": [99.0],
+            "close": [101.0], "volume": [12.0],
+        }, index=index)
+        midpoint = combine_sides({"bid": bid, "ask": ask}, ["bid", "ask"])
+        self.assertAlmostEqual(midpoint.iloc[0]["analysis_close"], 100.5)
+        bid_only = combine_sides({"bid": bid}, ["bid"])
+        self.assertAlmostEqual(bid_only.iloc[0]["analysis_close"], 100.0)
+        self.assertFalse(any(column.startswith("ask_") for column in bid_only.columns))
 
     def test_forward_journal_preserves_exact_candidate_features(self):
         from agent.ml_feature_engineer_gold import GoldFeatureEngineer
