@@ -259,12 +259,11 @@ No model artifact may be created or deployed from it. Hyperparameter search on
 the same years is prohibited until the event lifecycle, dependence weighting
 and directional research questions above are implemented.
 
-## Next planned experiment: candidate generation v2
+## Registered experiment: candidate generation v2
 
-`candidate-generation-20260719-v2` is the next planned research task, but it is
-not yet registered or frozen. Its result must not be evaluated until a
-machine-readable pre-analysis contract and matching tests fix all of the
-following:
+`candidate-generation-20260719-v2` is registered before its outcome comparison
+in `config/candidate_generation_v2.json`. Its machine-readable pre-analysis
+contract fixes all of the following:
 
 - causal setup-family definitions derived from candidate-time SMC objects;
 - an unchanged trade-all control and frozen simple-rule baselines;
@@ -276,10 +275,19 @@ following:
   block-bootstrap confidence gates; and
 - an attempt registry that retains every family tested, including failures.
 
+The single promotable development hypothesis is direction-specific liquidity
+sweep plus direction-appropriate 4H value location plus an order-block or FVG
+retest. Trade-all, score >= 85 and sweep-only are fixed controls. Value,
+retest, CHoCH, multi-timeframe alignment and their other registered combinations
+are secondary diagnostics and cannot be selected after their outcomes are
+seen. BUY and SELL must pass separately using 97.5% lower confidence bounds to
+account for the two primary directional hypotheses.
+
 The purpose is to test whether the candidate universe is too heterogeneous and
 can be defined more coherently using causal information. It is not permission
 to mine arbitrary SMC combinations on the full 2020-2026 outcomes. The frozen
-forward pilot and context observation continue unchanged in parallel.
+forward pilot and context observation continue unchanged in parallel. At
+registration time the outcome comparison has not been run.
 
 `research/benchmark_candidate_models.py` runs prevalence, direction-only,
 SMC-score-only logistic, all-feature logistic and XGBoost through the same

@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "contract_version": "candidate-generation-20260719-v2",
+  "registered_at_utc": "2026-07-19T15:46:20Z",
+  "paper_research_only": true,
+  "hypothesis": "The existing candidate universe is heterogeneous. A causal SMC setup requiring a direction-matched 1H liquidity sweep, direction-appropriate 4H value location, and an order-block or FVG retest has better after-cost expectancy than trade-all and liquidity-sweep-only controls.",
+  "evidence_boundary": {
+    "status": "CONTAMINATED_DEVELOPMENT_HISTORY",
+    "disclosure": "The 2020-2026 period, BUY liquidity-sweep result, existing SMC components and prior model failures have influenced this design. A pass can only register a future shadow hypothesis and cannot establish an edge.",
+    "outcomes_inspected_while_writing_this_contract": false,
+    "feature_only_preflight": {
+      "permitted_columns": [
+        "direction",
+        "rr_ratio",
+        "smc_score",
+        "structure_1d_encoded",
+        "structure_1h_encoded",
+        "choch_4h_present",
+        "choch_15m_present",
+        "liquidity_sweep_1h_present",
+        "price_at_ob",
+        "fvg_1h_present",
+        "premium_discount_position"
+      ],
+      "eligible_rows_at_rr_gte_2": 11865,
+      "eligible_buy_rows": 6468,
+      "eligible_sell_rows": 5397,
+      "non_discriminating_fields_excluded": [
+        "structure_4h_encoded",
+        "bos_4h_present",
+        "bos_15m_present"
+      ],
+      "reason": "4H structure defines candidate direction and both registered BOS presence fields are constant among historical candidates. Constant/gating fields cannot define useful subfamilies."
+    }
+  },
+  "lineage": {
+    "candidate_dataset": "data/research/xauusd_smc_candidates_v4.csv",
+    "candidate_dataset_sha256": "0b74895cbd58917e485043acaee470815b1149a7d1647a662d93f08cda919520",
+    "candidate_manifest": "data/research/xauusd_smc_candidates_v4.csv.manifest.json",
+    "candidate_manifest_sha256": "b975f45ecbbed7c2a1182f2ab23b69f90cef770622e84364ae027d1050e8c6cf",
+    "target_version": "bid_ask_fixed_clock_v1",
+    "provider": "dukascopy-public",
+    "symbol": "DUKASCOPY:XAUUSD"
+  },
+  "candidate_contract": {
+    "minimum_risk_reward_ratio": 2.0,
+    "requires_matured_unambiguous_label": true,
+    "direction_values": [
+      "BUY",
+      "SELL"
+    ],
+    "setup_cooldown_hours": 4,
+    "nearby_entry_fraction": 0.001,
+    "cooldown_applied_after_variant_membership": true,
+    "runtime_aligned_portfolio": {
+      "starting_capital_usd": 10000.0,
+      "paper_notional_per_trade_usd": 5000.0,
+      "maximum_open_positions": 15,
+      "daily_realized_loss_cap_pct": 3.0,
+      "weekly_realized_loss_cap_pct": 6.0
+    }
+  },
+  "primitive_definitions": {
+    "liquidity_sweep": "liquidity_sweep_1h_present == 1",
+    "directional_value_zone": "BUY and premium_discount_position <= 0.5, or SELL and premium_discount_position >= 0.5",
+    "zone_retest": "price_at_ob == 1 or fvg_1h_present == 1",
+    "change_of_character": "choch_4h_present == 1 or choch_15m_present == 1",
+    "multi_timeframe_alignment": "structure_1d_encoded and structure_1h_encoded both equal +1 for BUY or -1 for SELL",
+    "high_smc_score": "smc_score >= 85"
+  },
+  "registered_variants": {
+    "trade_all_control": {
+      "role": "CONTROL",
+      "expression": "all eligible candidates"
+    },
+    "smc_score_85_control": {
+      "role": "SIMPLE_CONTROL",
+      "expression": "high_smc_score"
+    },
+    "liquidity_sweep_control": {
+      "role": "SIMPLE_CONTROL",
+      "expression": "liquidity_sweep"
+    },
+    "value_zone_only": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "directional_value_zone"
+    },
+    "zone_retest_only": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "zone_retest"
+    },
+    "change_of_character_only": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "change_of_character"
+    },
+    "multi_timeframe_alignment_only": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "multi_timeframe_alignment"
+    },
+    "sweep_and_change_of_character": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "liquidity_sweep and change_of_character"
+    },
+    "sweep_and_value": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "liquidity_sweep and directional_value_zone"
+    },
+    "sweep_and_retest": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "liquidity_sweep and zone_retest"
+    },
+    "sweep_value_retest_primary": {
+      "role": "PRIMARY_PROMOTABLE_DEVELOPMENT_HYPOTHESIS",
+      "expression": "liquidity_sweep and directional_value_zone and zone_retest"
+    }
+  },
+  "evaluation_contract": {
+    "primary_variant": "sweep_value_retest_primary",
+    "primary_target": "net_return_pct",
+    "target_semantics": "48 UTC-clock-hour direction-correct executable bid/ask TP/SL/expiry return with 0.10 points slippage per side",
+    "primary_evaluation_candidate_years": [
+      2022,
+      2023,
+      2024,
+      2025,
+      2026
+    ],
+    "fold_semantics": "Fixed rules require no fitting or calibration. Each calendar-year fold contains candidates assigned in that year whose actual label exit occurs before the next fold boundary; the final partial year uses only matured outcomes present in the frozen dataset.",
+    "training_or_threshold_selection": "NONE_FIXED_RULES_ONLY",
+    "directions_evaluated_and_promoted_separately": true,
+    "bootstrap_method": "paired calendar-week block bootstrap",
+    "bootstrap_samples": 2000,
+    "bootstrap_seed": 42,
+    "primary_familywise_error_control": "Two directional primary hypotheses use one-sided 97.5 percent lower bounds (alpha 0.025 per direction).",
+    "base_slippage_points_per_side": 0.1,
+    "stress_slippage_points_per_side": 0.25,
+    "primary_comparators": [
+      "trade_all_control",
+      "liquidity_sweep_control"
+    ],
+    "secondary_variants_cannot_select_a_new_primary_rule": true,
+    "secondary_variants_cannot_authorize_runtime_or_shadow_changes": true
+  },
+  "primary_direction_promotion_gates": {
+    "minimum_opened_candidates": 300,
+    "minimum_calendar_weeks": 100,
+    "minimum_kish_effective_sample_size": 200,
+    "minimum_positive_calendar_folds": 3,
+    "maximum_historical_drawdown_pct": 25.0,
+    "base_selected_mean_return_lower_97_5_above_zero": true,
+    "base_profit_factor_lower_97_5_above_one": true,
+    "stress_selected_mean_return_lower_97_5_above_zero": true,
+    "paired_mean_return_improvement_vs_trade_all_lower_97_5_above_zero": true,
+    "paired_mean_return_improvement_vs_liquidity_sweep_lower_97_5_above_zero": true
+  },
+  "decision_rule": {
+    "pass": "A direction passes only if every registered primary gate passes. The result remains development-contaminated and may only create a new frozen prospective shadow variant.",
+    "fail": "Preserve REJECT_CANDIDATE_GENERATION_V2 for the failed direction. Do not tune the rule from secondary diagnostics, create an ML artifact, change runtime approval, or change Telegram behavior.",
+    "mixed_direction_result": "A passing direction never promotes the other direction.",
+    "model_artifact_authorized": false,
+    "paper_approval_authorized": false,
+    "broker_execution_authorized": false
+  },
+  "commercial_rights_status": "NOT_REVIEWED_DO_NOT_RESELL_OR_REDISTRIBUTE_SOURCE_DATA",
+  "change_rule": "Any primitive, family expression, primary choice, target, cost, lifecycle, fold, comparator, uncertainty method, gate or direction rule change requires a new contract version before affected results are inspected."
+}
