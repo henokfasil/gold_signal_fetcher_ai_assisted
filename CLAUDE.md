@@ -80,6 +80,26 @@ Current research state at handoff:
   and selected +0.0105%, but its selected-return interval was -0.0197% to
   +0.0418%. The contract forbids using secondary diagnostics to select a
   horizon, model or threshold. It is not a shadow authorization or an edge.
+- Candidate generation v2 is complete under the outcome-blind pre-analysis
+  contract `config/candidate_generation_v2.json` (SHA-256
+  `484246c8c1c4cc464a7da9059fac9da1235ebf4d5ad90442fbb2c68642130da9`).
+  The contract was committed as `8b851ea` before the evaluator or outcome
+  comparison. It fixed one promotable setup: direction-matched 1H liquidity
+  sweep, direction-appropriate 4H value location, and an order-block or FVG
+  retest. All other setup families were controls or non-selectable diagnostics.
+- The canonical result is `REJECT_CANDIDATE_GENERATION_V2` in
+  `data/research/candidate_generation_benchmarks_v2.json` (SHA-256
+  `f6d2b68a0794c751772d57a07446ec956f2b8d71800d1394bed51298789941a0`).
+  BUY opened 653 candidates, returned +12.09% at fixed paper notional, PF 1.20
+  and 6.70% maximum drawdown, but only two of five calendar folds were positive
+  and its mean-return 97.5% interval was -0.044% to +0.135%. Its cost-stressed
+  interval and paired improvement intervals against trade-all and sweep-only
+  also crossed zero. SELL opened 618, returned -21.10%, had PF 0.65 and every
+  calendar fold was negative. Neither direction passed.
+- No candidate-generation model, runtime filter, shadow variant, paper
+  approval or Telegram change was created. The positive BUY point estimate is
+  not an edge, and the secondary setup family results cannot be mined into a
+  replacement primary rule under the frozen contract.
 - Prospective context observation is frozen as
   `forward-context-buy-20260719-v1` in
   `config/forward_context_observation_v1.json` (SHA-256
@@ -155,11 +175,13 @@ Completion checkpoint:
 - Rejected experiments are useful completed work: they prevent the same weak
   information from being repackaged under another model name. They do not mean
   that the whole AI-assisted research program failed.
-- The next active research task is a separately versioned candidate-generation
-  experiment, provisionally named `candidate-generation-20260719-v2`. It is
-  not registered or frozen yet. Before reading its outcome comparison, create
-  a machine-readable contract that fixes the setup taxonomy, causal inputs,
-  BUY/SELL separation, targets, costs, folds, baselines and promotion gates.
+- The next high-information research task is upstream event-candidate capture,
+  not another Boolean combination or model over the same rows. Register a new
+  contract before implementation that regenerates a broader pre-score event
+  universe and records causal object geometry: stable setup/event IDs, object
+  age and distance in ATR units, sweep depth/reclaim, displacement magnitude,
+  order-block/FVG width and mitigation state, time since BOS/CHoCH and structure
+  transition. Do not define thresholds from the inspected outcomes.
 
 Resume in this order:
 
@@ -174,17 +196,17 @@ Resume in this order:
    diagnostic, tune its features or change its gates after seeing the result.
 5. Monitor prospective context source health, counts and missingness without
    inspecting interim returns or giving the fields approval/Telegram effect.
-6. Register and implement `candidate-generation-20260719-v2`: classify the
-   existing causal SMC objects into explicit setup families (for example sweep,
-   BOS/CHoCH, FVG/order-block proximity, session and trend/regime combinations)
-   without using outcome data to define the families.
-7. Compare those frozen families and a trade-all control separately for BUY and
-   SELL using the existing executable-side targets, identical chronological
-   folds, actual-exit purge, costs and dependence-aware uncertainty. Only then
-   decide whether ML has a better candidate universe to rank.
-8. Add causal regime/session diagnostics only inside chronological training
+6. Preserve candidate-generation v2 as rejected. Do not promote its BUY point
+   estimate or choose a replacement rule from its secondary diagnostics.
+7. Write the next pre-analysis contract for an upstream, event-first candidate
+   universe before regenerating data or inspecting new outcome comparisons.
+   The design must distinguish unique structural events from repeated scans and
+   capture continuous causal geometry rather than only presence flags.
+8. Regenerate that event universe from completed bid/ask-aligned bars, verify
+   point-in-time availability and compare fixed rule families before any ML.
+9. Add causal regime/session diagnostics only inside chronological training
    folds. Register every proposed filter before examining its next-fold result.
-9. Freeze a revision only if the underlying non-ML baseline and any ML filter
+10. Freeze a revision only if the underlying non-ML baseline and any ML filter
    pass development gates. Final evidence must come from future forward paper
    observations with no mid-test changes.
 
@@ -571,16 +593,19 @@ registered there before evaluation.
    test fold; its positive 4h diagnostic cannot select a new model or horizon.
 6. Keep the prospective runtime context contract unchanged; monitor only exact
    source health, staleness, candidate counts and missingness until evaluation.
-7. Make the next local task `candidate-generation-20260719-v2`. First freeze a
-   setup-taxonomy contract; then test each causal setup family against trade-all
-   and simple-rule controls, separately for BUY and SELL, with the existing
-   executable-side targets and leakage-safe evaluation. Do not try another
-   model class on the same rejected 62-field information set.
-8. Continue model/prompt/dataset lineage, drift and calibration monitoring.
-9. Secure the public dashboard with a reverse proxy, HTTPS and authentication
+7. Preserve `REJECT_CANDIDATE_GENERATION_V2`. Its primary BUY point estimate
+   was positive but failed fold stability, uncertainty, stress and paired-
+   improvement gates; SELL was negative in every fold. Do not select a
+   secondary family or fit another model on the same candidate rows.
+8. Register an upstream event-candidate-universe experiment that captures
+   unique structural event identity and continuous point-in-time SMC geometry
+   before the current score gate. Compare simple fixed families first; ML is
+   eligible only if the regenerated information improves those baselines.
+9. Continue model/prompt/dataset lineage, drift and calibration monitoring.
+10. Secure the public dashboard with a reverse proxy, HTTPS and authentication
    before treating it as a customer-facing service. This is an operations gate,
    not evidence of trading performance.
-10. Do not design live-capital execution unless a later frozen forward test
+11. Do not design live-capital execution unless a later frozen forward test
    passes the registered gates; this experiment remains paper-only.
 
 ### Validation decision rule
@@ -749,6 +774,26 @@ The canonical primary result is `REJECT_EXECUTION_STATE_MODELS`: all three
 eligible execution models fail every positive-return gate, with zero positive
 1h test folds and no separately eligible direction. No model artifact, runtime
 score, approval rule or Telegram behavior may be created from this result.
+
+### Candidate-generation v2 benchmark
+
+The contract was committed before the outcome comparison and is enforced by an
+exact hash in `research/benchmark_candidate_generation.py`. Reproduce the fixed
+rule evaluation with:
+
+```bash
+python -m research.benchmark_candidate_generation \
+  data/research/xauusd_smc_candidates_v4.csv \
+  --output data/research/candidate_generation_benchmarks_v2.json \
+  --bootstrap-samples 2000 --seed 42
+```
+
+The evaluator applies each registered setup family before the four-hour
+same-direction/nearby-entry cooldown, uses the runtime-aligned paper portfolio,
+reports BUY and SELL separately, resamples whole calendar weeks and applies
+incremental two-sided slippage stress. Only `sweep_value_retest_primary` was
+eligible to pass; all other families were fixed controls or diagnostics. The
+canonical result is `REJECT_CANDIDATE_GENERATION_V2`, with no runtime effect.
 
 ## Security and operations
 

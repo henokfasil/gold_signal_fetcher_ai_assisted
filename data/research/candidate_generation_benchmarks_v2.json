@@ -1,0 +1,3716 @@
+{
+  "status": "REJECT_CANDIDATE_GENERATION_V2",
+  "scope": "CONTAMINATED_DEVELOPMENT_HISTORY_NO_RUNTIME_OR_EDGE_AUTHORIZATION",
+  "contract_version": "candidate-generation-20260719-v2",
+  "contract_sha256": "484246c8c1c4cc464a7da9059fac9da1235ebf4d5ad90442fbb2c68642130da9",
+  "dataset_sha256": "0b74895cbd58917e485043acaee470815b1149a7d1647a662d93f08cda919520",
+  "dataset_manifest_sha256": "b975f45ecbbed7c2a1182f2ab23b69f90cef770622e84364ae027d1050e8c6cf",
+  "benchmark_script_sha256": "5d1277a079e62c486d086f8a2813868a9a56a8c38b6a5fa112e7313f76a6cef3",
+  "eligible_evaluation_rows": 10004,
+  "bootstrap_samples": 2000,
+  "seed": 42,
+  "primary_variant": "sweep_value_retest_primary",
+  "primary_comparators": [
+    "trade_all_control",
+    "liquidity_sweep_control"
+  ],
+  "primary_passing_directions": [],
+  "model_artifact_created": false,
+  "runtime_changed": false,
+  "telegram_changed": false,
+  "secondary_selection_permitted": false,
+  "variants": {
+    "trade_all_control": {
+      "role": "CONTROL",
+      "expression": "all eligible candidates",
+      "directions": {
+        "BUY": {
+          "membership_rows": 5596,
+          "opened_rows": 2028,
+          "calendar_weeks": 193,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 11569.348099463288,
+            "net_pnl_usd": 1569.3480994632882,
+            "return_pct": 15.69348099463288,
+            "opened": 2028,
+            "rejected": 3568,
+            "max_concurrent": 11,
+            "max_drawdown_pct": 22.211825842917253,
+            "profit_factor": 1.0778339610645216,
+            "by_direction": {
+              "BUY": {
+                "trades": 2028,
+                "win_rate": 0.3111439842209073,
+                "pnl_usd": 1569.3480994632926,
+                "mean_net_return_pct": 0.015476805714628134
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 3546,
+              "DAILY_LOSS_CAP": 20,
+              "WEEKLY_LOSS_CAP": 2
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 193,
+            "seed": 43,
+            "mean_net_return_pct": {
+              "median": 0.014675206657469431,
+              "lower_97_5_one_sided": -0.03568310976679627,
+              "upper_97_5": 0.06820834226074428
+            },
+            "portfolio_return_pct": {
+              "median": 14.878956634561662,
+              "lower_97_5_one_sided": -35.43347396062051,
+              "upper_97_5": 70.55197364807128
+            },
+            "profit_factor": {
+              "median": 1.0750437564346735,
+              "lower_97_5_one_sided": 0.8271251110167934,
+              "upper_97_5": 1.3655943722387343
+            }
+          },
+          "dependence": {
+            "rows": 2028,
+            "sum_uniqueness": 1178.534207597776,
+            "kish_effective_sample_size": 1576.6266533781768,
+            "median_uniqueness": 0.5,
+            "p05_uniqueness": 0.16322353812066265,
+            "max_label_concurrency": 11
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 970,
+              "opened": 353,
+              "mean_net_return_pct": -0.09023540457227573,
+              "return_pct": -15.926548907006655,
+              "profit_factor": 0.5504940889440728,
+              "max_drawdown_pct": 17.41760935923804
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 1319,
+              "opened": 428,
+              "mean_net_return_pct": 0.01667284854736927,
+              "return_pct": 3.567989589136933,
+              "profit_factor": 1.1059229027939206,
+              "max_drawdown_pct": 7.049050393654708
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 994,
+              "opened": 378,
+              "mean_net_return_pct": -0.019993103586013864,
+              "return_pct": -3.7786965777566017,
+              "profit_factor": 0.8695553949695048,
+              "max_drawdown_pct": 8.796533842728907
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 1735,
+              "opened": 645,
+              "mean_net_return_pct": 0.072513715390179,
+              "return_pct": 23.38567321333276,
+              "profit_factor": 1.3864666239001633,
+              "max_drawdown_pct": 5.753421009194519
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 578,
+              "opened": 224,
+              "mean_net_return_pct": 0.07540235425827199,
+              "return_pct": 8.445063676926456,
+              "profit_factor": 1.19624920213585,
+              "max_drawdown_pct": 13.437051333380476
+            }
+          ],
+          "positive_calendar_folds": 3,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 10365.148719125422,
+              "net_pnl_usd": 365.14871912542185,
+              "return_pct": 3.65148719125421,
+              "opened": 2027,
+              "rejected": 3569,
+              "max_concurrent": 11,
+              "max_drawdown_pct": 27.1836584778964,
+              "profit_factor": 1.0173903273959117,
+              "by_direction": {
+                "BUY": {
+                  "trades": 2027,
+                  "win_rate": 0.3063640848544647,
+                  "pnl_usd": 365.14871912540684,
+                  "mean_net_return_pct": 0.00360284873335379
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 3546,
+                "DAILY_LOSS_CAP": 20,
+                "WEEKLY_LOSS_CAP": 3
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 193,
+              "seed": 50043,
+              "mean_net_return_pct": {
+                "median": 0.0029323976687618226,
+                "lower_97_5_one_sided": -0.046711773447263516,
+                "upper_97_5": 0.0561490477848961
+              },
+              "portfolio_return_pct": {
+                "median": 2.979777660837952,
+                "lower_97_5_one_sided": -46.60305563652829,
+                "upper_97_5": 57.89530482255303
+              },
+              "profit_factor": {
+                "median": 1.0140010538512279,
+                "lower_97_5_one_sided": 0.7802317223299271,
+                "upper_97_5": 1.284108123201351
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        },
+        "SELL": {
+          "membership_rows": 4408,
+          "opened_rows": 1497,
+          "calendar_weeks": 169,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 7206.790562210144,
+            "net_pnl_usd": -2793.2094377898557,
+            "return_pct": -27.932094377898554,
+            "opened": 1497,
+            "rejected": 2911,
+            "max_concurrent": 11,
+            "max_drawdown_pct": 51.66996406986224,
+            "profit_factor": 0.8305362843398284,
+            "by_direction": {
+              "SELL": {
+                "trades": 1497,
+                "win_rate": 0.2618570474281897,
+                "pnl_usd": -2793.20943778987,
+                "mean_net_return_pct": -0.0373174273585821
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 2911
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 169,
+            "seed": 44,
+            "mean_net_return_pct": {
+              "median": -0.03694086343116325,
+              "lower_97_5_one_sided": -0.0881285643220251,
+              "upper_97_5": 0.024741979499101053
+            },
+            "portfolio_return_pct": {
+              "median": -27.608592127818277,
+              "lower_97_5_one_sided": -67.12272292862997,
+              "upper_97_5": 17.90056584305698
+            },
+            "profit_factor": {
+              "median": 0.8334043903971002,
+              "lower_97_5_one_sided": 0.6179064953980896,
+              "upper_97_5": 1.1163489039684722
+            }
+          },
+          "dependence": {
+            "rows": 1497,
+            "sum_uniqueness": 890.8217061294934,
+            "kish_effective_sample_size": 1160.237512746429,
+            "median_uniqueness": 0.5,
+            "p05_uniqueness": 0.14858352229753757,
+            "max_label_concurrency": 11
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 1174,
+              "opened": 395,
+              "mean_net_return_pct": -0.010655015761499747,
+              "return_pct": -2.104365612896164,
+              "profit_factor": 0.938855763572854,
+              "max_drawdown_pct": 11.712822639494727
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 1198,
+              "opened": 359,
+              "mean_net_return_pct": -0.012078176544604838,
+              "return_pct": -2.168032689756416,
+              "profit_factor": 0.9220472474782238,
+              "max_drawdown_pct": 9.852073685232469
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 758,
+              "opened": 251,
+              "mean_net_return_pct": -0.13898744914797295,
+              "return_pct": -17.442924868070563,
+              "profit_factor": 0.29856378147444096,
+              "max_drawdown_pct": 18.409352445028137
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 485,
+              "opened": 187,
+              "mean_net_return_pct": -0.12164065890047451,
+              "return_pct": -11.373401607194268,
+              "profit_factor": 0.5374750286671561,
+              "max_drawdown_pct": 13.969073941727222
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 793,
+              "opened": 305,
+              "mean_net_return_pct": 0.0338139698361904,
+              "return_pct": 5.156630400019102,
+              "profit_factor": 1.097037504407984,
+              "max_drawdown_pct": 13.552924171582509
+            }
+          ],
+          "positive_calendar_folds": 1,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 6259.754872630014,
+              "net_pnl_usd": -3740.245127369986,
+              "return_pct": -37.40245127369987,
+              "opened": 1497,
+              "rejected": 2911,
+              "max_concurrent": 11,
+              "max_drawdown_pct": 59.459103452502426,
+              "profit_factor": 0.7822664732803715,
+              "by_direction": {
+                "SELL": {
+                  "trades": 1497,
+                  "win_rate": 0.25851703406813625,
+                  "pnl_usd": -3740.245127369986,
+                  "mean_net_return_pct": -0.04996987478116214
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 2911
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 169,
+              "seed": 50044,
+              "mean_net_return_pct": {
+                "median": -0.050337809513680665,
+                "lower_97_5_one_sided": -0.1028970717683454,
+                "upper_97_5": 0.010565724488983791
+              },
+              "portfolio_return_pct": {
+                "median": -37.22720736117111,
+                "lower_97_5_one_sided": -77.62751495808931,
+                "upper_97_5": 7.88080827406836
+              },
+              "profit_factor": {
+                "median": 0.7799743698622056,
+                "lower_97_5_one_sided": 0.5638410050810622,
+                "upper_97_5": 1.049775241754005
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        }
+      }
+    },
+    "smc_score_85_control": {
+      "role": "SIMPLE_CONTROL",
+      "expression": "high_smc_score",
+      "directions": {
+        "BUY": {
+          "membership_rows": 4149,
+          "opened_rows": 1622,
+          "calendar_weeks": 191,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 10305.514998358984,
+            "net_pnl_usd": 305.5149983589836,
+            "return_pct": 3.0551499835898444,
+            "opened": 1622,
+            "rejected": 2527,
+            "max_concurrent": 9,
+            "max_drawdown_pct": 16.828742342559828,
+            "profit_factor": 1.0194320158207952,
+            "by_direction": {
+              "BUY": {
+                "trades": 1622,
+                "win_rate": 0.312577065351418,
+                "pnl_usd": 305.514998358997,
+                "mean_net_return_pct": 0.00376713931392104
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 2514,
+              "DAILY_LOSS_CAP": 11,
+              "WEEKLY_LOSS_CAP": 2
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 191,
+            "seed": 143,
+            "mean_net_return_pct": {
+              "median": 0.0029162457319633064,
+              "lower_97_5_one_sided": -0.04332814028021137,
+              "upper_97_5": 0.05479254567136554
+            },
+            "portfolio_return_pct": {
+              "median": 2.3385487670197995,
+              "lower_97_5_one_sided": -34.593575775292756,
+              "upper_97_5": 44.46509333861853
+            },
+            "profit_factor": {
+              "median": 1.0150013157109894,
+              "lower_97_5_one_sided": 0.7879687849154572,
+              "upper_97_5": 1.2993948648292322
+            }
+          },
+          "dependence": {
+            "rows": 1622,
+            "sum_uniqueness": 1006.2349453502962,
+            "kish_effective_sample_size": 1306.8864786736292,
+            "median_uniqueness": 0.5,
+            "p05_uniqueness": 0.19984006734074308,
+            "max_label_concurrency": 9
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 688,
+              "opened": 287,
+              "mean_net_return_pct": -0.05649856057567787,
+              "return_pct": -8.1075434426098,
+              "profit_factor": 0.6885675549334764,
+              "max_drawdown_pct": 10.40382781415865
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 958,
+              "opened": 342,
+              "mean_net_return_pct": 0.00942609228675401,
+              "return_pct": 1.6118617810348512,
+              "profit_factor": 1.0594824324452647,
+              "max_drawdown_pct": 6.52839092280682
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 775,
+              "opened": 305,
+              "mean_net_return_pct": -0.051951205879879024,
+              "return_pct": -7.922558896681586,
+              "profit_factor": 0.679426386214914,
+              "max_drawdown_pct": 9.002004766531098
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 1271,
+              "opened": 494,
+              "mean_net_return_pct": 0.06223841635264438,
+              "return_pct": 15.372888839103172,
+              "profit_factor": 1.3381410563932334,
+              "max_drawdown_pct": 5.282863533127459
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 457,
+              "opened": 194,
+              "mean_net_return_pct": 0.02165465672931123,
+              "return_pct": 2.1005017027432515,
+              "profit_factor": 1.061934912352035,
+              "max_drawdown_pct": 10.373397680734133
+            }
+          ],
+          "positive_calendar_folds": 3,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 9342.600220215609,
+              "net_pnl_usd": -657.3997797843913,
+              "return_pct": -6.573997797843911,
+              "opened": 1621,
+              "rejected": 2528,
+              "max_concurrent": 9,
+              "max_drawdown_pct": 23.883306084312835,
+              "profit_factor": 0.9598798946608764,
+              "by_direction": {
+                "BUY": {
+                  "trades": 1621,
+                  "win_rate": 0.30845157310302285,
+                  "pnl_usd": -657.3997797844027,
+                  "mean_net_return_pct": -0.008111039849283186
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 2514,
+                "DAILY_LOSS_CAP": 11,
+                "WEEKLY_LOSS_CAP": 3
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 191,
+              "seed": 50143,
+              "mean_net_return_pct": {
+                "median": -0.008071029361856975,
+                "lower_97_5_one_sided": -0.05263927391987926,
+                "upper_97_5": 0.04203824592741645
+              },
+              "portfolio_return_pct": {
+                "median": -6.610960508960657,
+                "lower_97_5_one_sided": -41.474270264659765,
+                "upper_97_5": 34.77222175803257
+              },
+              "profit_factor": {
+                "median": 0.9599042146704186,
+                "lower_97_5_one_sided": 0.7520995732485691,
+                "upper_97_5": 1.221196995508545
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        },
+        "SELL": {
+          "membership_rows": 2411,
+          "opened_rows": 926,
+          "calendar_weeks": 153,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 7246.33024951951,
+            "net_pnl_usd": -2753.6697504804897,
+            "return_pct": -27.5366975048049,
+            "opened": 926,
+            "rejected": 1485,
+            "max_concurrent": 11,
+            "max_drawdown_pct": 34.89981655336592,
+            "profit_factor": 0.6936234371905324,
+            "by_direction": {
+              "SELL": {
+                "trades": 926,
+                "win_rate": 0.2613390928725702,
+                "pnl_usd": -2753.6697504805006,
+                "mean_net_return_pct": -0.05947450864968684
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 1485
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 153,
+            "seed": 144,
+            "mean_net_return_pct": {
+              "median": -0.06292035780508509,
+              "lower_97_5_one_sided": -0.10222846421957862,
+              "upper_97_5": -0.0038522390375688035
+            },
+            "portfolio_return_pct": {
+              "median": -28.944549634854262,
+              "lower_97_5_one_sided": -45.903035462096135,
+              "upper_97_5": -1.7758340472375342
+            },
+            "profit_factor": {
+              "median": 0.6776888545783708,
+              "lower_97_5_one_sided": 0.4880058164769748,
+              "upper_97_5": 0.9788464045418771
+            }
+          },
+          "dependence": {
+            "rows": 926,
+            "sum_uniqueness": 627.9046641422137,
+            "kish_effective_sample_size": 769.0917289294954,
+            "median_uniqueness": 0.6847911741528505,
+            "p05_uniqueness": 0.200000000000216,
+            "max_label_concurrency": 11
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 744,
+              "opened": 283,
+              "mean_net_return_pct": -0.004615390032507151,
+              "return_pct": -0.6530776895998125,
+              "profit_factor": 0.9732029659154227,
+              "max_drawdown_pct": 8.271133833786035
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 787,
+              "opened": 256,
+              "mean_net_return_pct": -0.040569762105677115,
+              "return_pct": -5.192929549526559,
+              "profit_factor": 0.7158132948091653,
+              "max_drawdown_pct": 7.379525134684678
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 254,
+              "opened": 114,
+              "mean_net_return_pct": -0.1561835453372945,
+              "return_pct": -8.902462084225771,
+              "profit_factor": 0.22345378684851422,
+              "max_drawdown_pct": 9.32230934874356
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 193,
+              "opened": 97,
+              "mean_net_return_pct": -0.12986939326158387,
+              "return_pct": -6.298665573186701,
+              "profit_factor": 0.43937608818821594,
+              "max_drawdown_pct": 6.468465426929673
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 433,
+              "opened": 176,
+              "mean_net_return_pct": -0.07374502963938606,
+              "return_pct": -6.4895626082658975,
+              "profit_factor": 0.7354989388143335,
+              "max_drawdown_pct": 8.467893589649158
+            }
+          ],
+          "positive_calendar_folds": 0,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 6632.288788764668,
+              "net_pnl_usd": -3367.7112112353316,
+              "return_pct": -33.67711211235331,
+              "opened": 926,
+              "rejected": 1485,
+              "max_concurrent": 11,
+              "max_drawdown_pct": 40.21280204379708,
+              "profit_factor": 0.643175796538632,
+              "by_direction": {
+                "SELL": {
+                  "trades": 926,
+                  "win_rate": 0.25593952483801297,
+                  "pnl_usd": -3367.711211235345,
+                  "mean_net_return_pct": -0.07273674322322563
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 1485
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 153,
+              "seed": 50144,
+              "mean_net_return_pct": {
+                "median": -0.07459007747723055,
+                "lower_97_5_one_sided": -0.11690329946265123,
+                "upper_97_5": -0.01853100465101521
+              },
+              "portfolio_return_pct": {
+                "median": -34.64364446385633,
+                "lower_97_5_one_sided": -52.94349497599048,
+                "upper_97_5": -8.61313973997056
+              },
+              "profit_factor": {
+                "median": 0.6371609685547298,
+                "lower_97_5_one_sided": 0.4443294235285636,
+                "upper_97_5": 0.9067307721045625
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        }
+      }
+    },
+    "liquidity_sweep_control": {
+      "role": "SIMPLE_CONTROL",
+      "expression": "liquidity_sweep",
+      "directions": {
+        "BUY": {
+          "membership_rows": 4088,
+          "opened_rows": 1526,
+          "calendar_weeks": 191,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 13448.762804362128,
+            "net_pnl_usd": 3448.762804362128,
+            "return_pct": 34.487628043621285,
+            "opened": 1526,
+            "rejected": 2562,
+            "max_concurrent": 10,
+            "max_drawdown_pct": 13.313145030225659,
+            "profit_factor": 1.2432204021045303,
+            "by_direction": {
+              "BUY": {
+                "trades": 1526,
+                "win_rate": 0.3269986893840105,
+                "pnl_usd": 3448.762804362148,
+                "mean_net_return_pct": 0.04520003675441872
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 2551,
+              "DAILY_LOSS_CAP": 11
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 191,
+            "seed": 243,
+            "mean_net_return_pct": {
+              "median": 0.042953054543059546,
+              "lower_97_5_one_sided": -0.014121179624419871,
+              "upper_97_5": 0.11069637685809784
+            },
+            "portfolio_return_pct": {
+              "median": 32.84933644912813,
+              "lower_97_5_one_sided": -10.173648201997088,
+              "upper_97_5": 87.29795913501168
+            },
+            "profit_factor": {
+              "median": 1.2324446693355304,
+              "lower_97_5_one_sided": 0.9279533309956444,
+              "upper_97_5": 1.6164967882388512
+            }
+          },
+          "dependence": {
+            "rows": 1526,
+            "sum_uniqueness": 955.0760229940937,
+            "kish_effective_sample_size": 1223.5864185357107,
+            "median_uniqueness": 0.5101382488479067,
+            "p05_uniqueness": 0.17056560203672402,
+            "max_label_concurrency": 10
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 781,
+              "opened": 297,
+              "mean_net_return_pct": -0.05362872432369192,
+              "return_pct": -7.963865562068262,
+              "profit_factor": 0.6880050034077417,
+              "max_drawdown_pct": 10.57960842183544
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 1024,
+              "opened": 338,
+              "mean_net_return_pct": 0.029440125261993227,
+              "return_pct": 4.975381169276671,
+              "profit_factor": 1.2031296727912413,
+              "max_drawdown_pct": 5.251195924985659
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 643,
+              "opened": 255,
+              "mean_net_return_pct": -0.0247454843742107,
+              "return_pct": -3.155049257711884,
+              "profit_factor": 0.827905069831486,
+              "max_drawdown_pct": 6.356033358647034
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 1174,
+              "opened": 451,
+              "mean_net_return_pct": 0.11327048821091973,
+              "return_pct": 25.542495091562344,
+              "profit_factor": 1.6399539705353177,
+              "max_drawdown_pct": 4.68106311803384
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 466,
+              "opened": 185,
+              "mean_net_return_pct": 0.16312072002770106,
+              "return_pct": 15.088666602562384,
+              "profit_factor": 1.450000469699053,
+              "max_drawdown_pct": 11.394271573453901
+            }
+          ],
+          "positive_calendar_folds": 3,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 12521.268932750563,
+              "net_pnl_usd": 2521.268932750563,
+              "return_pct": 25.212689327505622,
+              "opened": 1526,
+              "rejected": 2562,
+              "max_concurrent": 10,
+              "max_drawdown_pct": 17.311609672417973,
+              "profit_factor": 1.1701963234986055,
+              "by_direction": {
+                "BUY": {
+                  "trades": 1526,
+                  "win_rate": 0.3211009174311927,
+                  "pnl_usd": 2521.268932750542,
+                  "mean_net_return_pct": 0.03304415377130462
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 2551,
+                "DAILY_LOSS_CAP": 11
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 191,
+              "seed": 50243,
+              "mean_net_return_pct": {
+                "median": 0.0324648553843118,
+                "lower_97_5_one_sided": -0.026964295184627216,
+                "upper_97_5": 0.09683897887152813
+              },
+              "portfolio_return_pct": {
+                "median": 24.73685509192685,
+                "lower_97_5_one_sided": -19.715400246846894,
+                "upper_97_5": 75.23074814906211
+              },
+              "profit_factor": {
+                "median": 1.1681030671658021,
+                "lower_97_5_one_sided": 0.865963890387001,
+                "upper_97_5": 1.5112469119513259
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        },
+        "SELL": {
+          "membership_rows": 3730,
+          "opened_rows": 1276,
+          "calendar_weeks": 168,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 7952.951868760896,
+            "net_pnl_usd": -2047.048131239104,
+            "return_pct": -20.470481312391044,
+            "opened": 1276,
+            "rejected": 2454,
+            "max_concurrent": 11,
+            "max_drawdown_pct": 43.70682144312986,
+            "profit_factor": 0.8462422350280484,
+            "by_direction": {
+              "SELL": {
+                "trades": 1276,
+                "win_rate": 0.26959247648902823,
+                "pnl_usd": -2047.0481312391298,
+                "mean_net_return_pct": -0.03208539390656943
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 2454
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 168,
+            "seed": 244,
+            "mean_net_return_pct": {
+              "median": -0.03304319965070798,
+              "lower_97_5_one_sided": -0.08825809424773694,
+              "upper_97_5": 0.03467916771572082
+            },
+            "portfolio_return_pct": {
+              "median": -21.320473509901753,
+              "lower_97_5_one_sided": -56.41862218745098,
+              "upper_97_5": 22.478999969981228
+            },
+            "profit_factor": {
+              "median": 0.8386447934710994,
+              "lower_97_5_one_sided": 0.5949400848727507,
+              "upper_97_5": 1.1731674017214422
+            }
+          },
+          "dependence": {
+            "rows": 1276,
+            "sum_uniqueness": 788.7904559581464,
+            "kish_effective_sample_size": 1009.9909515896552,
+            "median_uniqueness": 0.5000000000000228,
+            "p05_uniqueness": 0.1666666666664014,
+            "max_label_concurrency": 11
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 990,
+              "opened": 330,
+              "mean_net_return_pct": 0.018801187036383706,
+              "return_pct": 3.102195861003376,
+              "profit_factor": 1.1159478811151962,
+              "max_drawdown_pct": 6.797720637597761
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 975,
+              "opened": 295,
+              "mean_net_return_pct": 0.002505076017125081,
+              "return_pct": 0.3694987125260285,
+              "profit_factor": 1.015941475402811,
+              "max_drawdown_pct": 7.6154227274639235
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 659,
+              "opened": 221,
+              "mean_net_return_pct": -0.12833138248612855,
+              "return_pct": -14.180617764717173,
+              "profit_factor": 0.3338820042406506,
+              "max_drawdown_pct": 15.18523447984548
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 460,
+              "opened": 177,
+              "mean_net_return_pct": -0.11709568793484461,
+              "return_pct": -10.362968382233618,
+              "profit_factor": 0.5521290296319149,
+              "max_drawdown_pct": 12.731147803981887
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 646,
+              "opened": 253,
+              "mean_net_return_pct": 0.004754231312493219,
+              "return_pct": 0.6014102610304661,
+              "profit_factor": 1.0155105219189902,
+              "max_drawdown_pct": 16.02311119314587
+            }
+          ],
+          "positive_calendar_folds": 3,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 7151.140731884815,
+              "net_pnl_usd": -2848.859268115185,
+              "return_pct": -28.488592681151847,
+              "opened": 1276,
+              "rejected": 2454,
+              "max_concurrent": 11,
+              "max_drawdown_pct": 49.49235157920015,
+              "profit_factor": 0.7949640947517174,
+              "by_direction": {
+                "SELL": {
+                  "trades": 1276,
+                  "win_rate": 0.2664576802507837,
+                  "pnl_usd": -2848.859268115151,
+                  "mean_net_return_pct": -0.04465296658487696
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 2454
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 168,
+              "seed": 50244,
+              "mean_net_return_pct": {
+                "median": -0.04664554387572973,
+                "lower_97_5_one_sided": -0.10399727568398809,
+                "upper_97_5": 0.027614471230092648
+              },
+              "portfolio_return_pct": {
+                "median": -29.54677437913897,
+                "lower_97_5_one_sided": -65.84069886275202,
+                "upper_97_5": 18.355590761381272
+              },
+              "profit_factor": {
+                "median": 0.7856700206679292,
+                "lower_97_5_one_sided": 0.5443819572041251,
+                "upper_97_5": 1.127845681233546
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        }
+      }
+    },
+    "value_zone_only": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "directional_value_zone",
+      "directions": {
+        "BUY": {
+          "membership_rows": 2078,
+          "opened_rows": 791,
+          "calendar_weeks": 170,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 11492.736277249547,
+            "net_pnl_usd": 1492.7362772495471,
+            "return_pct": 14.927362772495467,
+            "opened": 791,
+            "rejected": 1287,
+            "max_concurrent": 10,
+            "max_drawdown_pct": 13.989455364943234,
+            "profit_factor": 1.1685828306065542,
+            "by_direction": {
+              "BUY": {
+                "trades": 791,
+                "win_rate": 0.3185840707964602,
+                "pnl_usd": 1492.7362772495558,
+                "mean_net_return_pct": 0.03774301585966008
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 1281,
+              "DAILY_LOSS_CAP": 6
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 170,
+            "seed": 343,
+            "mean_net_return_pct": {
+              "median": 0.03568388776054804,
+              "lower_97_5_one_sided": -0.06632329082188322,
+              "upper_97_5": 0.14435275631510872
+            },
+            "portfolio_return_pct": {
+              "median": 14.11771909846339,
+              "lower_97_5_one_sided": -26.200893335498783,
+              "upper_97_5": 59.98253365013192
+            },
+            "profit_factor": {
+              "median": 1.161255537670547,
+              "lower_97_5_one_sided": 0.7303186421289609,
+              "upper_97_5": 1.700031778357433
+            }
+          },
+          "dependence": {
+            "rows": 791,
+            "sum_uniqueness": 509.20755622011916,
+            "kish_effective_sample_size": 638.1345324215313,
+            "median_uniqueness": 0.5597014925373949,
+            "p05_uniqueness": 0.16666666666606034,
+            "max_label_concurrency": 10
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 444,
+              "opened": 166,
+              "mean_net_return_pct": -0.06632151932699551,
+              "return_pct": -5.5046861041406325,
+              "profit_factor": 0.6203154019701527,
+              "max_drawdown_pct": 6.810564669029191
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 487,
+              "opened": 167,
+              "mean_net_return_pct": 0.0884958888664939,
+              "return_pct": 7.389406720352176,
+              "profit_factor": 1.541382588962146,
+              "max_drawdown_pct": 5.315052636202503
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 288,
+              "opened": 121,
+              "mean_net_return_pct": 0.03793017984313757,
+              "return_pct": 2.2947758805097918,
+              "profit_factor": 1.3077389026255029,
+              "max_drawdown_pct": 2.15629402928987
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 546,
+              "opened": 214,
+              "mean_net_return_pct": 0.08074379365844404,
+              "return_pct": 8.639585921453508,
+              "profit_factor": 1.3797987243294974,
+              "max_drawdown_pct": 4.216652647455176
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 313,
+              "opened": 123,
+              "mean_net_return_pct": 0.0342809813710668,
+              "return_pct": 2.108280354320624,
+              "profit_factor": 1.0698238334104944,
+              "max_drawdown_pct": 15.754503919909043
+            }
+          ],
+          "positive_calendar_folds": 4,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 11014.975340528037,
+              "net_pnl_usd": 1014.9753405280371,
+              "return_pct": 10.149753405280372,
+              "opened": 791,
+              "rejected": 1287,
+              "max_concurrent": 10,
+              "max_drawdown_pct": 14.686859474315606,
+              "profit_factor": 1.1105483749630667,
+              "by_direction": {
+                "BUY": {
+                  "trades": 791,
+                  "win_rate": 0.3122629582806574,
+                  "pnl_usd": 1014.9753405280252,
+                  "mean_net_return_pct": 0.025663093312971556
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 1281,
+                "DAILY_LOSS_CAP": 6
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 170,
+              "seed": 50343,
+              "mean_net_return_pct": {
+                "median": 0.023914315786665398,
+                "lower_97_5_one_sided": -0.08615696070228797,
+                "upper_97_5": 0.13879785289692528
+              },
+              "portfolio_return_pct": {
+                "median": 9.38851687029534,
+                "lower_97_5_one_sided": -33.091174413995525,
+                "upper_97_5": 57.529318565256155
+              },
+              "profit_factor": {
+                "median": 1.1040022532338485,
+                "lower_97_5_one_sided": 0.6678884581144067,
+                "upper_97_5": 1.6613165719005227
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        },
+        "SELL": {
+          "membership_rows": 2569,
+          "opened_rows": 838,
+          "calendar_weeks": 147,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 8248.335353202308,
+            "net_pnl_usd": -1751.6646467976916,
+            "return_pct": -17.516646467976916,
+            "opened": 838,
+            "rejected": 1731,
+            "max_concurrent": 10,
+            "max_drawdown_pct": 33.98103710688151,
+            "profit_factor": 0.8244406034882621,
+            "by_direction": {
+              "SELL": {
+                "trades": 838,
+                "win_rate": 0.2649164677804296,
+                "pnl_usd": -1751.664646797729,
+                "mean_net_return_pct": -0.041805838825721454
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 1731
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 147,
+            "seed": 344,
+            "mean_net_return_pct": {
+              "median": -0.04106287273866814,
+              "lower_97_5_one_sided": -0.12173896873941308,
+              "upper_97_5": 0.05046400005643801
+            },
+            "portfolio_return_pct": {
+              "median": -16.903530869412002,
+              "lower_97_5_one_sided": -51.32579278076981,
+              "upper_97_5": 22.094444140003876
+            },
+            "profit_factor": {
+              "median": 0.8254385654994271,
+              "lower_97_5_one_sided": 0.5253967781545327,
+              "upper_97_5": 1.225506953777306
+            }
+          },
+          "dependence": {
+            "rows": 838,
+            "sum_uniqueness": 489.64322247110925,
+            "kish_effective_sample_size": 642.6214650058965,
+            "median_uniqueness": 0.5,
+            "p05_uniqueness": 0.14918212073409626,
+            "max_label_concurrency": 10
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 554,
+              "opened": 177,
+              "mean_net_return_pct": -0.03336245691439838,
+              "return_pct": -2.9525774369241864,
+              "profit_factor": 0.8100599159899728,
+              "max_drawdown_pct": 6.505960805341769
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 653,
+              "opened": 198,
+              "mean_net_return_pct": 0.02877391000692559,
+              "return_pct": 2.8486170906857344,
+              "profit_factor": 1.1790024652497357,
+              "max_drawdown_pct": 6.15643540049147
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 500,
+              "opened": 152,
+              "mean_net_return_pct": -0.14772274080247047,
+              "return_pct": -11.226928300987716,
+              "profit_factor": 0.318078174960117,
+              "max_drawdown_pct": 12.141633239244875
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 323,
+              "opened": 112,
+              "mean_net_return_pct": -0.10050878916157026,
+              "return_pct": -5.62849219304784,
+              "profit_factor": 0.6188352855135761,
+              "max_drawdown_pct": 9.86929218089556
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 539,
+              "opened": 199,
+              "mean_net_return_pct": -0.00560065957490421,
+              "return_pct": -0.557265627702852,
+              "profit_factor": 0.9849742343561985,
+              "max_drawdown_pct": 12.635861383227349
+            }
+          ],
+          "positive_calendar_folds": 1,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 7745.57763919293,
+              "net_pnl_usd": -2254.4223608070697,
+              "return_pct": -22.544223608070702,
+              "opened": 838,
+              "rejected": 1731,
+              "max_concurrent": 10,
+              "max_drawdown_pct": 37.07180158169671,
+              "profit_factor": 0.7820660002330388,
+              "by_direction": {
+                "SELL": {
+                  "trades": 838,
+                  "win_rate": 0.26252983293556087,
+                  "pnl_usd": -2254.4223608070524,
+                  "mean_net_return_pct": -0.053804829613533466
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 1731
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 147,
+              "seed": 50344,
+              "mean_net_return_pct": {
+                "median": -0.057232276976510274,
+                "lower_97_5_one_sided": -0.13686598633912841,
+                "upper_97_5": 0.0370553658060848
+              },
+              "portfolio_return_pct": {
+                "median": -23.75065419512857,
+                "lower_97_5_one_sided": -57.50112080410128,
+                "upper_97_5": 15.173455703683926
+              },
+              "profit_factor": {
+                "median": 0.7658815932078187,
+                "lower_97_5_one_sided": 0.4919122199194854,
+                "upper_97_5": 1.1586232102084184
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        }
+      }
+    },
+    "zone_retest_only": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "zone_retest",
+      "directions": {
+        "BUY": {
+          "membership_rows": 5202,
+          "opened_rows": 1941,
+          "calendar_weeks": 192,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 10504.891165630781,
+            "net_pnl_usd": 504.89116563078096,
+            "return_pct": 5.0489116563078085,
+            "opened": 1941,
+            "rejected": 3261,
+            "max_concurrent": 11,
+            "max_drawdown_pct": 21.706996409048866,
+            "profit_factor": 1.0273814373942791,
+            "by_direction": {
+              "BUY": {
+                "trades": 1941,
+                "win_rate": 0.30705821741370426,
+                "pnl_usd": 504.89116563078846,
+                "mean_net_return_pct": 0.005202381923037493
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 3251,
+              "DAILY_LOSS_CAP": 8,
+              "WEEKLY_LOSS_CAP": 2
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 192,
+            "seed": 443,
+            "mean_net_return_pct": {
+              "median": 0.004113523438299209,
+              "lower_97_5_one_sided": -0.03827929640101312,
+              "upper_97_5": 0.05058240965025114
+            },
+            "portfolio_return_pct": {
+              "median": 4.117831859748909,
+              "lower_97_5_one_sided": -36.51523975305938,
+              "upper_97_5": 50.4199617471926
+            },
+            "profit_factor": {
+              "median": 1.0215495863636064,
+              "lower_97_5_one_sided": 0.8062286810926755,
+              "upper_97_5": 1.2855177339647301
+            }
+          },
+          "dependence": {
+            "rows": 1941,
+            "sum_uniqueness": 1151.6000982319704,
+            "kish_effective_sample_size": 1529.1181345892155,
+            "median_uniqueness": 0.5,
+            "p05_uniqueness": 0.16756215760634138,
+            "max_label_concurrency": 11
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 907,
+              "opened": 344,
+              "mean_net_return_pct": -0.09158011134877081,
+              "return_pct": -15.75177915198852,
+              "profit_factor": 0.5360023058728006,
+              "max_drawdown_pct": 17.565591608008422
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 1233,
+              "opened": 410,
+              "mean_net_return_pct": 0.024237362582636656,
+              "return_pct": 4.968659329440417,
+              "profit_factor": 1.1618236763230523,
+              "max_drawdown_pct": 6.520661145006665
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 951,
+              "opened": 366,
+              "mean_net_return_pct": -0.03743843940043288,
+              "return_pct": -6.851234410279194,
+              "profit_factor": 0.7593395962853403,
+              "max_drawdown_pct": 10.099689619144172
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 1655,
+              "opened": 624,
+              "mean_net_return_pct": 0.0737380760949278,
+              "return_pct": 23.006279741617462,
+              "profit_factor": 1.4053487404907652,
+              "max_drawdown_pct": 4.483396079164118
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 456,
+              "opened": 197,
+              "mean_net_return_pct": -0.003279328451597079,
+              "return_pct": -0.3230138524823456,
+              "profit_factor": 0.9906411896461825,
+              "max_drawdown_pct": 10.857604299163057
+            }
+          ],
+          "positive_calendar_folds": 2,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 9347.90809853617,
+              "net_pnl_usd": -652.0919014638293,
+              "return_pct": -6.520919014638293,
+              "opened": 1940,
+              "rejected": 3262,
+              "max_concurrent": 11,
+              "max_drawdown_pct": 28.554018653142283,
+              "profit_factor": 0.9661165608244461,
+              "by_direction": {
+                "BUY": {
+                  "trades": 1940,
+                  "win_rate": 0.30257731958762885,
+                  "pnl_usd": -652.0919014638459,
+                  "mean_net_return_pct": -0.006722596922307689
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 3251,
+                "DAILY_LOSS_CAP": 8,
+                "WEEKLY_LOSS_CAP": 3
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 192,
+              "seed": 50443,
+              "mean_net_return_pct": {
+                "median": -0.007321978997169553,
+                "lower_97_5_one_sided": -0.05362083194959793,
+                "upper_97_5": 0.03737399225736858
+              },
+              "portfolio_return_pct": {
+                "median": -7.128875520455971,
+                "lower_97_5_one_sided": -49.606208277049745,
+                "upper_97_5": 36.579045687422756
+              },
+              "profit_factor": {
+                "median": 0.9637036988046266,
+                "lower_97_5_one_sided": 0.7473072741885034,
+                "upper_97_5": 1.1990249628612457
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        },
+        "SELL": {
+          "membership_rows": 3677,
+          "opened_rows": 1323,
+          "calendar_weeks": 167,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 6127.4425164258455,
+            "net_pnl_usd": -3872.5574835741545,
+            "return_pct": -38.72557483574155,
+            "opened": 1323,
+            "rejected": 2354,
+            "max_concurrent": 11,
+            "max_drawdown_pct": 47.208072615403374,
+            "profit_factor": 0.7138488683302188,
+            "by_direction": {
+              "SELL": {
+                "trades": 1323,
+                "win_rate": 0.25321239606953894,
+                "pnl_usd": -3872.5574835741595,
+                "mean_net_return_pct": -0.05854206324375147
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 2354
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 167,
+            "seed": 444,
+            "mean_net_return_pct": {
+              "median": -0.06007083450609067,
+              "lower_97_5_one_sided": -0.09588978631953111,
+              "upper_97_5": -0.01550404009057287
+            },
+            "portfolio_return_pct": {
+              "median": -39.53480674369003,
+              "lower_97_5_one_sided": -64.11270804531608,
+              "upper_97_5": -10.386491756523887
+            },
+            "profit_factor": {
+              "median": 0.7059925257628645,
+              "lower_97_5_one_sided": 0.5337512278681131,
+              "upper_97_5": 0.9207089924227954
+            }
+          },
+          "dependence": {
+            "rows": 1323,
+            "sum_uniqueness": 850.387661998575,
+            "kish_effective_sample_size": 1066.726766035391,
+            "median_uniqueness": 0.5802469135802918,
+            "p05_uniqueness": 0.16671834625353238,
+            "max_label_concurrency": 11
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 995,
+              "opened": 359,
+              "mean_net_return_pct": -0.004976953978614819,
+              "return_pct": -0.8933632391614044,
+              "profit_factor": 0.9700012407904193,
+              "max_drawdown_pct": 9.588917104781974
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 1046,
+              "opened": 325,
+              "mean_net_return_pct": -0.04405271156339766,
+              "return_pct": -7.158565629051972,
+              "profit_factor": 0.694020965544839,
+              "max_drawdown_pct": 9.138165861858282
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 611,
+              "opened": 217,
+              "mean_net_return_pct": -0.14298444889462048,
+              "return_pct": -15.513812705066298,
+              "profit_factor": 0.24011871283478878,
+              "max_drawdown_pct": 16.50282280678498
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 399,
+              "opened": 166,
+              "mean_net_return_pct": -0.12349955029920608,
+              "return_pct": -10.250462674833994,
+              "profit_factor": 0.48868757027892606,
+              "max_drawdown_pct": 10.535291621264076
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 626,
+              "opened": 256,
+              "mean_net_return_pct": -0.038354457715841325,
+              "return_pct": -4.909370587627615,
+              "profit_factor": 0.8822509981282609,
+              "max_drawdown_pct": 13.899539192021773
+            }
+          ],
+          "positive_calendar_folds": 0,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 5279.570205558048,
+              "net_pnl_usd": -4720.429794441952,
+              "return_pct": -47.20429794441953,
+              "opened": 1323,
+              "rejected": 2354,
+              "max_concurrent": 11,
+              "max_drawdown_pct": 54.18722040381183,
+              "profit_factor": 0.6666906054866042,
+              "by_direction": {
+                "SELL": {
+                  "trades": 1323,
+                  "win_rate": 0.25018896447467875,
+                  "pnl_usd": -4720.429794441964,
+                  "mean_net_return_pct": -0.07135948290917558
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 2354
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 167,
+              "seed": 50444,
+              "mean_net_return_pct": {
+                "median": -0.07328675498561492,
+                "lower_97_5_one_sided": -0.1103842078602969,
+                "upper_97_5": -0.02353270227932469
+              },
+              "portfolio_return_pct": {
+                "median": -48.16963398958866,
+                "lower_97_5_one_sided": -74.0306263573924,
+                "upper_97_5": -16.175266474790167
+              },
+              "profit_factor": {
+                "median": 0.6585145731174151,
+                "lower_97_5_one_sided": 0.4866774978781371,
+                "upper_97_5": 0.8840040488603187
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        }
+      }
+    },
+    "change_of_character_only": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "change_of_character",
+      "directions": {
+        "BUY": {
+          "membership_rows": 4877,
+          "opened_rows": 1866,
+          "calendar_weeks": 189,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 10420.636878915311,
+            "net_pnl_usd": 420.6368789153112,
+            "return_pct": 4.206368789153103,
+            "opened": 1866,
+            "rejected": 3011,
+            "max_concurrent": 11,
+            "max_drawdown_pct": 25.90678896828762,
+            "profit_factor": 1.0226296864831055,
+            "by_direction": {
+              "BUY": {
+                "trades": 1866,
+                "win_rate": 0.3086816720257235,
+                "pnl_usd": 420.6368789153207,
+                "mean_net_return_pct": 0.004508433857613301
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 2998,
+              "DAILY_LOSS_CAP": 12,
+              "WEEKLY_LOSS_CAP": 1
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 189,
+            "seed": 543,
+            "mean_net_return_pct": {
+              "median": 0.0041771035870022104,
+              "lower_97_5_one_sided": -0.04357797784660488,
+              "upper_97_5": 0.04820406975985659
+            },
+            "portfolio_return_pct": {
+              "median": 3.873527323639795,
+              "lower_97_5_one_sided": -39.862652564817445,
+              "upper_97_5": 45.82025274506007
+            },
+            "profit_factor": {
+              "median": 1.02043570175183,
+              "lower_97_5_one_sided": 0.7929451868580862,
+              "upper_97_5": 1.2544672964920471
+            }
+          },
+          "dependence": {
+            "rows": 1866,
+            "sum_uniqueness": 1100.61177276448,
+            "kish_effective_sample_size": 1463.07203858069,
+            "median_uniqueness": 0.5,
+            "p05_uniqueness": 0.16666666666787933,
+            "max_label_concurrency": 11
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 843,
+              "opened": 322,
+              "mean_net_return_pct": -0.0876090411302693,
+              "return_pct": -14.105055621973328,
+              "profit_factor": 0.5653041784773737,
+              "max_drawdown_pct": 15.738730351355395
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 1144,
+              "opened": 393,
+              "mean_net_return_pct": -0.026030768100667033,
+              "return_pct": -5.115045931781137,
+              "profit_factor": 0.8372562912715044,
+              "max_drawdown_pct": 7.385940552435027
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 927,
+              "opened": 356,
+              "mean_net_return_pct": -0.023830387149343196,
+              "return_pct": -4.241808912583034,
+              "profit_factor": 0.8468899818948865,
+              "max_drawdown_pct": 8.751054635326105
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 1480,
+              "opened": 590,
+              "mean_net_return_pct": 0.06376228209172945,
+              "return_pct": 18.80987321706018,
+              "profit_factor": 1.3387134039774546,
+              "max_drawdown_pct": 5.098504502620558
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 483,
+              "opened": 205,
+              "mean_net_return_pct": 0.08642347354566382,
+              "return_pct": 8.858406038430466,
+              "profit_factor": 1.2285299746879643,
+              "max_drawdown_pct": 11.522257332746918
+            }
+          ],
+          "positive_calendar_folds": 2,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 9313.528369627178,
+              "net_pnl_usd": -686.4716303728219,
+              "return_pct": -6.864716303728224,
+              "opened": 1865,
+              "rejected": 3012,
+              "max_concurrent": 11,
+              "max_drawdown_pct": 34.11326359481877,
+              "profit_factor": 0.9645364705718418,
+              "by_direction": {
+                "BUY": {
+                  "trades": 1865,
+                  "win_rate": 0.3040214477211796,
+                  "pnl_usd": -686.4716303728533,
+                  "mean_net_return_pct": -0.007361626062979658
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 2998,
+                "DAILY_LOSS_CAP": 12,
+                "WEEKLY_LOSS_CAP": 2
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 189,
+              "seed": 50543,
+              "mean_net_return_pct": {
+                "median": -0.007850540902444266,
+                "lower_97_5_one_sided": -0.05276940168914259,
+                "upper_97_5": 0.039330343829738414
+              },
+              "portfolio_return_pct": {
+                "median": -7.323428884739309,
+                "lower_97_5_one_sided": -47.750042643350746,
+                "upper_97_5": 37.43851755377245
+              },
+              "profit_factor": {
+                "median": 0.9623076382596548,
+                "lower_97_5_one_sided": 0.7572162022554759,
+                "upper_97_5": 1.201353022913716
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        },
+        "SELL": {
+          "membership_rows": 3184,
+          "opened_rows": 1223,
+          "calendar_weeks": 161,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 6924.114423784324,
+            "net_pnl_usd": -3075.8855762156763,
+            "return_pct": -30.758855762156767,
+            "opened": 1223,
+            "rejected": 1961,
+            "max_concurrent": 11,
+            "max_drawdown_pct": 42.651042753538526,
+            "profit_factor": 0.7654827576778487,
+            "by_direction": {
+              "SELL": {
+                "trades": 1223,
+                "win_rate": 0.2608340147179068,
+                "pnl_usd": -3075.885576215694,
+                "mean_net_return_pct": -0.05030066355217815
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 1961
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 161,
+            "seed": 544,
+            "mean_net_return_pct": {
+              "median": -0.05165585833065959,
+              "lower_97_5_one_sided": -0.09944879057907728,
+              "upper_97_5": 0.0051496835414285395
+            },
+            "portfolio_return_pct": {
+              "median": -31.48119547660054,
+              "lower_97_5_one_sided": -61.29427000069541,
+              "upper_97_5": 3.3264629372023227
+            },
+            "profit_factor": {
+              "median": 0.7585165329007475,
+              "lower_97_5_one_sided": 0.5544546497501552,
+              "upper_97_5": 1.026064531462858
+            }
+          },
+          "dependence": {
+            "rows": 1223,
+            "sum_uniqueness": 768.0290789343711,
+            "kish_effective_sample_size": 979.1158648076686,
+            "median_uniqueness": 0.5182648401826484,
+            "p05_uniqueness": 0.17016406160216488,
+            "max_label_concurrency": 11
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 954,
+              "opened": 350,
+              "mean_net_return_pct": -0.00948056223056887,
+              "return_pct": -1.6590983903494783,
+              "profit_factor": 0.9467415599278168,
+              "max_drawdown_pct": 10.541854034819998
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 875,
+              "opened": 296,
+              "mean_net_return_pct": -0.020965858666525238,
+              "return_pct": -3.102947082645624,
+              "profit_factor": 0.8583489403384943,
+              "max_drawdown_pct": 8.765047440110749
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 420,
+              "opened": 186,
+              "mean_net_return_pct": -0.13604766129718612,
+              "return_pct": -12.652432500638277,
+              "profit_factor": 0.2743726517914242,
+              "max_drawdown_pct": 13.842469733470583
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 394,
+              "opened": 160,
+              "mean_net_return_pct": -0.1555630096762528,
+              "return_pct": -12.445040774100203,
+              "profit_factor": 0.41490007997226536,
+              "max_drawdown_pct": 13.167343881220607
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 541,
+              "opened": 231,
+              "mean_net_return_pct": -0.0077864676573430195,
+              "return_pct": -0.8993370144230739,
+              "profit_factor": 0.9771708799281763,
+              "max_drawdown_pct": 12.356804192935138
+            }
+          ],
+          "positive_calendar_folds": 0,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 6136.936789883957,
+              "net_pnl_usd": -3863.0632101160427,
+              "return_pct": -38.63063210116042,
+              "opened": 1223,
+              "rejected": 1961,
+              "max_concurrent": 11,
+              "max_drawdown_pct": 49.09594301028129,
+              "profit_factor": 0.7178666158733967,
+              "by_direction": {
+                "SELL": {
+                  "trades": 1223,
+                  "win_rate": 0.25674570727718726,
+                  "pnl_usd": -3863.06321011604,
+                  "mean_net_return_pct": -0.0631735602635493
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 1961
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 161,
+              "seed": 50544,
+              "mean_net_return_pct": {
+                "median": -0.06461181019402952,
+                "lower_97_5_one_sided": -0.11172171750831017,
+                "upper_97_5": -0.006569734112272936
+              },
+              "portfolio_return_pct": {
+                "median": -39.2403131375691,
+                "lower_97_5_one_sided": -68.31319997094018,
+                "upper_97_5": -3.9872090062026384
+              },
+              "profit_factor": {
+                "median": 0.7080581755831842,
+                "lower_97_5_one_sided": 0.5130055477044112,
+                "upper_97_5": 0.9691081477877177
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        }
+      }
+    },
+    "multi_timeframe_alignment_only": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "multi_timeframe_alignment",
+      "directions": {
+        "BUY": {
+          "membership_rows": 752,
+          "opened_rows": 305,
+          "calendar_weeks": 55,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 9611.422515037679,
+            "net_pnl_usd": -388.57748496232125,
+            "return_pct": -3.8857748496232136,
+            "opened": 305,
+            "rejected": 447,
+            "max_concurrent": 6,
+            "max_drawdown_pct": 10.748762746208921,
+            "profit_factor": 0.877110220473029,
+            "by_direction": {
+              "BUY": {
+                "trades": 305,
+                "win_rate": 0.30491803278688523,
+                "pnl_usd": -388.5774849623227,
+                "mean_net_return_pct": -0.025480490817201492
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 447
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 55,
+            "seed": 643,
+            "mean_net_return_pct": {
+              "median": -0.02780554503109422,
+              "lower_97_5_one_sided": -0.10502174638833046,
+              "upper_97_5": 0.05131091331061425
+            },
+            "portfolio_return_pct": {
+              "median": -4.221160352477444,
+              "lower_97_5_one_sided": -15.941291452180577,
+              "upper_97_5": 7.970169313424793
+            },
+            "profit_factor": {
+              "median": 0.8652390986138115,
+              "lower_97_5_one_sided": 0.5393839090489022,
+              "upper_97_5": 1.2774954386411856
+            }
+          },
+          "dependence": {
+            "rows": 305,
+            "sum_uniqueness": 193.46200432493183,
+            "kish_effective_sample_size": 250.55700604735748,
+            "median_uniqueness": 0.5159313725490018,
+            "p05_uniqueness": 0.23083119658113282,
+            "max_label_concurrency": 6
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 102,
+              "opened": 49,
+              "mean_net_return_pct": -0.00015564192900619284,
+              "return_pct": -0.0038132272606739015,
+              "profit_factor": 0.9993435682319127,
+              "max_drawdown_pct": 3.2349023739196294
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 215,
+              "opened": 84,
+              "mean_net_return_pct": -0.07516413514687563,
+              "return_pct": -3.1568936761687705,
+              "profit_factor": 0.5956008335400873,
+              "max_drawdown_pct": 3.4135785720607803
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 151,
+              "opened": 56,
+              "mean_net_return_pct": -0.07605864763234642,
+              "return_pct": -2.1296421337056337,
+              "profit_factor": 0.5983416990363815,
+              "max_drawdown_pct": 2.129642133705638
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 193,
+              "opened": 80,
+              "mean_net_return_pct": -0.026035547730415186,
+              "return_pct": -1.0414219092166443,
+              "profit_factor": 0.8730660405124567,
+              "max_drawdown_pct": 4.48094434590514
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 91,
+              "opened": 36,
+              "mean_net_return_pct": 0.13588867204047272,
+              "return_pct": 2.445996096728509,
+              "profit_factor": 1.5437922689431411,
+              "max_drawdown_pct": 2.297963142667979
+            }
+          ],
+          "positive_calendar_folds": 1,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 9429.478430679137,
+              "net_pnl_usd": -570.5215693208629,
+              "return_pct": -5.705215693208632,
+              "opened": 305,
+              "rejected": 447,
+              "max_concurrent": 6,
+              "max_drawdown_pct": 12.233904255564957,
+              "profit_factor": 0.8265686044652624,
+              "by_direction": {
+                "BUY": {
+                  "trades": 305,
+                  "win_rate": 0.30491803278688523,
+                  "pnl_usd": -570.5215693208825,
+                  "mean_net_return_pct": -0.03741125044727099
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 447
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 55,
+              "seed": 50643,
+              "mean_net_return_pct": {
+                "median": -0.03910382335488742,
+                "lower_97_5_one_sided": -0.1155117874431188,
+                "upper_97_5": 0.044191971582232016
+              },
+              "portfolio_return_pct": {
+                "median": -5.954786499963788,
+                "lower_97_5_one_sided": -17.30564294429545,
+                "upper_97_5": 6.8212002451042295
+              },
+              "profit_factor": {
+                "median": 0.8182680184973155,
+                "lower_97_5_one_sided": 0.5230924430589038,
+                "upper_97_5": 1.2256118007657826
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        },
+        "SELL": {
+          "membership_rows": 288,
+          "opened_rows": 112,
+          "calendar_weeks": 25,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 9484.316613712232,
+            "net_pnl_usd": -515.6833862877684,
+            "return_pct": -5.1568338628776855,
+            "opened": 112,
+            "rejected": 176,
+            "max_concurrent": 8,
+            "max_drawdown_pct": 6.245448386770494,
+            "profit_factor": 0.523712580196302,
+            "by_direction": {
+              "SELL": {
+                "trades": 112,
+                "win_rate": 0.25,
+                "pnl_usd": -515.6833862877669,
+                "mean_net_return_pct": -0.09208631897995836
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 176
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 25,
+            "seed": 644,
+            "mean_net_return_pct": {
+              "median": -0.09179346551611421,
+              "lower_97_5_one_sided": -0.18962859676290905,
+              "upper_97_5": 0.0014584123024397185
+            },
+            "portfolio_return_pct": {
+              "median": -5.01161640284529,
+              "lower_97_5_one_sided": -11.561398308772818,
+              "upper_97_5": 0.07212033087768494
+            },
+            "profit_factor": {
+              "median": 0.5224331622850211,
+              "lower_97_5_one_sided": 0.24087983684339595,
+              "upper_97_5": 1.0100292962254414
+            }
+          },
+          "dependence": {
+            "rows": 112,
+            "sum_uniqueness": 74.80510771060379,
+            "kish_effective_sample_size": 92.3110354830817,
+            "median_uniqueness": 0.6315151515151484,
+            "p05_uniqueness": 0.18902653769841157,
+            "max_label_concurrency": 8
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 123,
+              "opened": 44,
+              "mean_net_return_pct": -0.07460394520025128,
+              "return_pct": -1.6412867944055498,
+              "profit_factor": 0.5968694633053612,
+              "max_drawdown_pct": 2.7702529403924023
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 92,
+              "opened": 36,
+              "mean_net_return_pct": -0.00048000366671402704,
+              "return_pct": -0.008640066000842328,
+              "profit_factor": 0.9962034568281719,
+              "max_drawdown_pct": 0.9779318502679598
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 0,
+              "opened": 0,
+              "mean_net_return_pct": null,
+              "return_pct": 0.0,
+              "profit_factor": null,
+              "max_drawdown_pct": 0.0
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 6,
+              "opened": 4,
+              "mean_net_return_pct": 0.0002846695478112213,
+              "return_pct": 0.0005693390956240663,
+              "profit_factor": 1.0036993251808108,
+              "max_drawdown_pct": 0.08306599849373016
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 67,
+              "opened": 28,
+              "mean_net_return_pct": -0.25053402439763645,
+              "return_pct": -3.5074763415669064,
+              "profit_factor": 0.18923246521563733,
+              "max_drawdown_pct": 3.696957381766345
+            }
+          ],
+          "positive_calendar_folds": 1,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 9405.936275754852,
+              "net_pnl_usd": -594.0637242451485,
+              "return_pct": -5.940637242451485,
+              "opened": 112,
+              "rejected": 176,
+              "max_concurrent": 8,
+              "max_drawdown_pct": 6.862594311616179,
+              "profit_factor": 0.478929389886389,
+              "by_direction": {
+                "SELL": {
+                  "trades": 112,
+                  "win_rate": 0.25,
+                  "pnl_usd": -594.0637242451568,
+                  "mean_net_return_pct": -0.10608280790092084
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 176
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 25,
+              "seed": 50644,
+              "mean_net_return_pct": {
+                "median": -0.10504855525744458,
+                "lower_97_5_one_sided": -0.20377098391506043,
+                "upper_97_5": -0.011802738944565553
+              },
+              "portfolio_return_pct": {
+                "median": -5.7190481994122075,
+                "lower_97_5_one_sided": -12.335950632045288,
+                "upper_97_5": -0.626426160860331
+              },
+              "profit_factor": {
+                "median": 0.481703804363465,
+                "lower_97_5_one_sided": 0.21912890995218257,
+                "upper_97_5": 0.9226608378970755
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        }
+      }
+    },
+    "sweep_and_change_of_character": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "liquidity_sweep and change_of_character",
+      "directions": {
+        "BUY": {
+          "membership_rows": 3411,
+          "opened_rows": 1372,
+          "calendar_weeks": 187,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 12356.68775935036,
+            "net_pnl_usd": 2356.6877593503596,
+            "return_pct": 23.566877593503598,
+            "opened": 1372,
+            "rejected": 2039,
+            "max_concurrent": 10,
+            "max_drawdown_pct": 18.27205450667536,
+            "profit_factor": 1.1858686120124984,
+            "by_direction": {
+              "BUY": {
+                "trades": 1372,
+                "win_rate": 0.32653061224489793,
+                "pnl_usd": 2356.687759350385,
+                "mean_net_return_pct": 0.034354048970122245
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 2035,
+              "DAILY_LOSS_CAP": 4
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 187,
+            "seed": 743,
+            "mean_net_return_pct": {
+              "median": 0.031679603638275905,
+              "lower_97_5_one_sided": -0.021754839471475537,
+              "upper_97_5": 0.09059681406536181
+            },
+            "portfolio_return_pct": {
+              "median": 21.686037137520366,
+              "lower_97_5_one_sided": -14.638455691954963,
+              "upper_97_5": 63.67310590647506
+            },
+            "profit_factor": {
+              "median": 1.1714399339468327,
+              "lower_97_5_one_sided": 0.8827957481340117,
+              "upper_97_5": 1.5014128447521837
+            }
+          },
+          "dependence": {
+            "rows": 1372,
+            "sum_uniqueness": 880.5033299104922,
+            "kish_effective_sample_size": 1115.945201455485,
+            "median_uniqueness": 0.5580808080808966,
+            "p05_uniqueness": 0.19259782207458073,
+            "max_label_concurrency": 10
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 658,
+              "opened": 266,
+              "mean_net_return_pct": -0.04727309510841099,
+              "return_pct": -6.287321649418642,
+              "profit_factor": 0.7228721449268589,
+              "max_drawdown_pct": 9.02684599011164
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 854,
+              "opened": 304,
+              "mean_net_return_pct": -0.025027557054934015,
+              "return_pct": -3.8041886723501173,
+              "profit_factor": 0.8296792943456909,
+              "max_drawdown_pct": 5.3884981151548175
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 579,
+              "opened": 234,
+              "mean_net_return_pct": -0.029614216291779877,
+              "return_pct": -3.464863306138233,
+              "profit_factor": 0.7970165687299374,
+              "max_drawdown_pct": 6.128210236911209
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 947,
+              "opened": 402,
+              "mean_net_return_pct": 0.10863983464761393,
+              "return_pct": 21.836606764170273,
+              "profit_factor": 1.6199226453914755,
+              "max_drawdown_pct": 4.108630246353166
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 373,
+              "opened": 166,
+              "mean_net_return_pct": 0.18417643924385949,
+              "return_pct": 15.286644457240328,
+              "profit_factor": 1.5186148505802304,
+              "max_drawdown_pct": 9.235553631064466
+            }
+          ],
+          "positive_calendar_folds": 2,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 11522.460645960457,
+              "net_pnl_usd": 1522.4606459604565,
+              "return_pct": 15.224606459604573,
+              "opened": 1372,
+              "rejected": 2039,
+              "max_concurrent": 10,
+              "max_drawdown_pct": 23.519537568144717,
+              "profit_factor": 1.1148988852301323,
+              "by_direction": {
+                "BUY": {
+                  "trades": 1372,
+                  "win_rate": 0.3206997084548105,
+                  "pnl_usd": 1522.4606459604297,
+                  "mean_net_return_pct": 0.022193303876974203
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 2035,
+                "DAILY_LOSS_CAP": 4
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 187,
+              "seed": 50743,
+              "mean_net_return_pct": {
+                "median": 0.02114873882477867,
+                "lower_97_5_one_sided": -0.031218710067053373,
+                "upper_97_5": 0.0750565352645554
+              },
+              "portfolio_return_pct": {
+                "median": 14.338148452828037,
+                "lower_97_5_one_sided": -20.175978253028177,
+                "upper_97_5": 54.73576132229318
+              },
+              "profit_factor": {
+                "median": 1.1110405629627857,
+                "lower_97_5_one_sided": 0.8468493048153654,
+                "upper_97_5": 1.4052181875259355
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        },
+        "SELL": {
+          "membership_rows": 2568,
+          "opened_rows": 1013,
+          "calendar_weeks": 160,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 7719.187303103268,
+            "net_pnl_usd": -2280.8126968967317,
+            "return_pct": -22.80812696896731,
+            "opened": 1013,
+            "rejected": 1555,
+            "max_concurrent": 11,
+            "max_drawdown_pct": 32.14826218874304,
+            "profit_factor": 0.7760879084271027,
+            "by_direction": {
+              "SELL": {
+                "trades": 1013,
+                "win_rate": 0.2694965449160908,
+                "pnl_usd": -2280.812696896748,
+                "mean_net_return_pct": -0.04503085285087361
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 1555
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 160,
+            "seed": 744,
+            "mean_net_return_pct": {
+              "median": -0.046501518416477546,
+              "lower_97_5_one_sided": -0.09802877867333952,
+              "upper_97_5": 0.017747556504752498
+            },
+            "portfolio_return_pct": {
+              "median": -23.401072049286924,
+              "lower_97_5_one_sided": -49.12474251588677,
+              "upper_97_5": 8.961554461757155
+            },
+            "profit_factor": {
+              "median": 0.7673078845903827,
+              "lower_97_5_one_sided": 0.5405372726369053,
+              "upper_97_5": 1.094483625044598
+            }
+          },
+          "dependence": {
+            "rows": 1013,
+            "sum_uniqueness": 669.6450690950459,
+            "kish_effective_sample_size": 832.4040181083919,
+            "median_uniqueness": 0.6190476190477057,
+            "p05_uniqueness": 0.2000000000007276,
+            "max_label_concurrency": 11
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 772,
+              "opened": 286,
+              "mean_net_return_pct": 0.023466762188276674,
+              "return_pct": 3.3557469929236694,
+              "profit_factor": 1.141846318467734,
+              "max_drawdown_pct": 5.810212088326241
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 667,
+              "opened": 234,
+              "mean_net_return_pct": -0.004548132185234384,
+              "return_pct": -0.5321314656723697,
+              "profit_factor": 0.9692264140463093,
+              "max_drawdown_pct": 6.534256655780893
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 338,
+              "opened": 157,
+              "mean_net_return_pct": -0.12339256272954216,
+              "return_pct": -9.686316174269027,
+              "profit_factor": 0.31230284612127296,
+              "max_drawdown_pct": 10.916764250429251
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 369,
+              "opened": 150,
+              "mean_net_return_pct": -0.15246143398852807,
+              "return_pct": -11.434607549139542,
+              "profit_factor": 0.42303132420758605,
+              "max_drawdown_pct": 11.901855983805328
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 422,
+              "opened": 186,
+              "mean_net_return_pct": -0.04850342766462325,
+              "return_pct": -4.510818772809888,
+              "profit_factor": 0.8329880180097995,
+              "max_drawdown_pct": 7.216760486847962
+            }
+          ],
+          "positive_calendar_folds": 1,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 7072.152562631093,
+              "net_pnl_usd": -2927.847437368907,
+              "return_pct": -29.27847437368907,
+              "opened": 1013,
+              "rejected": 1555,
+              "max_concurrent": 11,
+              "max_drawdown_pct": 37.3505637208807,
+              "profit_factor": 0.7251583630457615,
+              "by_direction": {
+                "SELL": {
+                  "trades": 1013,
+                  "win_rate": 0.26554787759131293,
+                  "pnl_usd": -2927.8474373688805,
+                  "mean_net_return_pct": -0.05780547753936585
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 1555
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 160,
+              "seed": 50744,
+              "mean_net_return_pct": {
+                "median": -0.0596719300664722,
+                "lower_97_5_one_sided": -0.11126094243408313,
+                "upper_97_5": 0.002229841232385344
+              },
+              "portfolio_return_pct": {
+                "median": -30.163471944297655,
+                "lower_97_5_one_sided": -55.046660193756246,
+                "upper_97_5": 1.243792460402754
+              },
+              "profit_factor": {
+                "median": 0.7160958547227974,
+                "lower_97_5_one_sided": 0.5086434002626528,
+                "upper_97_5": 1.0109267845010594
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        }
+      }
+    },
+    "sweep_and_value": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "liquidity_sweep and directional_value_zone",
+      "directions": {
+        "BUY": {
+          "membership_rows": 1938,
+          "opened_rows": 738,
+          "calendar_weeks": 164,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 12208.630602510993,
+            "net_pnl_usd": 2208.6306025109934,
+            "return_pct": 22.086306025109927,
+            "opened": 738,
+            "rejected": 1200,
+            "max_concurrent": 10,
+            "max_drawdown_pct": 10.875995235416651,
+            "profit_factor": 1.2784611481229786,
+            "by_direction": {
+              "BUY": {
+                "trades": 738,
+                "win_rate": 0.32926829268292684,
+                "pnl_usd": 2208.6306025110066,
+                "mean_net_return_pct": 0.05985448787292703
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 1194,
+              "DAILY_LOSS_CAP": 6
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 164,
+            "seed": 843,
+            "mean_net_return_pct": {
+              "median": 0.05396096278688735,
+              "lower_97_5_one_sided": -0.05258386716600332,
+              "upper_97_5": 0.1682717914205539
+            },
+            "portfolio_return_pct": {
+              "median": 19.707714379676347,
+              "lower_97_5_one_sided": -18.55084645131209,
+              "upper_97_5": 64.4985050889929
+            },
+            "profit_factor": {
+              "median": 1.2592925048977293,
+              "lower_97_5_one_sided": 0.7789084105255387,
+              "upper_97_5": 1.8378105097263306
+            }
+          },
+          "dependence": {
+            "rows": 738,
+            "sum_uniqueness": 477.16853772907706,
+            "kish_effective_sample_size": 595.7006530834144,
+            "median_uniqueness": 0.5754830917873166,
+            "p05_uniqueness": 0.16641456582575997,
+            "max_label_concurrency": 10
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 417,
+              "opened": 157,
+              "mean_net_return_pct": -0.052237306744306176,
+              "return_pct": -4.1006285794280455,
+              "profit_factor": 0.6850293155957874,
+              "max_drawdown_pct": 5.617273740137394
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 452,
+              "opened": 157,
+              "mean_net_return_pct": 0.12002022722236377,
+              "return_pct": 9.421587836955482,
+              "profit_factor": 1.8465779193122023,
+              "max_drawdown_pct": 3.278508681375252
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 275,
+              "opened": 114,
+              "mean_net_return_pct": 0.037388032100350084,
+              "return_pct": 2.1311178297199085,
+              "profit_factor": 1.2989172214586138,
+              "max_drawdown_pct": 2.544175376779963
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 518,
+              "opened": 203,
+              "mean_net_return_pct": 0.08900991556912877,
+              "return_pct": 9.034506430266553,
+              "profit_factor": 1.4178839057833899,
+              "max_drawdown_pct": 4.129925660079853
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 276,
+              "opened": 107,
+              "mean_net_return_pct": 0.10466771042235554,
+              "return_pct": 5.599722507596039,
+              "profit_factor": 1.2119633385795243,
+              "max_drawdown_pct": 12.643801512132876
+            }
+          ],
+          "positive_calendar_folds": 4,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 11758.909489738351,
+              "net_pnl_usd": 1758.909489738351,
+              "return_pct": 17.589094897383518,
+              "opened": 738,
+              "rejected": 1200,
+              "max_concurrent": 10,
+              "max_drawdown_pct": 11.384053488224835,
+              "profit_factor": 1.2135749205890562,
+              "by_direction": {
+                "BUY": {
+                  "trades": 738,
+                  "win_rate": 0.3224932249322493,
+                  "pnl_usd": 1758.9094897383436,
+                  "mean_net_return_pct": 0.04766692384114753
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 1194,
+                "DAILY_LOSS_CAP": 6
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 164,
+              "seed": 50843,
+              "mean_net_return_pct": {
+                "median": 0.047189015832545395,
+                "lower_97_5_one_sided": -0.05910095505727876,
+                "upper_97_5": 0.1631795316099291
+              },
+              "portfolio_return_pct": {
+                "median": 17.328331118676992,
+                "lower_97_5_one_sided": -21.297223733258022,
+                "upper_97_5": 62.46736382253324
+              },
+              "profit_factor": {
+                "median": 1.2119375404746506,
+                "lower_97_5_one_sided": 0.7546111608222479,
+                "upper_97_5": 1.802543535136152
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        },
+        "SELL": {
+          "membership_rows": 2406,
+          "opened_rows": 784,
+          "calendar_weeks": 146,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 8820.29203868085,
+            "net_pnl_usd": -1179.7079613191509,
+            "return_pct": -11.797079613191508,
+            "opened": 784,
+            "rejected": 1622,
+            "max_concurrent": 10,
+            "max_drawdown_pct": 33.619768619668164,
+            "profit_factor": 0.8673889347541271,
+            "by_direction": {
+              "SELL": {
+                "trades": 784,
+                "win_rate": 0.26913265306122447,
+                "pnl_usd": -1179.7079613191918,
+                "mean_net_return_pct": -0.030094590849979383
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 1622
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 146,
+            "seed": 844,
+            "mean_net_return_pct": {
+              "median": -0.0353516692402982,
+              "lower_97_5_one_sided": -0.10862350870196986,
+              "upper_97_5": 0.0700146129607264
+            },
+            "portfolio_return_pct": {
+              "median": -13.346968967168023,
+              "lower_97_5_one_sided": -43.589352548815114,
+              "upper_97_5": 27.7245659767597
+            },
+            "profit_factor": {
+              "median": 0.8449240784147298,
+              "lower_97_5_one_sided": 0.5436360712301614,
+              "upper_97_5": 1.3207618952576368
+            }
+          },
+          "dependence": {
+            "rows": 784,
+            "sum_uniqueness": 465.05429415019137,
+            "kish_effective_sample_size": 606.1279309416035,
+            "median_uniqueness": 0.5,
+            "p05_uniqueness": 0.16066769026616223,
+            "max_label_concurrency": 10
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 549,
+              "opened": 173,
+              "mean_net_return_pct": -0.030969095320502266,
+              "return_pct": -2.6788267452233727,
+              "profit_factor": 0.8245811647291417,
+              "max_drawdown_pct": 6.2400692763879455
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 614,
+              "opened": 184,
+              "mean_net_return_pct": 0.032861580985997556,
+              "return_pct": 3.023265450711854,
+              "profit_factor": 1.2000952389733142,
+              "max_drawdown_pct": 5.998317837691338
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 461,
+              "opened": 139,
+              "mean_net_return_pct": -0.14343439734371394,
+              "return_pct": -9.968690615388054,
+              "profit_factor": 0.3304540636269734,
+              "max_drawdown_pct": 10.896360253440918
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 308,
+              "opened": 107,
+              "mean_net_return_pct": -0.0803177215972259,
+              "return_pct": -4.296998105451488,
+              "profit_factor": 0.6801654969205158,
+              "max_drawdown_pct": 8.550956484133785
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 474,
+              "opened": 181,
+              "mean_net_return_pct": 0.023471496156458112,
+              "return_pct": 2.124170402159531,
+              "profit_factor": 1.070206516348704,
+              "max_drawdown_pct": 15.106048404790709
+            }
+          ],
+          "positive_calendar_folds": 2,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 8346.944994114672,
+              "net_pnl_usd": -1653.0550058853278,
+              "return_pct": -16.530550058853276,
+              "opened": 784,
+              "rejected": 1622,
+              "max_concurrent": 10,
+              "max_drawdown_pct": 36.476667735941284,
+              "profit_factor": 0.8210895433287305,
+              "by_direction": {
+                "SELL": {
+                  "trades": 784,
+                  "win_rate": 0.26785714285714285,
+                  "pnl_usd": -1653.0550058853016,
+                  "mean_net_return_pct": -0.042169770558298514
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 1622
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 146,
+              "seed": 50844,
+              "mean_net_return_pct": {
+                "median": -0.044709631173566286,
+                "lower_97_5_one_sided": -0.12463039307538094,
+                "upper_97_5": 0.054456775746307966
+              },
+              "portfolio_return_pct": {
+                "median": -17.681256844303807,
+                "lower_97_5_one_sided": -48.46142048044229,
+                "upper_97_5": 22.34454141808826
+              },
+              "profit_factor": {
+                "median": 0.8089563134323183,
+                "lower_97_5_one_sided": 0.5136772451848911,
+                "upper_97_5": 1.2378123543896813
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        }
+      }
+    },
+    "sweep_and_retest": {
+      "role": "SECONDARY_DIAGNOSTIC",
+      "expression": "liquidity_sweep and zone_retest",
+      "directions": {
+        "BUY": {
+          "membership_rows": 3702,
+          "opened_rows": 1439,
+          "calendar_weeks": 190,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 12065.139989923582,
+            "net_pnl_usd": 2065.139989923582,
+            "return_pct": 20.651399899235813,
+            "opened": 1439,
+            "rejected": 2263,
+            "max_concurrent": 10,
+            "max_drawdown_pct": 12.833733256533009,
+            "profit_factor": 1.1625744170287113,
+            "by_direction": {
+              "BUY": {
+                "trades": 1439,
+                "win_rate": 0.320361362056984,
+                "pnl_usd": 2065.139989923602,
+                "mean_net_return_pct": 0.02870243210456709
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 2261,
+              "DAILY_LOSS_CAP": 2
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 190,
+            "seed": 943,
+            "mean_net_return_pct": {
+              "median": 0.027419156810362343,
+              "lower_97_5_one_sided": -0.022135327312295124,
+              "upper_97_5": 0.08813843951927114
+            },
+            "portfolio_return_pct": {
+              "median": 19.954938645579674,
+              "lower_97_5_one_sided": -15.560399706375476,
+              "upper_97_5": 64.0123112803987
+            },
+            "profit_factor": {
+              "median": 1.1558437800489194,
+              "lower_97_5_one_sided": 0.8808994883406296,
+              "upper_97_5": 1.5211210975122362
+            }
+          },
+          "dependence": {
+            "rows": 1439,
+            "sum_uniqueness": 928.6917805130631,
+            "kish_effective_sample_size": 1178.371221757303,
+            "median_uniqueness": 0.5490196078431373,
+            "p05_uniqueness": 0.19564695550339284,
+            "max_label_concurrency": 10
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 718,
+              "opened": 288,
+              "mean_net_return_pct": -0.054090943104515024,
+              "return_pct": -7.789095807050128,
+              "profit_factor": 0.6760260818024496,
+              "max_drawdown_pct": 10.564242961558344
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 942,
+              "opened": 321,
+              "mean_net_return_pct": 0.034352503251577834,
+              "return_pct": 5.513576771878048,
+              "profit_factor": 1.2464116488875294,
+              "max_drawdown_pct": 4.595848474751702
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 600,
+              "opened": 243,
+              "mean_net_return_pct": -0.051255860824974984,
+              "return_pct": -6.227587090234488,
+              "profit_factor": 0.6507994179333036,
+              "max_drawdown_pct": 7.357926746651289
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 1096,
+              "opened": 431,
+              "mean_net_return_pct": 0.11466974673193728,
+              "return_pct": 24.71133042073239,
+              "profit_factor": 1.6749875854697849,
+              "max_drawdown_pct": 3.9007618125982524
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 346,
+              "opened": 156,
+              "mean_net_return_pct": 0.05696378979371701,
+              "return_pct": 4.4431756039099435,
+              "profit_factor": 1.1698094960620755,
+              "max_drawdown_pct": 9.875968755030954
+            }
+          ],
+          "positive_calendar_folds": 3,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 11184.47311388707,
+              "net_pnl_usd": 1184.4731138870702,
+              "return_pct": 11.844731138870701,
+              "opened": 1439,
+              "rejected": 2263,
+              "max_concurrent": 10,
+              "max_drawdown_pct": 18.124467163423557,
+              "profit_factor": 1.0889917443736468,
+              "by_direction": {
+                "BUY": {
+                  "trades": 1439,
+                  "win_rate": 0.31480194579569143,
+                  "pnl_usd": 1184.4731138870459,
+                  "mean_net_return_pct": 0.016462447726018698
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 2261,
+                "DAILY_LOSS_CAP": 2
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 190,
+              "seed": 50943,
+              "mean_net_return_pct": {
+                "median": 0.015607659205263306,
+                "lower_97_5_one_sided": -0.032675196763704784,
+                "upper_97_5": 0.07374066853655391
+              },
+              "portfolio_return_pct": {
+                "median": 11.266704946868831,
+                "lower_97_5_one_sided": -23.785298281196713,
+                "upper_97_5": 53.28897998196103
+              },
+              "profit_factor": {
+                "median": 1.0839037475186455,
+                "lower_97_5_one_sided": 0.8234379067120925,
+                "upper_97_5": 1.4088110021162588
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        },
+        "SELL": {
+          "membership_rows": 3035,
+          "opened_rows": 1110,
+          "calendar_weeks": 166,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 7010.47889224997,
+            "net_pnl_usd": -2989.52110775003,
+            "return_pct": -29.895211077500296,
+            "opened": 1110,
+            "rejected": 1925,
+            "max_concurrent": 11,
+            "max_drawdown_pct": 37.78831104770219,
+            "profit_factor": 0.7158161039616255,
+            "by_direction": {
+              "SELL": {
+                "trades": 1110,
+                "win_rate": 0.26036036036036037,
+                "pnl_usd": -2989.5211077500408,
+                "mean_net_return_pct": -0.05386524518468542
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 1925
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 166,
+            "seed": 944,
+            "mean_net_return_pct": {
+              "median": -0.0548560063832125,
+              "lower_97_5_one_sided": -0.09608956889951267,
+              "upper_97_5": -0.0022404829552563816
+            },
+            "portfolio_return_pct": {
+              "median": -30.321800025630225,
+              "lower_97_5_one_sided": -53.06021636341923,
+              "upper_97_5": -1.3360921837757505
+            },
+            "profit_factor": {
+              "median": 0.707998038504281,
+              "lower_97_5_one_sided": 0.5129062233616996,
+              "upper_97_5": 0.98768241755272
+            }
+          },
+          "dependence": {
+            "rows": 1110,
+            "sum_uniqueness": 748.7971847899797,
+            "kish_effective_sample_size": 921.5076413634237,
+            "median_uniqueness": 0.6666666666669698,
+            "p05_uniqueness": 0.2000000000007276,
+            "max_label_concurrency": 11
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 811,
+              "opened": 294,
+              "mean_net_return_pct": 0.029341484590055446,
+              "return_pct": 4.313198234738147,
+              "profit_factor": 1.195002542137202,
+              "max_drawdown_pct": 4.632362866739091
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 823,
+              "opened": 261,
+              "mean_net_return_pct": -0.035410223959920314,
+              "return_pct": -4.621034226769516,
+              "profit_factor": 0.7537014466136632,
+              "max_drawdown_pct": 6.763617433056974
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 519,
+              "opened": 188,
+              "mean_net_return_pct": -0.13465649050519796,
+              "return_pct": -12.657710107488585,
+              "profit_factor": 0.2659349973195873,
+              "max_drawdown_pct": 13.680154246308362
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 381,
+              "opened": 159,
+              "mean_net_return_pct": -0.12136502518582126,
+              "return_pct": -9.648519502272668,
+              "profit_factor": 0.49229877404062194,
+              "max_drawdown_pct": 9.934439253473965
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 501,
+              "opened": 208,
+              "mean_net_return_pct": -0.07001101418949575,
+              "return_pct": -7.281145475707451,
+              "profit_factor": 0.7405934907329206,
+              "max_drawdown_pct": 9.358743344359118
+            }
+          ],
+          "positive_calendar_folds": 1,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 6305.029942135368,
+              "net_pnl_usd": -3694.9700578646316,
+              "return_pct": -36.949700578646315,
+              "opened": 1110,
+              "rejected": 1925,
+              "max_concurrent": 11,
+              "max_drawdown_pct": 43.84554932334323,
+              "profit_factor": 0.6652039966967809,
+              "by_direction": {
+                "SELL": {
+                  "trades": 1110,
+                  "win_rate": 0.25765765765765763,
+                  "pnl_usd": -3694.9700578646252,
+                  "mean_net_return_pct": -0.06657603707864189
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 1925
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 166,
+              "seed": 50944,
+              "mean_net_return_pct": {
+                "median": -0.06985443315928792,
+                "lower_97_5_one_sided": -0.10801648287457809,
+                "upper_97_5": -0.01452574385417102
+              },
+              "portfolio_return_pct": {
+                "median": -38.648645630556835,
+                "lower_97_5_one_sided": -58.168598324106625,
+                "upper_97_5": -8.071526404565157
+              },
+              "profit_factor": {
+                "median": 0.6471335599991694,
+                "lower_97_5_one_sided": 0.4761980525182604,
+                "upper_97_5": 0.9264360958384869
+              }
+            }
+          },
+          "primary_gate_eligible": false
+        }
+      }
+    },
+    "sweep_value_retest_primary": {
+      "role": "PRIMARY_PROMOTABLE_DEVELOPMENT_HYPOTHESIS",
+      "expression": "liquidity_sweep and directional_value_zone and zone_retest",
+      "directions": {
+        "BUY": {
+          "membership_rows": 1567,
+          "opened_rows": 653,
+          "calendar_weeks": 161,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 11208.839095774922,
+            "net_pnl_usd": 1208.8390957749216,
+            "return_pct": 12.088390957749207,
+            "opened": 653,
+            "rejected": 914,
+            "max_concurrent": 9,
+            "max_drawdown_pct": 6.7026885907640015,
+            "profit_factor": 1.1974270849601203,
+            "by_direction": {
+              "BUY": {
+                "trades": 653,
+                "win_rate": 0.3169984686064318,
+                "pnl_usd": 1208.8390957749311,
+                "mean_net_return_pct": 0.03702416832388763
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 914
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 161,
+            "seed": 1043,
+            "mean_net_return_pct": {
+              "median": 0.032692039038046086,
+              "lower_97_5_one_sided": -0.044042321506108546,
+              "upper_97_5": 0.13547810068090607
+            },
+            "portfolio_return_pct": {
+              "median": 10.814559396320563,
+              "lower_97_5_one_sided": -13.892634317950485,
+              "upper_97_5": 47.32733154491113
+            },
+            "profit_factor": {
+              "median": 1.1747275847132215,
+              "lower_97_5_one_sided": 0.7868343582366564,
+              "upper_97_5": 1.768653995362032
+            }
+          },
+          "dependence": {
+            "rows": 653,
+            "sum_uniqueness": 451.3866369696367,
+            "kish_effective_sample_size": 550.265204606531,
+            "median_uniqueness": 0.75,
+            "p05_uniqueness": 0.19944238835412226,
+            "max_label_concurrency": 9
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 356,
+              "opened": 149,
+              "mean_net_return_pct": -0.05507228467217835,
+              "return_pct": -4.1028852080772555,
+              "profit_factor": 0.649710518442827,
+              "max_drawdown_pct": 4.716967794095049
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 373,
+              "opened": 140,
+              "mean_net_return_pct": 0.14347155511623957,
+              "return_pct": 10.043008858136716,
+              "profit_factor": 2.1145429215624802,
+              "max_drawdown_pct": 2.152005834424707
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 232,
+              "opened": 102,
+              "mean_net_return_pct": -0.018459215741228285,
+              "return_pct": -0.9414200028026842,
+              "profit_factor": 0.8580083107212718,
+              "max_drawdown_pct": 2.5053338854201224
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 442,
+              "opened": 183,
+              "mean_net_return_pct": 0.08993833425392612,
+              "return_pct": 8.229357584234197,
+              "profit_factor": 1.449281943412627,
+              "max_drawdown_pct": 3.712417190014029
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 164,
+              "opened": 79,
+              "mean_net_return_pct": -0.028852411993462536,
+              "return_pct": -1.1396702737417441,
+              "profit_factor": 0.9267523355093176,
+              "max_drawdown_pct": 7.576827063443858
+            }
+          ],
+          "positive_calendar_folds": 2,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 10804.739060276264,
+              "net_pnl_usd": 804.7390602762644,
+              "return_pct": 8.04739060276265,
+              "opened": 653,
+              "rejected": 914,
+              "max_concurrent": 9,
+              "max_drawdown_pct": 7.0293189698755825,
+              "profit_factor": 1.1257326138944685,
+              "by_direction": {
+                "BUY": {
+                  "trades": 653,
+                  "win_rate": 0.3108728943338438,
+                  "pnl_usd": 804.7390602762549,
+                  "mean_net_return_pct": 0.024647444418874582
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 914
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 161,
+              "seed": 51043,
+              "mean_net_return_pct": {
+                "median": 0.019951953560823972,
+                "lower_97_5_one_sided": -0.056174000116237154,
+                "upper_97_5": 0.11486720189616431
+              },
+              "portfolio_return_pct": {
+                "median": 6.574923612452157,
+                "lower_97_5_one_sided": -17.271642622506015,
+                "upper_97_5": 39.42206201088246
+              },
+              "profit_factor": {
+                "median": 1.1032237616021714,
+                "lower_97_5_one_sided": 0.7283589637819661,
+                "upper_97_5": 1.6125263381222896
+              }
+            }
+          },
+          "primary_gate_eligible": true,
+          "paired_comparisons": {
+            "trade_all_control": {
+              "method": "paired calendar-week block bootstrap of mean return per opened trade",
+              "weeks": 193,
+              "samples": 2000,
+              "seed": 1000143,
+              "mean_difference_pct": {
+                "median": 0.020564098135785934,
+                "lower_97_5_one_sided": -0.032593358983691575,
+                "upper_97_5": 0.08350779954763894
+              }
+            },
+            "liquidity_sweep_control": {
+              "method": "paired calendar-week block bootstrap of mean return per opened trade",
+              "weeks": 191,
+              "samples": 2000,
+              "seed": 1000144,
+              "mean_difference_pct": {
+                "median": -0.009419035791855053,
+                "lower_97_5_one_sided": -0.058263852868319074,
+                "upper_97_5": 0.04824634748227879
+              }
+            }
+          },
+          "primary_direction_promotion_gates": {
+            "opened_candidates_at_least_300": true,
+            "calendar_weeks_at_least_100": true,
+            "kish_effective_sample_size_at_least_200": true,
+            "positive_calendar_folds_at_least_3": false,
+            "maximum_drawdown_at_most_25_pct": true,
+            "base_mean_return_lower_97_5_above_zero": false,
+            "base_profit_factor_lower_97_5_above_one": false,
+            "stress_mean_return_lower_97_5_above_zero": false,
+            "paired_improvement_vs_trade_all_lower_97_5_above_zero": false,
+            "paired_improvement_vs_liquidity_sweep_lower_97_5_above_zero": false
+          },
+          "all_primary_direction_promotion_gates_pass": false
+        },
+        "SELL": {
+          "membership_rows": 1725,
+          "opened_rows": 618,
+          "calendar_weeks": 143,
+          "portfolio": {
+            "starting_capital": 10000.0,
+            "ending_capital": 7890.367964770439,
+            "net_pnl_usd": -2109.6320352295606,
+            "return_pct": -21.096320352295606,
+            "opened": 618,
+            "rejected": 1107,
+            "max_concurrent": 8,
+            "max_drawdown_pct": 25.08311152538526,
+            "profit_factor": 0.653534427223953,
+            "by_direction": {
+              "SELL": {
+                "trades": 618,
+                "win_rate": 0.2524271844660194,
+                "pnl_usd": -2109.632035229579,
+                "mean_net_return_pct": -0.06827288139901547
+              }
+            },
+            "rejection_reasons": {
+              "SETUP_COOLDOWN": 1107
+            },
+            "limitations": [
+              "Development history, not untouched evidence.",
+              "Fixed paper notional; no broker execution or financing costs.",
+              "Portfolio outcomes use Dukascopy historical bid/ask labels."
+            ]
+          },
+          "weekly_block_interval": {
+            "method": "calendar-week block bootstrap",
+            "samples": 2000,
+            "weeks": 143,
+            "seed": 1044,
+            "mean_net_return_pct": {
+              "median": -0.06762027183310931,
+              "lower_97_5_one_sided": -0.11615997171815087,
+              "upper_97_5": -0.01750549784902309
+            },
+            "portfolio_return_pct": {
+              "median": -20.89226842237292,
+              "lower_97_5_one_sided": -36.76316437649663,
+              "upper_97_5": -5.384263017767312
+            },
+            "profit_factor": {
+              "median": 0.6540950143618363,
+              "lower_97_5_one_sided": 0.45253828976450483,
+              "upper_97_5": 0.9051687868116397
+            }
+          },
+          "dependence": {
+            "rows": 618,
+            "sum_uniqueness": 424.5956035186525,
+            "kish_effective_sample_size": 516.7326801554921,
+            "median_uniqueness": 0.7247474747474747,
+            "p05_uniqueness": 0.1999999999998181,
+            "max_label_concurrency": 8
+          },
+          "folds": [
+            {
+              "candidate_year": 2022,
+              "membership_rows": 380,
+              "opened": 137,
+              "mean_net_return_pct": -0.019654403933928227,
+              "return_pct": -1.346326669474096,
+              "profit_factor": 0.8718591577512059,
+              "max_drawdown_pct": 3.9126700264903844
+            },
+            {
+              "candidate_year": 2023,
+              "membership_rows": 462,
+              "opened": 150,
+              "mean_net_return_pct": -0.026230233181117005,
+              "return_pct": -1.9672674885836905,
+              "profit_factor": 0.8160160339870955,
+              "max_drawdown_pct": 4.135884462803966
+            },
+            {
+              "candidate_year": 2024,
+              "membership_rows": 325,
+              "opened": 106,
+              "mean_net_return_pct": -0.15927908743714717,
+              "return_pct": -8.441791634168771,
+              "profit_factor": 0.2212084843597638,
+              "max_drawdown_pct": 9.385194219292291
+            },
+            {
+              "candidate_year": 2025,
+              "membership_rows": 229,
+              "opened": 89,
+              "mean_net_return_pct": -0.08050672416832877,
+              "return_pct": -3.58254922549055,
+              "profit_factor": 0.6148253447397113,
+              "max_drawdown_pct": 5.644252918995911
+            },
+            {
+              "candidate_year": 2026,
+              "membership_rows": 329,
+              "opened": 136,
+              "mean_net_return_pct": -0.08468213727321311,
+              "return_pct": -5.7583853345783975,
+              "profit_factor": 0.7054559184261684,
+              "max_drawdown_pct": 8.054277375768471
+            }
+          ],
+          "positive_calendar_folds": 0,
+          "cost_stress_0_25_points_per_side": {
+            "portfolio": {
+              "starting_capital": 10000.0,
+              "ending_capital": 7513.38564916594,
+              "net_pnl_usd": -2486.61435083406,
+              "return_pct": -24.8661435083406,
+              "opened": 618,
+              "rejected": 1107,
+              "max_concurrent": 8,
+              "max_drawdown_pct": 28.532355194695054,
+              "profit_factor": 0.609538914755918,
+              "by_direction": {
+                "SELL": {
+                  "trades": 618,
+                  "win_rate": 0.2524271844660194,
+                  "pnl_usd": -2486.6143508340465,
+                  "mean_net_return_pct": -0.08047295633767143
+                }
+              },
+              "rejection_reasons": {
+                "SETUP_COOLDOWN": 1107
+              },
+              "limitations": [
+                "Development history, not untouched evidence.",
+                "Fixed paper notional; no broker execution or financing costs.",
+                "Portfolio outcomes use Dukascopy historical bid/ask labels."
+              ]
+            },
+            "weekly_block_interval": {
+              "method": "calendar-week block bootstrap",
+              "samples": 2000,
+              "weeks": 143,
+              "seed": 51044,
+              "mean_net_return_pct": {
+                "median": -0.08137479134362785,
+                "lower_97_5_one_sided": -0.12638824989821,
+                "upper_97_5": -0.031317640821776994
+              },
+              "portfolio_return_pct": {
+                "median": -24.994846829791324,
+                "lower_97_5_one_sided": -39.96399375363246,
+                "upper_97_5": -9.297958510481527
+              },
+              "profit_factor": {
+                "median": 0.604397747400736,
+                "lower_97_5_one_sided": 0.42131382760442565,
+                "upper_97_5": 0.8396677550993048
+              }
+            }
+          },
+          "primary_gate_eligible": true,
+          "paired_comparisons": {
+            "trade_all_control": {
+              "method": "paired calendar-week block bootstrap of mean return per opened trade",
+              "weeks": 169,
+              "samples": 2000,
+              "seed": 1000243,
+              "mean_difference_pct": {
+                "median": -0.029757969187077973,
+                "lower_97_5_one_sided": -0.079220317630168,
+                "upper_97_5": 0.011236379402272787
+              }
+            },
+            "liquidity_sweep_control": {
+              "method": "paired calendar-week block bootstrap of mean return per opened trade",
+              "weeks": 168,
+              "samples": 2000,
+              "seed": 1000244,
+              "mean_difference_pct": {
+                "median": -0.03464791719186543,
+                "lower_97_5_one_sided": -0.08144376890285235,
+                "upper_97_5": 0.006861467880427369
+              }
+            }
+          },
+          "primary_direction_promotion_gates": {
+            "opened_candidates_at_least_300": true,
+            "calendar_weeks_at_least_100": true,
+            "kish_effective_sample_size_at_least_200": true,
+            "positive_calendar_folds_at_least_3": false,
+            "maximum_drawdown_at_most_25_pct": false,
+            "base_mean_return_lower_97_5_above_zero": false,
+            "base_profit_factor_lower_97_5_above_one": false,
+            "stress_mean_return_lower_97_5_above_zero": false,
+            "paired_improvement_vs_trade_all_lower_97_5_above_zero": false,
+            "paired_improvement_vs_liquidity_sweep_lower_97_5_above_zero": false
+          },
+          "all_primary_direction_promotion_gates_pass": false
+        }
+      }
+    }
+  },
+  "limitations": [
+    "The full historical period has influenced research and is not untouched evidence.",
+    "Rules filter the existing SMC candidate universe; they do not regenerate omitted market setups.",
+    "Weekly blocks and cooldown reduce dependence but do not create independent observations.",
+    "A development pass can only authorize registration of a future shadow hypothesis."
+  ]
+}

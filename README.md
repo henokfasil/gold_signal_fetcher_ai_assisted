@@ -32,11 +32,17 @@ negative after costs in every test fold, so no model or runtime behavior was
 created. The machine-readable result is
 `data/research/execution_state_benchmarks_v1.json`.
 
-The engineering baseline is running, but the research program is not complete.
-The next planned local experiment is a pre-registered candidate-generation
-setup taxonomy evaluated against simple controls separately for BUY and SELL.
-It must seek a better-defined candidate universe before any further ML model is
-considered.
+The pre-registered candidate-generation v2 setup taxonomy is complete with
+`REJECT_CANDIDATE_GENERATION_V2`. The primary BUY setup had a positive point
+estimate and lower drawdown but failed fold-stability, uncertainty, cost-stress
+and paired-control gates; SELL was negative in every fold. No model or runtime
+behavior was created. The engineering baseline is running, but the research
+program and profitable-edge objective are not complete.
+
+The next research step is an upstream event-first candidate universe with
+unique structural event identity and richer causal SMC geometry. It must be
+registered before outcome comparison and beat simple fixed-rule baselines
+before further ML is considered.
 
 See [CLAUDE.md](CLAUDE.md) for architecture, data contracts, operational status
 and the research roadmap. The skeptical-review response and implemented

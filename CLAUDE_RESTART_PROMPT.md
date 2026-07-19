@@ -59,6 +59,19 @@ Important evidence already established:
 - A positive-looking secondary 4h execution-only diagnostic is not eligible
   for promotion: its selected-return interval includes zero and the contract
   forbids using a secondary diagnostic to choose a horizon/model/threshold.
+- Candidate generation v2 was registered before outcome inspection in
+  `config/candidate_generation_v2.json` (SHA-256
+  `484246c8c1c4cc464a7da9059fac9da1235ebf4d5ad90442fbb2c68642130da9`)
+  and completed with `REJECT_CANDIDATE_GENERATION_V2`. The primary BUY
+  sweep+value+retest family opened 653 candidates and returned +12.09% with PF
+  1.20 and 6.70% drawdown, but only two of five folds were positive and its
+  97.5% mean-return interval was -0.044% to +0.135%. It failed stress and both
+  paired-improvement gates. SELL returned -21.10%, PF 0.65, with all folds
+  negative. Result SHA-256 is
+  `f6d2b68a0794c751772d57a07446ec956f2b8d71800d1394bed51298789941a0`.
+- Candidate-generation v2 created no model, shadow variant, runtime approval or
+  Telegram change. Do not select a replacement rule from its secondary
+  diagnostics.
 - Prospective context observation is implemented under the frozen contract
   `forward-context-buy-20260719-v1` (SHA-256
   `97e7d3b4bf2ad00809c00c9e2b6cb6dfd6961b40c70e26da7772b42ef8048b70`).
@@ -97,8 +110,8 @@ Important evidence already established:
   traffic on the VPS interfaces; it does not change the public URL.
 - The engineering baseline is operating, but the project is not finished: no
   validated profitable edge or deployable ML model exists. The next research
-  task is a new candidate-generation/setup-taxonomy experiment, not another
-  model fitted to the already rejected feature set.
+  task must regenerate an upstream event-first candidate universe with new
+  causal geometry, not recombine or remodel the rejected candidate rows.
 
 Continue with these objectives in order:
 
@@ -113,21 +126,22 @@ Continue with these objectives in order:
    information has been added.
 4. Preserve rejected execution-state v1 and do not tune or promote its 4h
    secondary diagnostic.
-5. Register `candidate-generation-20260719-v2` before inspecting its outcome
-   comparison. Freeze causal setup-family definitions, BUY/SELL separation,
-   executable-side targets, costs, chronological folds, actual-exit purge,
-   simple controls and dependence-aware gates in a machine-readable contract.
-6. Implement the frozen setup taxonomy and compare each family against a
-   trade-all control and simple-rule baseline before fitting ML. Preserve all
-   attempted families and failed results.
-7. Run each later genuinely new-information experiment through the same
+5. Preserve candidate-generation v2 as rejected; do not promote the BUY point
+   estimate or any secondary setup family.
+6. Register the next event-candidate-universe contract before implementation.
+   It must define unique structural event identity and point-in-time continuous
+   geometry such as age, ATR-normalized distance, sweep depth/reclaim,
+   displacement, zone width/mitigation and time since structure transition.
+7. Regenerate the broader pre-score event universe and test fixed rule families
+   against simple baselines before fitting ML.
+8. Run each later genuinely new-information experiment through the same
    simple-baseline-first chronological folds, purge, calibration and
    weekly-block uncertainty.
-8. Keep SELL shadow-only unless its separate pre-registered research track
+9. Keep SELL shadow-only unless its separate pre-registered research track
    passes all gates.
-9. Keep the public dashboard at `http://187.55.229.4:8502/`; treat domain,
+10. Keep the public dashboard at `http://187.55.229.4:8502/`; treat domain,
    HTTPS and authentication as a separate operations-hardening milestone.
-10. Update `CLAUDE.md`, `RESEARCH_PROTOCOL.md`, tests, Git and the canonical VPS
+11. Update `CLAUDE.md`, `RESEARCH_PROTOCOL.md`, tests, Git and the canonical VPS
    together only after local verification.
 
 Required methodological constraints:
@@ -144,11 +158,11 @@ Required methodological constraints:
   to design a separately frozen, adequately powered confirmation if warranted.
 
 Begin by summarizing your understanding of the current state in no more than
-ten bullets. Then show the exact local verification results and start the
-smallest next implementation step: the pre-analysis contract and tests for
-`candidate-generation-20260719-v2`. Proceed autonomously with safe read-only
-diagnostics and locally authorized research changes, but stop before any live
-trading, secret handling, destructive operation or unrequested external
-action.
+ten bullets. Then show the exact local verification results and propose the
+smallest outcome-blind event-candidate-universe contract; do not run its
+outcome comparison until the contract and tests are frozen. Proceed
+autonomously with safe read-only diagnostics and locally authorized research
+changes, but stop before any live trading, secret handling, destructive
+operation or unrequested external action.
 
 ---

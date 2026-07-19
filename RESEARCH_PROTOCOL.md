@@ -269,8 +269,8 @@ contract fixes all of the following:
 - an unchanged trade-all control and frozen simple-rule baselines;
 - separate BUY and SELL hypotheses and promotion decisions;
 - executable bid/ask targets, costs and cost-stress assumptions;
-- chronological folds purged by actual label exit, calibration boundaries and
-  uniqueness/dependence treatment;
+- fixed calendar-year evaluation folds restricted by actual label exit, with
+  no fitting or calibration, plus explicit uniqueness/dependence treatment;
 - minimum sample/effective-sample requirements, fold stability and weekly
   block-bootstrap confidence gates; and
 - an attempt registry that retains every family tested, including failures.
@@ -286,8 +286,27 @@ account for the two primary directional hypotheses.
 The purpose is to test whether the candidate universe is too heterogeneous and
 can be defined more coherently using causal information. It is not permission
 to mine arbitrary SMC combinations on the full 2020-2026 outcomes. The frozen
-forward pilot and context observation continue unchanged in parallel. At
-registration time the outcome comparison has not been run.
+forward pilot and context observation continue unchanged in parallel.
+
+The registered comparison is complete with
+`REJECT_CANDIDATE_GENERATION_V2`. The canonical report is
+`data/research/candidate_generation_benchmarks_v2.json`, SHA-256
+`f6d2b68a0794c751772d57a07446ec956f2b8d71800d1394bed51298789941a0`.
+The contract was committed as `8b851ea` before the evaluator and outcome run.
+
+The primary BUY family opened 653 candidates, returned +12.09% at the fixed
+paper notional, had PF 1.20 and 6.70% maximum drawdown. Its point estimate did
+not pass: only two of five folds were positive; the weekly-block 97.5% interval
+for mean return was -0.044% to +0.135%; the PF lower bound was 0.79; and the
+cost-stressed and paired improvements versus trade-all and sweep-only all had
+lower bounds below zero. SELL opened 618 candidates, returned -21.10%, had PF
+0.65 and was negative in all five folds. Neither direction passed every gate.
+
+No model, runtime filter, prospective variant, approval or Telegram behavior
+is authorized. Secondary families remain non-selectable. The next experiment
+must obtain genuinely new upstream information by regenerating a pre-score,
+event-first universe with unique structural event identity and continuous
+candidate-time geometry; it must be separately registered before evaluation.
 
 `research/benchmark_candidate_models.py` runs prevalence, direction-only,
 SMC-score-only logistic, all-feature logistic and XGBoost through the same

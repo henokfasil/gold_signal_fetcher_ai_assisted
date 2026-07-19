@@ -5,6 +5,9 @@
 > `RESEARCH_REVIEW_ACTIONS_2026-07-19.md`. The v1 forward contract below never
 > began valid collection because the TradingView multi-timeframe payload failed
 > cadence/duplication checks; it has been superseded by the hash-locked v2 pilot.
+> This packet remains a historical snapshot. Later context, execution-state and
+> candidate-generation v2 results are recorded in `CLAUDE.md`,
+> `RESEARCH_PROTOCOL.md` and `RESEARCH_REVIEW_ACTIONS_2026-07-19.md`.
 
 Prepared: 2026-07-18
 

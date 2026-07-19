@@ -114,9 +114,17 @@ negative after-cost returns in every test fold, and no direction qualified.
 Its positive-looking 4-hour secondary diagnostic has an uncertainty interval
 spanning zero and cannot be promoted under the frozen contract.
 
-The next local research priority is therefore candidate generation rather than
-another model-class substitution. A new `candidate-generation-20260719-v2`
-contract must freeze causal SMC setup families and compare them with trade-all
-and simple-rule controls separately for BUY and SELL before any ML ranking is
-attempted. The prospective pilot continues unchanged while this independent
-development work proceeds.
+Candidate generation v2 was then frozen before its outcome run. Its primary
+sweep+value+retest setup was rejected for both directions. BUY produced a
+positive +12.09% point estimate and low 6.70% drawdown, but only two of five
+folds were positive and uncertainty, cost stress and paired-control gates all
+failed. SELL returned -21.10% and was negative in every fold. The positive BUY
+point estimate is not an edge and secondary families cannot be selected after
+inspection.
+
+The next local research priority is an upstream event-first candidate universe
+rather than another model-class substitution or Boolean recombination. It must
+record unique structural event identity and richer point-in-time geometry
+before the existing score gate, freeze its rules first, and beat simple fixed
+baselines before any ML ranking is attempted. The prospective pilot continues
+unchanged while this independent development work proceeds.
