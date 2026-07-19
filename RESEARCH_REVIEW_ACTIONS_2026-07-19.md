@@ -86,9 +86,15 @@ alone.
 
 ## What happens next without waiting
 
-The fixed pilot runs in the background. Independent work proceeds on a
-registered `gold_context` dataset, point-in-time macro/related-market features,
-multi-horizon after-cost return and utility targets, and the same baseline-first
-chronological harness. More complex models are considered only after new
-information or a new target beats simple baselines. Broker execution remains
-out of scope.
+The fixed pilot runs in the background. The first independent target redesign
+is complete: 1h/4h/12h/48h after-cost returns were evaluated with a constant
+baseline, direction/SMC-score ridge, all-feature ridge and fixed XGBoost under
+actual-exit purging, uniqueness weights, prior-calibration thresholds and
+weekly block uncertainty. No target/model passed the exploratory gates. The
+48h all-feature ridge selected +0.114% on its point estimate, but its 95%
+interval was -0.061% to +0.281% and its 2026 fold selected only four rows.
+
+Independent work therefore proceeds on a registered `gold_context` dataset and
+genuinely new point-in-time macro/related-market features. More complex models
+are considered only after new information beats simple baselines. Broker
+execution remains out of scope.

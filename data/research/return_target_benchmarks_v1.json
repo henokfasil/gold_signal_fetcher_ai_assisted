@@ -1,0 +1,4321 @@
+{
+  "status": "NO_EXPLORATORY_SIGNAL",
+  "scope": "CONTAMINATED_DEVELOPMENT_HISTORY_NO_MODEL_AUTHORIZATION",
+  "target_version": "multi_horizon_executable_return_v1",
+  "horizons_hours": [
+    1,
+    4,
+    12,
+    48
+  ],
+  "selection_rule": "prediction >= 80th percentile of model scores in the prior calibration slice",
+  "purge_method": "actual target exit must precede calibration/test boundary",
+  "fit_weighting": "average inverse target-interval concurrency, normalized to mean one",
+  "multiple_testing_warning": "Four targets and four fixed models are exploratory; any pass requires a separately registered reproduction and cannot authorize deployment.",
+  "horizons": {
+    "1h": {
+      "target": "target_1h_net_return_pct",
+      "eligible_rows": 11865,
+      "models": {
+        "calibration_mean": {
+          "overall_oos": {
+            "rows": 10020,
+            "mean_target_net_return_pct": -0.02870776987512632,
+            "mean_prediction_pct": -0.028499502248711006,
+            "mae_pct": 0.14978666733007154,
+            "rmse_pct": 0.2527304386381445,
+            "r2": 0.00020577239183072749,
+            "rank_ic_spearman": 0.023152442256379947,
+            "selected_rows": 10020,
+            "selection_rate": 1.0,
+            "selected_mean_net_return_pct": -0.02870776987512632,
+            "selected_excess_over_all_candidates_pct": 0.0,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": 0.03035468042316655,
+                "selected_rows": 5604,
+                "selected_mean_net_return_pct": -0.02480660511594203
+              },
+              "SELL": {
+                "rows": 4416,
+                "rank_ic_spearman": 0.012351017907394766,
+                "selected_rows": 4416,
+                "selected_mean_net_return_pct": -0.03365843276246073
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 52,
+            "rank_ic_spearman": {
+              "median": 0.02312824485170501,
+              "lower_95": -0.004515556518571899,
+              "upper_95": 0.047673183934091506
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.02897363276067875,
+              "lower_95": -0.03427007738243031,
+              "upper_95": -0.02328601332402621
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": 0.0,
+              "lower_95": 0.0,
+              "upper_95": 0.0
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.038775204732655354,
+              "mean_prediction_pct": -0.03323453490243947,
+              "mae_pct": 0.13170576505207568,
+              "rmse_pct": 0.19535747384693694,
+              "r2": -0.0008050335160836308,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 2145,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.038775204732655354,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 971,
+                  "selected_mean_net_return_pct": -0.03970379904156641
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1174,
+                  "selected_mean_net_return_pct": -0.038007176560634376
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1472,
+              "calibration_rows": 369,
+              "selection_threshold_pct": -0.03323453490243947
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.032256891268059425,
+              "mean_prediction_pct": -0.026841063463490553,
+              "mae_pct": 0.10387071842784519,
+              "rmse_pct": 0.1652949440478145,
+              "r2": -0.0010746747132934775,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 2526,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.032256891268059425,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1323,
+                  "selected_mean_net_return_pct": -0.029965291553644413
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1203,
+                  "selected_mean_net_return_pct": -0.034777079482665466
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": -0.026841063463490553
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.026366254939715113,
+              "mean_prediction_pct": -0.03365425981880105,
+              "mae_pct": 0.11601184525018617,
+              "rmse_pct": 0.16606379672288676,
+              "r2": -0.0019297660539796535,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 1754,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.026366254939715113,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 995,
+                  "selected_mean_net_return_pct": -0.017214921790538636
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 759,
+                  "selected_mean_net_return_pct": -0.03836306190075675
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5212,
+              "calibration_rows": 1303,
+              "selection_threshold_pct": -0.03365425981880106
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.020560150008684556,
+              "mean_prediction_pct": -0.02675532001322214,
+              "mae_pct": 0.16446658046927998,
+              "rmse_pct": 0.24148156809704574,
+              "r2": -0.0006586040793550296,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 2224,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.020560150008684556,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1737,
+                  "selected_mean_net_return_pct": -0.01611496936535425
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 487,
+                  "selected_mean_net_return_pct": -0.036414931892595724
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6616,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.026755320013222138
+            },
+            {
+              "rows": 1371,
+              "mean_target_net_return_pct": -0.022630158913586527,
+              "mean_prediction_pct": -0.020381477334785823,
+              "mae_pct": 0.282069769751548,
+              "rmse_pct": 0.4763292349801953,
+              "r2": -2.228697513473321e-05,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 1371,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.022630158913586527,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 578,
+                  "selected_mean_net_return_pct": -0.027161239629239314
+                },
+                "SELL": {
+                  "rows": 793,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 793,
+                  "selected_mean_net_return_pct": -0.019327555315040115
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8393,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": -0.020381477334785823
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "direction_ridge": {
+          "overall_oos": {
+            "rows": 10020,
+            "mean_target_net_return_pct": -0.02870776987512632,
+            "mean_prediction_pct": -0.034863979139959096,
+            "mae_pct": 0.1500267350894634,
+            "rmse_pct": 0.2528905164917159,
+            "r2": -0.0010611553320081235,
+            "rank_ic_spearman": -0.0046903983846495224,
+            "selected_rows": 5451,
+            "selection_rate": 0.5440119760479042,
+            "selected_mean_net_return_pct": -0.029217705774321465,
+            "selected_excess_over_all_candidates_pct": -0.000509935899195145,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": 0.003639779482550066,
+                "selected_rows": 2315,
+                "selected_mean_net_return_pct": -0.01887295822605644
+              },
+              "SELL": {
+                "rows": 4416,
+                "rank_ic_spearman": -0.010121254679493423,
+                "selected_rows": 3136,
+                "selected_mean_net_return_pct": -0.03685421424824798
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 53,
+            "rank_ic_spearman": {
+              "median": -0.004365321072610046,
+              "lower_95": -0.02841124188553215,
+              "upper_95": 0.018779559201993035
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.0292507692428609,
+              "lower_95": -0.037088956261180896,
+              "upper_95": -0.021691964382444803
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": -0.00046360710530105216,
+              "lower_95": -0.005181096860846711,
+              "upper_95": 0.0041242591819210025
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.038775204732655354,
+              "mean_prediction_pct": -0.030004877224830737,
+              "mae_pct": 0.13175527424539005,
+              "rmse_pct": 0.195487574887856,
+              "r2": -0.0021384775889548013,
+              "rank_ic_spearman": 0.019168986218870802,
+              "selected_rows": 1174,
+              "selection_rate": 0.5473193473193473,
+              "selected_mean_net_return_pct": -0.038007176560634376,
+              "selected_excess_over_all_candidates_pct": 0.0007680281720209778,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1174,
+                  "selected_mean_net_return_pct": -0.038007176560634376
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1472,
+              "calibration_rows": 369,
+              "selection_threshold_pct": -0.02713469484870505
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.032256891268059425,
+              "mean_prediction_pct": -0.0390524254634396,
+              "mae_pct": 0.10409678901950335,
+              "rmse_pct": 0.16535813577541833,
+              "r2": -0.001840236303801257,
+              "rank_ic_spearman": -0.010327400926457422,
+              "selected_rows": 1203,
+              "selection_rate": 0.47624703087885983,
+              "selected_mean_net_return_pct": -0.034777079482665466,
+              "selected_excess_over_all_candidates_pct": -0.002520188214606041,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1203,
+                  "selected_mean_net_return_pct": -0.034777079482665466
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": -0.03828606089067788
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.026366254939715113,
+              "mean_prediction_pct": -0.035424509057763086,
+              "mae_pct": 0.11619637480284974,
+              "rmse_pct": 0.16620998596169226,
+              "r2": -0.0036945796200698044,
+              "rank_ic_spearman": -0.0947811575763425,
+              "selected_rows": 759,
+              "selection_rate": 0.43272519954389965,
+              "selected_mean_net_return_pct": -0.03836306190075675,
+              "selected_excess_over_all_candidates_pct": -0.011996806961041637,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 759,
+                  "selected_mean_net_return_pct": -0.03836306190075675
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5212,
+              "calibration_rows": 1303,
+              "selection_threshold_pct": -0.03439567227991031
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.020560150008684556,
+              "mean_prediction_pct": -0.03472688718678088,
+              "mae_pct": 0.16494480849622925,
+              "rmse_pct": 0.24179710460824547,
+              "r2": -0.0032753720091356353,
+              "rank_ic_spearman": 0.06914406668441324,
+              "selected_rows": 1737,
+              "selection_rate": 0.7810251798561151,
+              "selected_mean_net_return_pct": -0.01611496936535425,
+              "selected_excess_over_all_candidates_pct": 0.004445180643330306,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1737,
+                  "selected_mean_net_return_pct": -0.01611496936535425
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6616,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.03440544546793458
+            },
+            {
+              "rows": 1371,
+              "mean_target_net_return_pct": -0.022630158913586527,
+              "mean_prediction_pct": -0.03425455625365618,
+              "mae_pct": 0.2823184812377708,
+              "rmse_pct": 0.47650132910917437,
+              "r2": -0.0007450183996982052,
+              "rank_ic_spearman": 0.031894489801408826,
+              "selected_rows": 578,
+              "selection_rate": 0.4215900802334063,
+              "selected_mean_net_return_pct": -0.027161239629239314,
+              "selected_excess_over_all_candidates_pct": -0.004531080715652787,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 578,
+                  "selected_mean_net_return_pct": -0.027161239629239314
+                },
+                "SELL": {
+                  "rows": 793,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8393,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": -0.030597262669912466
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "smc_score_ridge": {
+          "overall_oos": {
+            "rows": 10020,
+            "mean_target_net_return_pct": -0.02870776987512632,
+            "mean_prediction_pct": -0.0346652643630701,
+            "mae_pct": 0.1500580706479409,
+            "rmse_pct": 0.25292369602125225,
+            "r2": -0.0013238533369626104,
+            "rank_ic_spearman": -0.005637744763800631,
+            "selected_rows": 2591,
+            "selection_rate": 0.25858283433133733,
+            "selected_mean_net_return_pct": -0.031088507200377695,
+            "selected_excess_over_all_candidates_pct": -0.0023807373252513753,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": -0.009724780173289047,
+                "selected_rows": 1378,
+                "selected_mean_net_return_pct": -0.02648769109242617
+              },
+              "SELL": {
+                "rows": 4416,
+                "rank_ic_spearman": 0.005253585514804145,
+                "selected_rows": 1213,
+                "selected_mean_net_return_pct": -0.03631515567256005
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 54,
+            "rank_ic_spearman": {
+              "median": -0.006156304083741462,
+              "lower_95": -0.028370873327755664,
+              "upper_95": 0.01580770777813079
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.031063859743984235,
+              "lower_95": -0.04371297106509947,
+              "upper_95": -0.019469176311100324
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": -0.002271937108239544,
+              "lower_95": -0.011685857488098667,
+              "upper_95": 0.007457449640378311
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.038775204732655354,
+              "mean_prediction_pct": -0.028975706366475885,
+              "mae_pct": 0.13194090703912031,
+              "rmse_pct": 0.19567748228269585,
+              "r2": -0.004086488332526228,
+              "rank_ic_spearman": -0.0108517741971124,
+              "selected_rows": 450,
+              "selection_rate": 0.2097902097902098,
+              "selected_mean_net_return_pct": -0.03966250306546802,
+              "selected_excess_over_all_candidates_pct": -0.000887298332812668,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": -0.005438648457161392,
+                  "selected_rows": 164,
+                  "selected_mean_net_return_pct": -0.029802621850685416
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": -0.01925583327889666,
+                  "selected_rows": 286,
+                  "selected_mean_net_return_pct": -0.04531642096485385
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1472,
+              "calibration_rows": 369,
+              "selection_threshold_pct": -0.023609082343163532
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.032256891268059425,
+              "mean_prediction_pct": -0.0391853128313244,
+              "mae_pct": 0.10409850939830718,
+              "rmse_pct": 0.16542190965668568,
+              "r2": -0.002613147300734475,
+              "rank_ic_spearman": 0.012784722761853775,
+              "selected_rows": 772,
+              "selection_rate": 0.3056215360253365,
+              "selected_mean_net_return_pct": -0.03815782571550282,
+              "selected_excess_over_all_candidates_pct": -0.005900934447443398,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.0020070375051413096,
+                  "selected_rows": 361,
+                  "selected_mean_net_return_pct": -0.032139466904210386
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": 0.031069417118371308,
+                  "selected_rows": 411,
+                  "selected_mean_net_return_pct": -0.04344402408746527
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": -0.036935914007114774
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.026366254939715113,
+              "mean_prediction_pct": -0.0352510485899145,
+              "mae_pct": 0.1160989871196843,
+              "rmse_pct": 0.1661441245305723,
+              "r2": -0.0028993005170863118,
+              "rank_ic_spearman": -0.034036070528531304,
+              "selected_rows": 426,
+              "selection_rate": 0.24287343215507412,
+              "selected_mean_net_return_pct": -0.018819022064946712,
+              "selected_excess_over_all_candidates_pct": 0.007547232874768401,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": 0.00428305005621012,
+                  "selected_rows": 121,
+                  "selected_mean_net_return_pct": 0.0068655691905692845
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.043869781836343685,
+                  "selected_rows": 305,
+                  "selected_mean_net_return_pct": -0.02900864679254487
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5212,
+              "calibration_rows": 1303,
+              "selection_threshold_pct": -0.03515974825850871
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.020560150008684556,
+              "mean_prediction_pct": -0.03515195528501255,
+              "mae_pct": 0.16499126624514115,
+              "rmse_pct": 0.2418428542300009,
+              "r2": -0.0036550606832648214,
+              "rank_ic_spearman": 0.015435937603294203,
+              "selected_rows": 566,
+              "selection_rate": 0.25449640287769787,
+              "selected_mean_net_return_pct": -0.02235491033559492,
+              "selected_excess_over_all_candidates_pct": -0.0017947603269103628,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": -0.011583815772147512,
+                  "selected_rows": 535,
+                  "selected_mean_net_return_pct": -0.02023598663629149
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": -0.004002819276965265,
+                  "selected_rows": 31,
+                  "selected_mean_net_return_pct": -0.0589234322429282
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6616,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.034292079319698236
+            },
+            {
+              "rows": 1371,
+              "mean_target_net_return_pct": -0.022630158913586527,
+              "mean_prediction_pct": -0.03369997867933503,
+              "mae_pct": 0.2823031276558794,
+              "rmse_pct": 0.4764590174026799,
+              "r2": -0.0005673007441959754,
+              "rank_ic_spearman": 0.03987972601382713,
+              "selected_rows": 377,
+              "selection_rate": 0.274981765134938,
+              "selected_mean_net_return_pct": -0.033354301524498135,
+              "selected_excess_over_all_candidates_pct": -0.010724142610911609,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.04170741995277649,
+                  "selected_rows": 197,
+                  "selected_mean_net_return_pct": -0.05083523761966419
+                },
+                "SELL": {
+                  "rows": 793,
+                  "rank_ic_spearman": 0.022884489529423492,
+                  "selected_rows": 180,
+                  "selected_mean_net_return_pct": -0.014222388131455302
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8393,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": -0.032887936126248005
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "all_features_ridge": {
+          "overall_oos": {
+            "rows": 10020,
+            "mean_target_net_return_pct": -0.02870776987512632,
+            "mean_prediction_pct": -0.040429316307601784,
+            "mae_pct": 0.15462747858901732,
+            "rmse_pct": 0.2579697521883843,
+            "r2": -0.04167704928556892,
+            "rank_ic_spearman": -0.008738938288661223,
+            "selected_rows": 1906,
+            "selection_rate": 0.19021956087824352,
+            "selected_mean_net_return_pct": -0.03217597463174848,
+            "selected_excess_over_all_candidates_pct": -0.0034682047566221633,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": -0.01576454341772584,
+                "selected_rows": 976,
+                "selected_mean_net_return_pct": -0.029776603891257587
+              },
+              "SELL": {
+                "rows": 4416,
+                "rank_ic_spearman": 0.006268546307076608,
+                "selected_rows": 930,
+                "selected_mean_net_return_pct": -0.03469402392499485
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 55,
+            "rank_ic_spearman": {
+              "median": -0.008658104538095655,
+              "lower_95": -0.03424402252208328,
+              "upper_95": 0.017293206761944593
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.030555490760179667,
+              "lower_95": -0.05698339964657676,
+              "upper_95": -0.013853920530838436
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": -0.0022349306462257634,
+              "lower_95": -0.024549869743259706,
+              "upper_95": 0.012532643511357312
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.038775204732655354,
+              "mean_prediction_pct": -0.019895892797063233,
+              "mae_pct": 0.13654695859766186,
+              "rmse_pct": 0.20470092391307343,
+              "r2": -0.09882624809861795,
+              "rank_ic_spearman": 0.04430508895897471,
+              "selected_rows": 485,
+              "selection_rate": 0.2261072261072261,
+              "selected_mean_net_return_pct": -0.03819277851754692,
+              "selected_excess_over_all_candidates_pct": 0.000582426215108435,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": 0.07916706808769054,
+                  "selected_rows": 155,
+                  "selected_mean_net_return_pct": -0.020164616092419346
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.012171621459644347,
+                  "selected_rows": 330,
+                  "selected_mean_net_return_pct": -0.046660551777834104
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1472,
+              "calibration_rows": 369,
+              "selection_threshold_pct": 0.008834122427966341
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.032256891268059425,
+              "mean_prediction_pct": -0.039148027279496865,
+              "mae_pct": 0.10854127818008974,
+              "rmse_pct": 0.1679355010247872,
+              "r2": -0.03331411929545869,
+              "rank_ic_spearman": 0.004414163398504914,
+              "selected_rows": 292,
+              "selection_rate": 0.11559778305621536,
+              "selected_mean_net_return_pct": -0.039037447231130465,
+              "selected_excess_over_all_candidates_pct": -0.00678055596307104,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.018575990955698396,
+                  "selected_rows": 143,
+                  "selected_mean_net_return_pct": -0.03271998365277266
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": -0.012591316772771971,
+                  "selected_rows": 149,
+                  "selected_mean_net_return_pct": -0.04510051630297722
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": -0.002138812431728423
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.026366254939715113,
+              "mean_prediction_pct": -0.04719259910805228,
+              "mae_pct": 0.11968679518373462,
+              "rmse_pct": 0.1699838702753264,
+              "r2": -0.0497908415594277,
+              "rank_ic_spearman": -0.006321416513554962,
+              "selected_rows": 284,
+              "selection_rate": 0.1619156214367161,
+              "selected_mean_net_return_pct": -0.014923695761727028,
+              "selected_excess_over_all_candidates_pct": 0.011442559177988086,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": -0.043691439671509714,
+                  "selected_rows": 108,
+                  "selected_mean_net_return_pct": -0.015769477048272425
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.10442329869643709,
+                  "selected_rows": 176,
+                  "selected_mean_net_return_pct": -0.014404693608619625
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5212,
+              "calibration_rows": 1303,
+              "selection_threshold_pct": -0.02246756144169501
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.020560150008684556,
+              "mean_prediction_pct": -0.056390045359393924,
+              "mae_pct": 0.16929960151104678,
+              "rmse_pct": 0.24582094032875826,
+              "r2": -0.03694497300622457,
+              "rank_ic_spearman": 0.009695247395769413,
+              "selected_rows": 397,
+              "selection_rate": 0.17850719424460432,
+              "selected_mean_net_return_pct": -0.02044291307844811,
+              "selected_excess_over_all_candidates_pct": 0.00011723693023644663,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": -0.0074932155436622724,
+                  "selected_rows": 325,
+                  "selected_mean_net_return_pct": -0.013894814685733848
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": 0.044735683945297845,
+                  "selected_rows": 72,
+                  "selected_mean_net_return_pct": -0.05000030165667219
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6616,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.027500309356277012
+            },
+            {
+              "rows": 1371,
+              "mean_target_net_return_pct": -0.022630158913586527,
+              "mean_prediction_pct": -0.040371891123008256,
+              "mae_pct": 0.2887278541752176,
+              "rmse_pct": 0.4835909199792536,
+              "r2": -0.030745576999960278,
+              "rank_ic_spearman": -0.03853593269198576,
+              "selected_rows": 448,
+              "selection_rate": 0.3267687819110139,
+              "selected_mean_net_return_pct": -0.04252412809628992,
+              "selected_excess_over_all_candidates_pct": -0.019893969182703395,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": -0.0361659603330656,
+                  "selected_rows": 245,
+                  "selected_mean_net_return_pct": -0.061381934478036713
+                },
+                "SELL": {
+                  "rows": 793,
+                  "rank_ic_spearman": -0.05354690250631119,
+                  "selected_rows": 203,
+                  "selected_mean_net_return_pct": -0.01976470660107831
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8393,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": -0.01615263970805347
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "all_features_xgboost": {
+          "overall_oos": {
+            "rows": 10020,
+            "mean_target_net_return_pct": -0.02870776987512632,
+            "mean_prediction_pct": -0.0464211402820096,
+            "mae_pct": 0.1585361974737921,
+            "rmse_pct": 0.26227952737676935,
+            "r2": -0.07677337296835818,
+            "rank_ic_spearman": -0.006316672404621596,
+            "selected_rows": 2285,
+            "selection_rate": 0.2280439121756487,
+            "selected_mean_net_return_pct": -0.03545874665214078,
+            "selected_excess_over_all_candidates_pct": -0.0067509767770144585,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": -0.011726532440493972,
+                "selected_rows": 1148,
+                "selected_mean_net_return_pct": -0.030916793841791856
+              },
+              "SELL": {
+                "rows": 4416,
+                "rank_ic_spearman": 0.005792057971609703,
+                "selected_rows": 1137,
+                "selected_mean_net_return_pct": -0.04004464095845613
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 56,
+            "rank_ic_spearman": {
+              "median": -0.007589512346300767,
+              "lower_95": -0.03522243445545626,
+              "upper_95": 0.019697230583742883
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.035648079290915874,
+              "lower_95": -0.04716655934121131,
+              "upper_95": -0.023751345742370682
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": -0.006640019506243282,
+              "lower_95": -0.017425599570791123,
+              "upper_95": 0.004061332605463218
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.038775204732655354,
+              "mean_prediction_pct": -0.030479376589435576,
+              "mae_pct": 0.13970584854117785,
+              "rmse_pct": 0.20442348223663856,
+              "r2": -0.09584967530922528,
+              "rank_ic_spearman": -0.0021293684926151687,
+              "selected_rows": 632,
+              "selection_rate": 0.29463869463869463,
+              "selected_mean_net_return_pct": -0.04049796524902454,
+              "selected_excess_over_all_candidates_pct": -0.0017227605163691873,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": -0.007452635317242118,
+                  "selected_rows": 232,
+                  "selected_mean_net_return_pct": -0.04483127780217392
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.0009568919946887093,
+                  "selected_rows": 400,
+                  "selected_mean_net_return_pct": -0.037984643968197916
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1472,
+              "calibration_rows": 369,
+              "selection_threshold_pct": -0.02711888588964939
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.032256891268059425,
+              "mean_prediction_pct": -0.038843088734056945,
+              "mae_pct": 0.10884088229640791,
+              "rmse_pct": 0.17117605312541181,
+              "r2": -0.07357737883734772,
+              "rank_ic_spearman": 0.005189961455217299,
+              "selected_rows": 308,
+              "selection_rate": 0.12193190815518606,
+              "selected_mean_net_return_pct": -0.057326432768578996,
+              "selected_excess_over_all_candidates_pct": -0.02506954150051957,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.018390653787994468,
+                  "selected_rows": 152,
+                  "selected_mean_net_return_pct": -0.0660026458749086
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": -0.011377028424255939,
+                  "selected_rows": 156,
+                  "selected_mean_net_return_pct": -0.04887268666497578
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": -0.020585067570209503
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.026366254939715113,
+              "mean_prediction_pct": -0.037685541689435255,
+              "mae_pct": 0.12086002869740266,
+              "rmse_pct": 0.17149099832320347,
+              "r2": -0.06848888876712822,
+              "rank_ic_spearman": 0.012997994798297656,
+              "selected_rows": 438,
+              "selection_rate": 0.24971493728620298,
+              "selected_mean_net_return_pct": -0.0225410306688181,
+              "selected_excess_over_all_candidates_pct": 0.0038252242708970118,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": 0.006721219875554531,
+                  "selected_rows": 251,
+                  "selected_mean_net_return_pct": -0.01651426561708489
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.03512138634298233,
+                  "selected_rows": 187,
+                  "selected_mean_net_return_pct": -0.030630431887989414
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5212,
+              "calibration_rows": 1303,
+              "selection_threshold_pct": -0.026792170479893684
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.020560150008684556,
+              "mean_prediction_pct": -0.06262784490600555,
+              "mae_pct": 0.17594924686560415,
+              "rmse_pct": 0.2541039924208445,
+              "r2": -0.10800300067560231,
+              "rank_ic_spearman": 0.008387390272118855,
+              "selected_rows": 459,
+              "selection_rate": 0.20638489208633093,
+              "selected_mean_net_return_pct": -0.016143772620590437,
+              "selected_excess_over_all_candidates_pct": 0.0044163773880941185,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": -0.005682647651559713,
+                  "selected_rows": 351,
+                  "selected_mean_net_return_pct": -0.010873803515310107
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": 0.07149669154276865,
+                  "selected_rows": 108,
+                  "selected_mean_net_return_pct": -0.033271172212751506
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6616,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.022162113338708878
+            },
+            {
+              "rows": 1371,
+              "mean_target_net_return_pct": -0.022630158913586527,
+              "mean_prediction_pct": -0.07021090700579376,
+              "mae_pct": 0.2995127421746872,
+              "rmse_pct": 0.49094224025309213,
+              "r2": -0.06232158108338015,
+              "rank_ic_spearman": -0.04700572347598382,
+              "selected_rows": 448,
+              "selection_rate": 0.3267687819110139,
+              "selected_mean_net_return_pct": -0.04573441451839842,
+              "selected_excess_over_all_candidates_pct": -0.023104255604811896,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": -0.057219096259432944,
+                  "selected_rows": 162,
+                  "selected_mean_net_return_pct": -0.04381132718224964
+                },
+                "SELL": {
+                  "rows": 793,
+                  "rank_ic_spearman": -0.032305779724948074,
+                  "selected_rows": 286,
+                  "selected_mean_net_return_pct": -0.046823715736776406
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8393,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": -0.006842813920229673
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        }
+      }
+    },
+    "4h": {
+      "target": "target_4h_net_return_pct",
+      "eligible_rows": 11865,
+      "models": {
+        "calibration_mean": {
+          "overall_oos": {
+            "rows": 10020,
+            "mean_target_net_return_pct": -0.028063887838782376,
+            "mean_prediction_pct": -0.023127960120465817,
+            "mae_pct": 0.3078857797237011,
+            "rmse_pct": 0.4853528835229701,
+            "r2": -0.0017027843644314977,
+            "rank_ic_spearman": -0.009695221490003934,
+            "selected_rows": 10020,
+            "selection_rate": 1.0,
+            "selected_mean_net_return_pct": -0.028063887838782376,
+            "selected_excess_over_all_candidates_pct": 0.0,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": -0.010304780158192207,
+                "selected_rows": 5604,
+                "selected_mean_net_return_pct": -0.018758640521752273
+              },
+              "SELL": {
+                "rows": 4416,
+                "rank_ic_spearman": -0.0007069409609274537,
+                "selected_rows": 4416,
+                "selected_mean_net_return_pct": -0.03987244897207874
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 82,
+            "rank_ic_spearman": {
+              "median": -0.010151906608469643,
+              "lower_95": -0.041148839695569886,
+              "upper_95": 0.030011074604832932
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.027607774936679177,
+              "lower_95": -0.046563490547450063,
+              "upper_95": -0.011568303763393165
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": 0.0,
+              "lower_95": 0.0,
+              "upper_95": 0.0
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.0429763316057466,
+              "mean_prediction_pct": -0.040945423069027036,
+              "mae_pct": 0.2574979817703975,
+              "rmse_pct": 0.36658326559713733,
+              "r2": -3.069366782404437e-05,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 2145,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.0429763316057466,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 971,
+                  "selected_mean_net_return_pct": -0.06742945281590983
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1174,
+                  "selected_mean_net_return_pct": -0.022751475817783664
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1461,
+              "calibration_rows": 368,
+              "selection_threshold_pct": -0.04094542306902703
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.033275257404077156,
+              "mean_prediction_pct": -0.004851488605572378,
+              "mae_pct": 0.2143675296934607,
+              "rmse_pct": 0.32352458458560335,
+              "r2": -0.0077788245481931195,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 2526,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.033275257404077156,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1323,
+                  "selected_mean_net_return_pct": -0.02066483532246646
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1203,
+                  "selected_mean_net_return_pct": -0.04714357695018767
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": -0.004851488605572378
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.016181204565909203,
+              "mean_prediction_pct": -0.04619787054581159,
+              "mae_pct": 0.2404479732255999,
+              "rmse_pct": 0.34146935592996724,
+              "r2": -0.007787361610566812,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 1754,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.016181204565909203,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 995,
+                  "selected_mean_net_return_pct": 0.010518783278208146
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 759,
+                  "selected_mean_net_return_pct": -0.05118316491491679
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5203,
+              "calibration_rows": 1303,
+              "selection_threshold_pct": -0.04619787054581159
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.0032540993800147665,
+              "mean_prediction_pct": -0.018912741955713252,
+              "mae_pct": 0.33160518261280875,
+              "rmse_pct": 0.4680951117817002,
+              "r2": -0.0011202791906583798,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 2224,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.0032540993800147665,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1737,
+                  "selected_mean_net_return_pct": 0.018958021394837925
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 487,
+                  "selected_mean_net_return_pct": -0.08247885048046472
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6616,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.018912741955713252
+            },
+            {
+              "rows": 1371,
+              "mean_target_net_return_pct": -0.0505789021282396,
+              "mean_prediction_pct": -0.006248260145491494,
+              "mae_pct": 0.6068229691901618,
+              "rmse_pct": 0.9021877685755616,
+              "r2": -0.002420271083656056,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 1371,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.0505789021282396,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 578,
+                  "selected_mean_net_return_pct": -0.09637736711536113
+                },
+                "SELL": {
+                  "rows": 793,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 793,
+                  "selected_mean_net_return_pct": -0.017197423234726048
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8390,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": -0.006248260145491495
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "direction_ridge": {
+          "overall_oos": {
+            "rows": 10020,
+            "mean_target_net_return_pct": -0.028063887838782376,
+            "mean_prediction_pct": -0.05276712075893645,
+            "mae_pct": 0.30870924239456893,
+            "rmse_pct": 0.4857457035969546,
+            "r2": -0.003324895658129101,
+            "rank_ic_spearman": 0.01552011001788034,
+            "selected_rows": 4201,
+            "selection_rate": 0.41926147704590816,
+            "selected_mean_net_return_pct": -0.051926992675134655,
+            "selected_excess_over_all_candidates_pct": -0.02386310483635228,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": 0.05298788271057243,
+                "selected_rows": 578,
+                "selected_mean_net_return_pct": -0.09637736711536113
+              },
+              "SELL": {
+                "rows": 4416,
+                "rank_ic_spearman": -0.030435596442191522,
+                "selected_rows": 3623,
+                "selected_mean_net_return_pct": -0.04483554458613358
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 83,
+            "rank_ic_spearman": {
+              "median": 0.014978890817224602,
+              "lower_95": -0.02401582794212989,
+              "upper_95": 0.053002127415884503
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.05239321604584452,
+              "lower_95": -0.08301668329869649,
+              "upper_95": -0.02297350930413032
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": -0.023864843894666248,
+              "lower_95": -0.04670140859591739,
+              "upper_95": -0.0013102592396459748
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.0429763316057466,
+              "mean_prediction_pct": -0.05675387886227093,
+              "mae_pct": 0.25746208238957563,
+              "rmse_pct": 0.36656949475975753,
+              "r2": 4.4437974498046096e-05,
+              "rank_ic_spearman": 0.0743102624108904,
+              "selected_rows": 1174,
+              "selection_rate": 0.5473193473193473,
+              "selected_mean_net_return_pct": -0.022751475817783664,
+              "selected_excess_over_all_candidates_pct": 0.020224855787962934,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1174,
+                  "selected_mean_net_return_pct": -0.022751475817783664
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1461,
+              "calibration_rows": 368,
+              "selection_threshold_pct": -0.05224867670553937
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.033275257404077156,
+              "mean_prediction_pct": -0.06452052304210866,
+              "mae_pct": 0.21537744021526706,
+              "rmse_pct": 0.3241399993443477,
+              "r2": -0.011616504105628422,
+              "rank_ic_spearman": -0.048404154753892405,
+              "selected_rows": 1203,
+              "selection_rate": 0.47624703087885983,
+              "selected_mean_net_return_pct": -0.04714357695018767,
+              "selected_excess_over_all_candidates_pct": -0.013868319546110515,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1203,
+                  "selected_mean_net_return_pct": -0.04714357695018767
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": -0.05728145381739827
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.016181204565909203,
+              "mean_prediction_pct": -0.04800482381639212,
+              "mae_pct": 0.24135619048904497,
+              "rmse_pct": 0.34206662914577574,
+              "r2": -0.011315940728539031,
+              "rank_ic_spearman": -0.14031783869411293,
+              "selected_rows": 759,
+              "selection_rate": 0.43272519954389965,
+              "selected_mean_net_return_pct": -0.05118316491491679,
+              "selected_excess_over_all_candidates_pct": -0.035001960349007585,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 759,
+                  "selected_mean_net_return_pct": -0.05118316491491679
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5203,
+              "calibration_rows": 1303,
+              "selection_threshold_pct": -0.04283403777498217
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.0032540993800147665,
+              "mean_prediction_pct": -0.04627925770784845,
+              "mae_pct": 0.3341105788465562,
+              "rmse_pct": 0.46987622994697836,
+              "r2": -0.008753368596510214,
+              "rank_ic_spearman": -0.12290500320906388,
+              "selected_rows": 487,
+              "selection_rate": 0.2189748201438849,
+              "selected_mean_net_return_pct": -0.08247885048046472,
+              "selected_excess_over_all_candidates_pct": -0.07922475110044995,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 487,
+                  "selected_mean_net_return_pct": -0.08247885048046472
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6616,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.0448367295740265
+            },
+            {
+              "rows": 1371,
+              "mean_target_net_return_pct": -0.0505789021282396,
+              "mean_prediction_pct": -0.04149169111918231,
+              "mae_pct": 0.6058106073024435,
+              "rmse_pct": 0.9015430048557619,
+              "r2": -0.0009879899288183225,
+              "rank_ic_spearman": 0.006090780172700586,
+              "selected_rows": 578,
+              "selection_rate": 0.4215900802334063,
+              "selected_mean_net_return_pct": -0.09637736711536113,
+              "selected_excess_over_all_candidates_pct": -0.04579846498712153,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 578,
+                  "selected_mean_net_return_pct": -0.09637736711536113
+                },
+                "SELL": {
+                  "rows": 793,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8390,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": -0.03174884827664662
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "smc_score_ridge": {
+          "overall_oos": {
+            "rows": 10020,
+            "mean_target_net_return_pct": -0.028063887838782376,
+            "mean_prediction_pct": -0.053602193267979735,
+            "mae_pct": 0.30869896764507476,
+            "rmse_pct": 0.48570854178846534,
+            "r2": -0.003171383476356926,
+            "rank_ic_spearman": 0.02777088219245934,
+            "selected_rows": 2592,
+            "selection_rate": 0.25868263473053893,
+            "selected_mean_net_return_pct": -0.03075550340016182,
+            "selected_excess_over_all_candidates_pct": -0.0026916155613794443,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": 0.009537403369098274,
+                "selected_rows": 1901,
+                "selected_mean_net_return_pct": -0.044552273780576114
+              },
+              "SELL": {
+                "rows": 4416,
+                "rank_ic_spearman": 0.010371200511286411,
+                "selected_rows": 691,
+                "selected_mean_net_return_pct": 0.0072005899329316645
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 84,
+            "rank_ic_spearman": {
+              "median": 0.02689343530083593,
+              "lower_95": -0.0071788531380552485,
+              "upper_95": 0.06071680660278704
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.030586104224250815,
+              "lower_95": -0.07083414031682383,
+              "upper_95": 0.002628840983568496
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": -0.0013935600226801532,
+              "lower_95": -0.033358520967809766,
+              "upper_95": 0.026257529876107532
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.0429763316057466,
+              "mean_prediction_pct": -0.06010924853921544,
+              "mae_pct": 0.2585022336317831,
+              "rmse_pct": 0.36707226270600235,
+              "r2": -0.002700418766226953,
+              "rank_ic_spearman": 0.010631089991745711,
+              "selected_rows": 701,
+              "selection_rate": 0.32680652680652683,
+              "selected_mean_net_return_pct": -0.04180594521440831,
+              "selected_excess_over_all_candidates_pct": 0.0011703863913382906,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": -0.08658995536891068,
+                  "selected_rows": 342,
+                  "selected_mean_net_return_pct": -0.11233846119688927
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.08874466352263519,
+                  "selected_rows": 359,
+                  "selected_mean_net_return_pct": 0.02538659090260698
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1461,
+              "calibration_rows": 368,
+              "selection_threshold_pct": -0.04660288896712954
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.033275257404077156,
+              "mean_prediction_pct": -0.06416987069476081,
+              "mae_pct": 0.21498426794834216,
+              "rmse_pct": 0.32371330773253465,
+              "r2": -0.00895491238085544,
+              "rank_ic_spearman": -0.010970516441673803,
+              "selected_rows": 454,
+              "selection_rate": 0.17973079968329375,
+              "selected_mean_net_return_pct": -0.011452120903755721,
+              "selected_excess_over_all_candidates_pct": 0.021823136500321437,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.010453263231824486,
+                  "selected_rows": 342,
+                  "selected_mean_net_return_pct": 0.009045458938822151
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": -0.05573898238753045,
+                  "selected_rows": 112,
+                  "selected_mean_net_return_pct": -0.07404294506591315
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": -0.06205308640955851
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.016181204565909203,
+              "mean_prediction_pct": -0.04990651671460517,
+              "mae_pct": 0.24078949351117754,
+              "rmse_pct": 0.3418742406932155,
+              "r2": -0.010178672269141709,
+              "rank_ic_spearman": 0.05869546299087009,
+              "selected_rows": 494,
+              "selection_rate": 0.28164196123147095,
+              "selected_mean_net_return_pct": 0.010898349829010659,
+              "selected_excess_over_all_candidates_pct": 0.02707955439491986,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": 0.0014694343184337082,
+                  "selected_rows": 485,
+                  "selected_mean_net_return_pct": 0.0023780886767658495
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": -0.0637327655930798,
+                  "selected_rows": 9,
+                  "selected_mean_net_return_pct": 0.4700457563666471
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5203,
+              "calibration_rows": 1303,
+              "selection_threshold_pct": -0.043078506832178565
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.0032540993800147665,
+              "mean_prediction_pct": -0.04618759991643331,
+              "mae_pct": 0.3339826700967599,
+              "rmse_pct": 0.4699839793164972,
+              "r2": -0.009216064919151945,
+              "rank_ic_spearman": -0.007307627454933207,
+              "selected_rows": 566,
+              "selection_rate": 0.25449640287769787,
+              "selected_mean_net_return_pct": -0.007048208851663783,
+              "selected_excess_over_all_candidates_pct": -0.0037941094716490167,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": -0.07147851866730254,
+                  "selected_rows": 535,
+                  "selected_mean_net_return_pct": -0.008406767831064933
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": -0.019062959631485077,
+                  "selected_rows": 31,
+                  "selected_mean_net_return_pct": 0.016397889663807595
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6616,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.03856449479015027
+            },
+            {
+              "rows": 1371,
+              "mean_target_net_return_pct": -0.0505789021282396,
+              "mean_prediction_pct": -0.04070699673377738,
+              "mae_pct": 0.6057650429702136,
+              "rmse_pct": 0.90136132417624,
+              "r2": -0.0005845885318407351,
+              "rank_ic_spearman": 0.026261817022959218,
+              "selected_rows": 377,
+              "selection_rate": 0.274981765134938,
+              "selected_mean_net_return_pct": -0.12362740831061977,
+              "selected_excess_over_all_candidates_pct": -0.07304850618238018,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": -0.019436253377607442,
+                  "selected_rows": 197,
+                  "selected_mean_net_return_pct": -0.23362141067628406
+                },
+                "SELL": {
+                  "rows": 793,
+                  "rank_ic_spearman": 0.05584044367524984,
+                  "selected_rows": 180,
+                  "selected_mean_net_return_pct": -0.003245083499309498
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8390,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": -0.03221473090305833
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "all_features_ridge": {
+          "overall_oos": {
+            "rows": 10020,
+            "mean_target_net_return_pct": -0.028063887838782376,
+            "mean_prediction_pct": -0.03463603726725915,
+            "mae_pct": 0.31800715859492207,
+            "rmse_pct": 0.5000941997997909,
+            "r2": -0.06347500660102279,
+            "rank_ic_spearman": 0.013223099041392813,
+            "selected_rows": 3099,
+            "selection_rate": 0.3092814371257485,
+            "selected_mean_net_return_pct": -0.023014405419384862,
+            "selected_excess_over_all_candidates_pct": 0.005049482419397514,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": 0.04795353578033264,
+                "selected_rows": 1670,
+                "selected_mean_net_return_pct": -0.011561575799931697
+              },
+              "SELL": {
+                "rows": 4416,
+                "rank_ic_spearman": -0.030009179659432696,
+                "selected_rows": 1429,
+                "selected_mean_net_return_pct": -0.036398747941768894
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 85,
+            "rank_ic_spearman": {
+              "median": 0.01437548485770636,
+              "lower_95": -0.028502477911713085,
+              "upper_95": 0.04878618651128525
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.02132234080420537,
+              "lower_95": -0.06724568740850397,
+              "upper_95": 0.012808363569677114
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": 0.005781775710151418,
+              "lower_95": -0.02588911836443645,
+              "upper_95": 0.031900824177760086
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.0429763316057466,
+              "mean_prediction_pct": -0.07277339250723174,
+              "mae_pct": 0.26377532332283476,
+              "rmse_pct": 0.3710345399234256,
+              "r2": -0.024464088348084667,
+              "rank_ic_spearman": 0.04661187860753496,
+              "selected_rows": 450,
+              "selection_rate": 0.2097902097902098,
+              "selected_mean_net_return_pct": -0.009417788250072702,
+              "selected_excess_over_all_candidates_pct": 0.033558543355673896,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": 0.06385795858867288,
+                  "selected_rows": 158,
+                  "selected_mean_net_return_pct": -0.03434662934663503
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.029828571545110597,
+                  "selected_rows": 292,
+                  "selected_mean_net_return_pct": 0.004071105219985005
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1461,
+              "calibration_rows": 368,
+              "selection_threshold_pct": -0.012420413376594995
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.033275257404077156,
+              "mean_prediction_pct": -0.07827513100605887,
+              "mae_pct": 0.22367037778895665,
+              "rmse_pct": 0.33152090288195096,
+              "r2": -0.058211520484249046,
+              "rank_ic_spearman": 0.019711588123999677,
+              "selected_rows": 177,
+              "selection_rate": 0.07007125890736342,
+              "selected_mean_net_return_pct": -0.026141347453980536,
+              "selected_excess_over_all_candidates_pct": 0.00713390995009662,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.04584047853877655,
+                  "selected_rows": 80,
+                  "selected_mean_net_return_pct": 0.04995081292833112
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": -0.016205892144118012,
+                  "selected_rows": 97,
+                  "selected_mean_net_return_pct": -0.08889776838784581
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": 0.01250785370585008
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.016181204565909203,
+              "mean_prediction_pct": -0.06541115949573063,
+              "mae_pct": 0.25234993506702547,
+              "rmse_pct": 0.3524471949998726,
+              "r2": -0.07362731928054833,
+              "rank_ic_spearman": -0.007368812151881542,
+              "selected_rows": 588,
+              "selection_rate": 0.3352337514253136,
+              "selected_mean_net_return_pct": -0.010580217123089614,
+              "selected_excess_over_all_candidates_pct": 0.005600987442819588,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": -0.005996480182785885,
+                  "selected_rows": 244,
+                  "selected_mean_net_return_pct": 0.02205966218085265
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.09417219720800746,
+                  "selected_rows": 344,
+                  "selected_mean_net_return_pct": -0.03373175942007191
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5203,
+              "calibration_rows": 1303,
+              "selection_threshold_pct": -0.03382492093608244
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.0032540993800147665,
+              "mean_prediction_pct": 0.0027614680438179176,
+              "mae_pct": 0.33823797218512675,
+              "rmse_pct": 0.47546742076865106,
+              "r2": -0.03290308711633183,
+              "rank_ic_spearman": -0.00986443961330049,
+              "selected_rows": 1139,
+              "selection_rate": 0.5121402877697842,
+              "selected_mean_net_return_pct": -0.0010505856395534217,
+              "selected_excess_over_all_candidates_pct": 0.002203513740461345,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": 0.05442465407884305,
+                  "selected_rows": 826,
+                  "selected_mean_net_return_pct": 0.038221284252214674
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": -0.14767854107628126,
+                  "selected_rows": 313,
+                  "selected_mean_net_return_pct": -0.10468817199929922
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6616,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.009662356450672802
+            },
+            {
+              "rows": 1371,
+              "mean_target_net_return_pct": -0.0505789021282396,
+              "mean_prediction_pct": 0.08414185503824988,
+              "mae_pct": 0.6278477389142593,
+              "rmse_pct": 0.9403694339296853,
+              "r2": -0.08906293909009144,
+              "rank_ic_spearman": -0.017170851702269722,
+              "selected_rows": 745,
+              "selection_rate": 0.5433989788475565,
+              "selected_mean_net_return_pct": -0.07387763016236024,
+              "selected_excess_over_all_candidates_pct": -0.023298728034120635,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.0015495289502214017,
+                  "selected_rows": 362,
+                  "selected_mean_net_return_pct": -0.15146537996641288
+                },
+                "SELL": {
+                  "rows": 793,
+                  "rank_ic_spearman": -0.04862946168640515,
+                  "selected_rows": 383,
+                  "selected_mean_net_return_pct": -0.0005440389637517391
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8390,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": 0.0582594288344681
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "all_features_xgboost": {
+          "overall_oos": {
+            "rows": 10020,
+            "mean_target_net_return_pct": -0.028063887838782376,
+            "mean_prediction_pct": -0.06126804053997339,
+            "mae_pct": 0.31772858089852607,
+            "rmse_pct": 0.4919439335681043,
+            "r2": -0.02909358621697633,
+            "rank_ic_spearman": 0.022076001474589255,
+            "selected_rows": 2224,
+            "selection_rate": 0.2219560878243513,
+            "selected_mean_net_return_pct": 0.005181194535503279,
+            "selected_excess_over_all_candidates_pct": 0.03324508237428565,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": 0.03912260841631282,
+                "selected_rows": 1204,
+                "selected_mean_net_return_pct": 0.03328352727160537
+              },
+              "SELL": {
+                "rows": 4416,
+                "rank_ic_spearman": 0.003967705278857067,
+                "selected_rows": 1020,
+                "selected_mean_net_return_pct": -0.027990578615738795
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 86,
+            "rank_ic_spearman": {
+              "median": 0.022702171471241955,
+              "lower_95": -0.016122699022932754,
+              "upper_95": 0.05489239321103229
+            },
+            "selected_mean_net_return_pct": {
+              "median": 0.004242330264443799,
+              "lower_95": -0.026783930795925184,
+              "upper_95": 0.03711019625959017
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": 0.03200077078865972,
+              "lower_95": 0.004413503825836829,
+              "upper_95": 0.05815309548704769
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.0429763316057466,
+              "mean_prediction_pct": -0.05723959077583812,
+              "mae_pct": 0.26646080845550024,
+              "rmse_pct": 0.3744853394225144,
+              "r2": -0.043608719932587414,
+              "rank_ic_spearman": 0.058658472723802355,
+              "selected_rows": 416,
+              "selection_rate": 0.19393939393939394,
+              "selected_mean_net_return_pct": -0.00545083734819197,
+              "selected_excess_over_all_candidates_pct": 0.03752549425755463,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": 0.04591998978339249,
+                  "selected_rows": 138,
+                  "selected_mean_net_return_pct": -0.053805028755500486
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.05928738242870135,
+                  "selected_rows": 278,
+                  "selected_mean_net_return_pct": 0.01855232241514824
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1461,
+              "calibration_rows": 368,
+              "selection_threshold_pct": 0.010266446508467197
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.033275257404077156,
+              "mean_prediction_pct": -0.07614348714695418,
+              "mae_pct": 0.22416135666370704,
+              "rmse_pct": 0.3350941866584771,
+              "r2": -0.0811462329640178,
+              "rank_ic_spearman": 0.010645425828953057,
+              "selected_rows": 166,
+              "selection_rate": 0.06571654790182106,
+              "selected_mean_net_return_pct": -0.04225333774377019,
+              "selected_excess_over_all_candidates_pct": -0.008978080339693037,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.08212635816656864,
+                  "selected_rows": 85,
+                  "selected_mean_net_return_pct": 0.018309894412756877
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": -0.08691208228713768,
+                  "selected_rows": 81,
+                  "selected_mean_net_return_pct": -0.10580734679691589
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": 0.02034888043999672
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.016181204565909203,
+              "mean_prediction_pct": -0.07077632530709958,
+              "mae_pct": 0.2582585119819091,
+              "rmse_pct": 0.3586852821772953,
+              "r2": -0.11196866834986796,
+              "rank_ic_spearman": -0.01962037816127956,
+              "selected_rows": 527,
+              "selection_rate": 0.30045610034207526,
+              "selected_mean_net_return_pct": -0.0016206688063265307,
+              "selected_excess_over_all_candidates_pct": 0.014560535759582672,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": 0.024270354293437425,
+                  "selected_rows": 266,
+                  "selected_mean_net_return_pct": 0.05139825209322156
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": -0.03530249147433959,
+                  "selected_rows": 261,
+                  "selected_mean_net_return_pct": -0.05565527784571272
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5203,
+              "calibration_rows": 1303,
+              "selection_threshold_pct": -0.03707696869969368
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.0032540993800147665,
+              "mean_prediction_pct": -0.039334818372199744,
+              "mae_pct": 0.3427340291877866,
+              "rmse_pct": 0.4760696240676461,
+              "r2": -0.035521191018579756,
+              "rank_ic_spearman": -0.02272606990189449,
+              "selected_rows": 745,
+              "selection_rate": 0.33498201438848924,
+              "selected_mean_net_return_pct": 0.0027198092720060237,
+              "selected_excess_over_all_candidates_pct": 0.00597390865202079,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": -0.0004034047483489519,
+                  "selected_rows": 577,
+                  "selected_mean_net_return_pct": 0.044379460669750063
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": -0.09548950719101415,
+                  "selected_rows": 168,
+                  "selected_mean_net_return_pct": -0.1403612553500077
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6616,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.009084762074053288
+            },
+            {
+              "rows": 1371,
+              "mean_target_net_return_pct": -0.0505789021282396,
+              "mean_prediction_pct": -0.06357847178317243,
+              "mae_pct": 0.6058529894994551,
+              "rmse_pct": 0.9001020926612059,
+              "r2": 0.0022091580054787174,
+              "rank_ic_spearman": 0.06724320365457569,
+              "selected_rows": 370,
+              "selection_rate": 0.2698760029175784,
+              "selected_mean_net_return_pct": 0.05306057730422326,
+              "selected_excess_over_all_candidates_pct": 0.10363947943246286,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.04386522599946077,
+                  "selected_rows": 138,
+                  "selected_mean_net_return_pct": 0.048284318224238294
+                },
+                "SELL": {
+                  "rows": 793,
+                  "rank_ic_spearman": 0.09203108490798954,
+                  "selected_rows": 232,
+                  "selected_mean_net_return_pct": 0.055901627963869494
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8390,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": 0.010138719342648983
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": true,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        }
+      }
+    },
+    "12h": {
+      "target": "target_12h_net_return_pct",
+      "eligible_rows": 11863,
+      "models": {
+        "calibration_mean": {
+          "overall_oos": {
+            "rows": 10018,
+            "mean_target_net_return_pct": -0.03522726009923656,
+            "mean_prediction_pct": -0.018096965366428314,
+            "mae_pct": 0.5594835279614352,
+            "rmse_pct": 0.8539031287836947,
+            "r2": -0.0023029120731870023,
+            "rank_ic_spearman": -0.01426094288907853,
+            "selected_rows": 10018,
+            "selection_rate": 1.0,
+            "selected_mean_net_return_pct": -0.03522726009923656,
+            "selected_excess_over_all_candidates_pct": 0.0,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": -0.02054756409963107,
+                "selected_rows": 5604,
+                "selected_mean_net_return_pct": -0.017569212249725595
+              },
+              "SELL": {
+                "rows": 4414,
+                "rank_ic_spearman": -0.009157061758712755,
+                "selected_rows": 4414,
+                "selected_mean_net_return_pct": -0.057645860042294855
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 162,
+            "rank_ic_spearman": {
+              "median": -0.012183449160996115,
+              "lower_95": -0.07057528989930767,
+              "upper_95": 0.04094167770997086
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.03532922245046036,
+              "lower_95": -0.0833057655705714,
+              "upper_95": 0.007250645772774438
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": 0.0,
+              "lower_95": 0.0,
+              "upper_95": 0.0
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.058460097534735335,
+              "mean_prediction_pct": -0.05096678573068915,
+              "mae_pct": 0.4844407131734767,
+              "rmse_pct": 0.6740620168577749,
+              "r2": -0.00012359519048477097,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 2145,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.058460097534735335,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 971,
+                  "selected_mean_net_return_pct": -0.11050279701623278
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1174,
+                  "selected_mean_net_return_pct": -0.015416263466137368
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1446,
+              "calibration_rows": 365,
+              "selection_threshold_pct": -0.05096678573068916
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.016872442460589346,
+              "mean_prediction_pct": 0.0005360669991784759,
+              "mae_pct": 0.4187641902385126,
+              "rmse_pct": 0.6062970842334163,
+              "r2": -0.0008251072594029907,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 2526,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.016872442460589346,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1323,
+                  "selected_mean_net_return_pct": -0.010039112835980859
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1203,
+                  "selected_mean_net_return_pct": -0.024387400975433102
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": 0.000536066999178476
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.012308651419254956,
+              "mean_prediction_pct": -0.029893460583866827,
+              "mae_pct": 0.4032124187539316,
+              "rmse_pct": 0.5558187934203421,
+              "r2": -0.0010019447781470792,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 1754,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.012308651419254956,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 995,
+                  "selected_mean_net_return_pct": 0.03712334731959542
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 759,
+                  "selected_mean_net_return_pct": -0.07711081050378213
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5195,
+              "calibration_rows": 1301,
+              "selection_threshold_pct": -0.029893460583866816
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": 0.027353888309777537,
+              "mean_prediction_pct": -0.019788601533399487,
+              "mae_pct": 0.5908130917789055,
+              "rmse_pct": 0.8166585788502064,
+              "r2": -0.0033434404381906813,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 2224,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": 0.027353888309777537,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1737,
+                  "selected_mean_net_return_pct": 0.08951467556616595
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 487,
+                  "selected_mean_net_return_pct": -0.19435717424534904
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6609,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.019788601533399487
+            },
+            {
+              "rows": 1369,
+              "mean_target_net_return_pct": -0.163722181021379,
+              "mean_prediction_pct": 0.016886216790290266,
+              "mae_pct": 1.0860331703487107,
+              "rmse_pct": 1.570443488867764,
+              "r2": -0.013403357212236955,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 1369,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.163722181021379,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 578,
+                  "selected_mean_net_return_pct": -0.2946412202493517
+                },
+                "SELL": {
+                  "rows": 791,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 791,
+                  "selected_mean_net_return_pct": -0.06805694123153297
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8385,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": 0.01688621679029027
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "direction_ridge": {
+          "overall_oos": {
+            "rows": 10018,
+            "mean_target_net_return_pct": -0.03522726009923656,
+            "mean_prediction_pct": -0.05519599490107777,
+            "mae_pct": 0.5606136733102635,
+            "rmse_pct": 0.8541020195673782,
+            "r2": -0.0027698784563137124,
+            "rank_ic_spearman": -0.035270566723524285,
+            "selected_rows": 4201,
+            "selection_rate": 0.4193451786783789,
+            "selected_mean_net_return_pct": -0.08829288526938163,
+            "selected_excess_over_all_candidates_pct": -0.05306562517014507,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": 0.051019399214974025,
+                "selected_rows": 578,
+                "selected_mean_net_return_pct": -0.2946412202493517
+              },
+              "SELL": {
+                "rows": 4414,
+                "rank_ic_spearman": -0.0001893139520803141,
+                "selected_rows": 3623,
+                "selected_mean_net_return_pct": -0.05537283624414764
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 163,
+            "rank_ic_spearman": {
+              "median": -0.03319879970727151,
+              "lower_95": -0.09481759265950555,
+              "upper_95": 0.027386543602613878
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.08458037100795518,
+              "lower_95": -0.1771288286897626,
+              "upper_95": -0.005496757505210061
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": -0.05191548231190672,
+              "lower_95": -0.12065374912612319,
+              "upper_95": 0.008723820909989483
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.058460097534735335,
+              "mean_prediction_pct": -0.04274002778422306,
+              "mae_pct": 0.4838644847427877,
+              "rmse_pct": 0.6727336012788736,
+              "r2": 0.0038145309001504923,
+              "rank_ic_spearman": 0.05806207726830634,
+              "selected_rows": 1174,
+              "selection_rate": 0.5473193473193473,
+              "selected_mean_net_return_pct": -0.015416263466137368,
+              "selected_excess_over_all_candidates_pct": 0.043043834068597964,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1174,
+                  "selected_mean_net_return_pct": -0.015416263466137368
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1446,
+              "calibration_rows": 365,
+              "selection_threshold_pct": -0.01436171337636585
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.016872442460589346,
+              "mean_prediction_pct": -0.07355214935637136,
+              "mae_pct": 0.41744709372591543,
+              "rmse_pct": 0.6091894422743709,
+              "r2": -0.01039681510346635,
+              "rank_ic_spearman": -0.0024550744698791584,
+              "selected_rows": 1203,
+              "selection_rate": 0.47624703087885983,
+              "selected_mean_net_return_pct": -0.024387400975433102,
+              "selected_excess_over_all_candidates_pct": -0.007514958514843757,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1203,
+                  "selected_mean_net_return_pct": -0.024387400975433102
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": -0.05417804617121853
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.012308651419254956,
+              "mean_prediction_pct": -0.05546002390599064,
+              "mae_pct": 0.40760902441128094,
+              "rmse_pct": 0.5591718815035385,
+              "r2": -0.013115863750613022,
+              "rank_ic_spearman": -0.1491242788294889,
+              "selected_rows": 759,
+              "selection_rate": 0.43272519954389965,
+              "selected_mean_net_return_pct": -0.07711081050378213,
+              "selected_excess_over_all_candidates_pct": -0.06480215908452717,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 759,
+                  "selected_mean_net_return_pct": -0.07711081050378213
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5195,
+              "calibration_rows": 1301,
+              "selection_threshold_pct": -0.03620967867055365
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": 0.027353888309777537,
+              "mean_prediction_pct": -0.05384459532920213,
+              "mae_pct": 0.5965957501251293,
+              "rmse_pct": 0.8210569487653239,
+              "r2": -0.014180183518451628,
+              "rank_ic_spearman": -0.17268954411362067,
+              "selected_rows": 487,
+              "selection_rate": 0.2189748201438849,
+              "selected_mean_net_return_pct": -0.19435717424534904,
+              "selected_excess_over_all_candidates_pct": -0.22171106255512657,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 487,
+                  "selected_mean_net_return_pct": -0.19435717424534904
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6609,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.032124825810844485
+            },
+            {
+              "rows": 1369,
+              "mean_target_net_return_pct": -0.163722181021379,
+              "mean_prediction_pct": -0.042699872976180726,
+              "mae_pct": 1.0826091479924054,
+              "rmse_pct": 1.5648012447261523,
+              "r2": -0.00613458543157841,
+              "rank_ic_spearman": -0.05119425498012627,
+              "selected_rows": 578,
+              "selection_rate": 0.42220598977355733,
+              "selected_mean_net_return_pct": -0.2946412202493517,
+              "selected_excess_over_all_candidates_pct": -0.13091903922797268,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 578,
+                  "selected_mean_net_return_pct": -0.2946412202493517
+                },
+                "SELL": {
+                  "rows": 791,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8385,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": -0.041228098810567174
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "smc_score_ridge": {
+          "overall_oos": {
+            "rows": 10018,
+            "mean_target_net_return_pct": -0.03522726009923656,
+            "mean_prediction_pct": -0.056817411569976904,
+            "mae_pct": 0.5605976173861392,
+            "rmse_pct": 0.8541105268867412,
+            "r2": -0.002789854819544857,
+            "rank_ic_spearman": 0.025774448137113434,
+            "selected_rows": 2592,
+            "selection_rate": 0.2587342782990617,
+            "selected_mean_net_return_pct": -0.020811519425050093,
+            "selected_excess_over_all_candidates_pct": 0.014415740674186467,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": -0.004855757964995066,
+                "selected_rows": 1901,
+                "selected_mean_net_return_pct": -0.042208713090274984
+              },
+              "SELL": {
+                "rows": 4414,
+                "rank_ic_spearman": 0.014355719538482572,
+                "selected_rows": 691,
+                "selected_mean_net_return_pct": 0.03805398731531531
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 164,
+            "rank_ic_spearman": {
+              "median": 0.02594441220035744,
+              "lower_95": -0.01981786385568543,
+              "upper_95": 0.07401645313981609
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.01662275459237587,
+              "lower_95": -0.09227801713198078,
+              "upper_95": 0.052825979275515786
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": 0.015880143895907396,
+              "lower_95": -0.04264267055505082,
+              "upper_95": 0.06779491774238501
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.058460097534735335,
+              "mean_prediction_pct": -0.05220022336584283,
+              "mae_pct": 0.4858246582018406,
+              "rmse_pct": 0.6754680962471685,
+              "r2": -0.0043004211985304686,
+              "rank_ic_spearman": 0.04229072350741149,
+              "selected_rows": 701,
+              "selection_rate": 0.32680652680652683,
+              "selected_mean_net_return_pct": -0.07184374397582599,
+              "selected_excess_over_all_candidates_pct": -0.013383646441090656,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": -0.04436139021515476,
+                  "selected_rows": 342,
+                  "selected_mean_net_return_pct": -0.19483163597648032
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.11284633285700624,
+                  "selected_rows": 359,
+                  "selected_mean_net_return_pct": 0.04532020884930994
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1446,
+              "calibration_rows": 365,
+              "selection_threshold_pct": -0.01342221144391624
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.016872442460589346,
+              "mean_prediction_pct": -0.07415195683534789,
+              "mae_pct": 0.4198944659369891,
+              "rmse_pct": 0.610565909321984,
+              "r2": -0.014967968376115248,
+              "rank_ic_spearman": -0.060272206966412056,
+              "selected_rows": 454,
+              "selection_rate": 0.17973079968329375,
+              "selected_mean_net_return_pct": -0.014629879385108518,
+              "selected_excess_over_all_candidates_pct": 0.0022425630754808277,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": -0.027468030356604934,
+                  "selected_rows": 342,
+                  "selected_mean_net_return_pct": 0.021321046799251495
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": -0.10287438778386632,
+                  "selected_rows": 112,
+                  "selected_mean_net_return_pct": -0.12440860041235073
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": -0.040954489015450825
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.012308651419254956,
+              "mean_prediction_pct": -0.0602801800012462,
+              "mae_pct": 0.4052031745005548,
+              "rmse_pct": 0.5574649148379636,
+              "r2": -0.006939889991211423,
+              "rank_ic_spearman": 0.03897524896028468,
+              "selected_rows": 494,
+              "selection_rate": 0.28164196123147095,
+              "selected_mean_net_return_pct": 0.022704777504685063,
+              "selected_excess_over_all_candidates_pct": 0.03501342892394002,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": -0.0568403834609318,
+                  "selected_rows": 485,
+                  "selected_mean_net_return_pct": 0.014505802673299597
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": -0.005381704065817866,
+                  "selected_rows": 9,
+                  "selected_mean_net_return_pct": 0.4645384211960133
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5195,
+              "calibration_rows": 1301,
+              "selection_threshold_pct": -0.04231322125219725
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": 0.027353888309777537,
+              "mean_prediction_pct": -0.046778212963140706,
+              "mae_pct": 0.5938571367863454,
+              "rmse_pct": 0.8188348992052314,
+              "r2": -0.008698202763257834,
+              "rank_ic_spearman": 0.020615208337746566,
+              "selected_rows": 566,
+              "selection_rate": 0.25449640287769787,
+              "selected_mean_net_return_pct": 0.04284019972054678,
+              "selected_excess_over_all_candidates_pct": 0.01548631141076924,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": -0.06733682094267465,
+                  "selected_rows": 535,
+                  "selected_mean_net_return_pct": 0.03432174671844764
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": -0.006263788212605125,
+                  "selected_rows": 31,
+                  "selected_mean_net_return_pct": 0.18985221120838686
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6609,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.036306342774234196
+            },
+            {
+              "rows": 1369,
+              "mean_target_net_return_pct": -0.163722181021379,
+              "mean_prediction_pct": -0.04393960969320396,
+              "mae_pct": 1.0824360685812673,
+              "rmse_pct": 1.5646714660610361,
+              "r2": -0.0059677023987640965,
+              "rank_ic_spearman": 0.04557914605708371,
+              "selected_rows": 377,
+              "selection_rate": 0.2753834915997078,
+              "selected_mean_net_return_pct": -0.08594891700525324,
+              "selected_excess_over_all_candidates_pct": 0.07777326401612576,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.07369399570026387,
+                  "selected_rows": 197,
+                  "selected_mean_net_return_pct": -0.2350029993752298
+                },
+                "SELL": {
+                  "rows": 791,
+                  "rank_ic_spearman": 0.04534231348152822,
+                  "selected_rows": 180,
+                  "selected_mean_net_return_pct": 0.07718249536633214
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8385,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": -0.03228237052637606
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "all_features_ridge": {
+          "overall_oos": {
+            "rows": 10018,
+            "mean_target_net_return_pct": -0.03522726009923656,
+            "mean_prediction_pct": -0.11133280783140967,
+            "mae_pct": 0.5773856950200914,
+            "rmse_pct": 0.8594166084886848,
+            "r2": -0.01528803246829158,
+            "rank_ic_spearman": 0.005012393533496004,
+            "selected_rows": 1708,
+            "selection_rate": 0.17049311239768417,
+            "selected_mean_net_return_pct": 0.011549093977537301,
+            "selected_excess_over_all_candidates_pct": 0.04677635407677386,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": -0.002013992404943826,
+                "selected_rows": 717,
+                "selected_mean_net_return_pct": 0.06960523890771463
+              },
+              "SELL": {
+                "rows": 4414,
+                "rank_ic_spearman": 0.0268352530504416,
+                "selected_rows": 991,
+                "selected_mean_net_return_pct": -0.03045520058849411
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 165,
+            "rank_ic_spearman": {
+              "median": 0.004452884290420359,
+              "lower_95": -0.036680218720144125,
+              "upper_95": 0.05361790886375629
+            },
+            "selected_mean_net_return_pct": {
+              "median": 0.0101121612084871,
+              "lower_95": -0.06052880259847833,
+              "upper_95": 0.10016004731229934
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": 0.046731732011334064,
+              "lower_95": -0.02629916812936295,
+              "upper_95": 0.13307984882044438
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.058460097534735335,
+              "mean_prediction_pct": -0.10536014320658789,
+              "mae_pct": 0.5183457861272388,
+              "rmse_pct": 0.7071953188502732,
+              "r2": -0.10086158462553785,
+              "rank_ic_spearman": -0.0014209302685057894,
+              "selected_rows": 393,
+              "selection_rate": 0.18321678321678322,
+              "selected_mean_net_return_pct": -0.0848641036900053,
+              "selected_excess_over_all_candidates_pct": -0.026404006155269964,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": -0.08266334389238843,
+                  "selected_rows": 135,
+                  "selected_mean_net_return_pct": -0.2646580329633404
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.0527496382551369,
+                  "selected_rows": 258,
+                  "selected_mean_net_return_pct": 0.009214115115809584
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1446,
+              "calibration_rows": 365,
+              "selection_threshold_pct": 0.02665229897225581
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.016872442460589346,
+              "mean_prediction_pct": -0.09153041361434622,
+              "mae_pct": 0.4321538472315069,
+              "rmse_pct": 0.6233429574491318,
+              "r2": -0.057892033801602905,
+              "rank_ic_spearman": -0.018264574450599067,
+              "selected_rows": 213,
+              "selection_rate": 0.08432304038004751,
+              "selected_mean_net_return_pct": 0.008329133830077095,
+              "selected_excess_over_all_candidates_pct": 0.02520157629066644,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": -0.011794936051681157,
+                  "selected_rows": 81,
+                  "selected_mean_net_return_pct": 0.184316457104072
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": -0.0343917391872937,
+                  "selected_rows": 132,
+                  "selected_mean_net_return_pct": -0.0996630872698743
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": 0.03897552218922656
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.012308651419254956,
+              "mean_prediction_pct": -0.10857098852174281,
+              "mae_pct": 0.42327184443696714,
+              "rmse_pct": 0.5734302723520733,
+              "r2": -0.06544172262295023,
+              "rank_ic_spearman": -0.03097715682330438,
+              "selected_rows": 530,
+              "selection_rate": 0.30216647662485746,
+              "selected_mean_net_return_pct": -0.0024465015295588137,
+              "selected_excess_over_all_candidates_pct": 0.009862149889696142,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": -0.07177139241576479,
+                  "selected_rows": 181,
+                  "selected_mean_net_return_pct": 0.0031440445070833327
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.11571998478828961,
+                  "selected_rows": 349,
+                  "selected_mean_net_return_pct": -0.005345896465467786
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5195,
+              "calibration_rows": 1301,
+              "selection_threshold_pct": -0.04295873823525533
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": 0.027353888309777537,
+              "mean_prediction_pct": -0.10712207213058737,
+              "mae_pct": 0.6040737688532009,
+              "rmse_pct": 0.8260832350313276,
+              "r2": -0.026635258333375766,
+              "rank_ic_spearman": 0.03939983926973873,
+              "selected_rows": 284,
+              "selection_rate": 0.12769784172661872,
+              "selected_mean_net_return_pct": 0.0031161023679833386,
+              "selected_excess_over_all_candidates_pct": -0.0242377859417942,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": 0.08546005973580302,
+                  "selected_rows": 170,
+                  "selected_mean_net_return_pct": 0.1990451451291499
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": 0.0021527120639563274,
+                  "selected_rows": 114,
+                  "selected_mean_net_return_pct": -0.28905878596007195
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6609,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.002542672402787192
+            },
+            {
+              "rows": 1369,
+              "mean_target_net_return_pct": -0.163722181021379,
+              "mean_prediction_pct": -0.1676082794751856,
+              "mae_pct": 1.0919639782977377,
+              "rmse_pct": 1.540910273746397,
+              "r2": 0.024353673604591175,
+              "rank_ic_spearman": 0.04884986896335548,
+              "selected_rows": 288,
+              "selection_rate": 0.21037253469685901,
+              "selected_mean_net_return_pct": 0.17956601561166066,
+              "selected_excess_over_all_candidates_pct": 0.34328819663303967,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.10369713462519677,
+                  "selected_rows": 150,
+                  "selected_mean_net_return_pct": 0.24199607329143286
+                },
+                "SELL": {
+                  "rows": 791,
+                  "rank_ic_spearman": 0.01914099305720231,
+                  "selected_rows": 138,
+                  "selected_mean_net_return_pct": 0.11170725726408218
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8385,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": 0.0050056370313265475
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": true
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "all_features_xgboost": {
+          "overall_oos": {
+            "rows": 10018,
+            "mean_target_net_return_pct": -0.03522726009923656,
+            "mean_prediction_pct": -0.10630639133230597,
+            "mae_pct": 0.5852077535576132,
+            "rmse_pct": 0.8654838452483541,
+            "r2": -0.029673923338431107,
+            "rank_ic_spearman": 0.0006235127929947285,
+            "selected_rows": 2077,
+            "selection_rate": 0.20732681173887002,
+            "selected_mean_net_return_pct": -0.009441763850668833,
+            "selected_excess_over_all_candidates_pct": 0.025785496248567727,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": 0.004220834811774826,
+                "selected_rows": 1002,
+                "selected_mean_net_return_pct": 0.024246566719124254
+              },
+              "SELL": {
+                "rows": 4414,
+                "rank_ic_spearman": 0.00784770008092243,
+                "selected_rows": 1075,
+                "selected_mean_net_return_pct": -0.04084242173990851
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 166,
+            "rank_ic_spearman": {
+              "median": 0.0015515039842335,
+              "lower_95": -0.052826391111448,
+              "upper_95": 0.041985518454077726
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.00986908186696966,
+              "lower_95": -0.08666561700297297,
+              "upper_95": 0.0625179183127531
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": 0.0240035981957031,
+              "lower_95": -0.04828052421421566,
+              "upper_95": 0.10354036982525769
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.058460097534735335,
+              "mean_prediction_pct": -0.07631510257798829,
+              "mae_pct": 0.5056112611052366,
+              "rmse_pct": 0.6943124107450547,
+              "r2": -0.0611183355352698,
+              "rank_ic_spearman": 0.03603955893846358,
+              "selected_rows": 501,
+              "selection_rate": 0.23356643356643356,
+              "selected_mean_net_return_pct": -0.01703032953149835,
+              "selected_excess_over_all_candidates_pct": 0.041429768003236986,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": -0.04710587597214916,
+                  "selected_rows": 148,
+                  "selected_mean_net_return_pct": -0.2109498265750727
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.08126067887800273,
+                  "selected_rows": 353,
+                  "selected_mean_net_return_pct": 0.06427302900235154
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1446,
+              "calibration_rows": 365,
+              "selection_threshold_pct": 0.045001134276390076
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": -0.016872442460589346,
+              "mean_prediction_pct": -0.10195444583979835,
+              "mae_pct": 0.44784524458951513,
+              "rmse_pct": 0.6365984304442186,
+              "r2": -0.10336285567876136,
+              "rank_ic_spearman": -0.05375271516389586,
+              "selected_rows": 274,
+              "selection_rate": 0.10847189231987332,
+              "selected_mean_net_return_pct": -0.043618714230098006,
+              "selected_excess_over_all_candidates_pct": -0.02674627176950866,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": -0.008242137738260541,
+                  "selected_rows": 169,
+                  "selected_mean_net_return_pct": -0.11222451658805849
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": -0.11568112783723224,
+                  "selected_rows": 105,
+                  "selected_mean_net_return_pct": 0.06680395813652416
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3191,
+              "calibration_rows": 798,
+              "selection_threshold_pct": 0.07690499722957611
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.012308651419254956,
+              "mean_prediction_pct": -0.08519167237086585,
+              "mae_pct": 0.44539984959563683,
+              "rmse_pct": 0.5932243539586407,
+              "r2": -0.14026662019425595,
+              "rank_ic_spearman": -0.056796208626460024,
+              "selected_rows": 606,
+              "selection_rate": 0.34549600912200684,
+              "selected_mean_net_return_pct": -0.0202108293343707,
+              "selected_excess_over_all_candidates_pct": -0.007902177915115745,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": -0.008101402505972447,
+                  "selected_rows": 302,
+                  "selected_mean_net_return_pct": 0.0594779710863789
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": -0.04572162274976098,
+                  "selected_rows": 304,
+                  "selected_mean_net_return_pct": -0.09937536133129958
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5195,
+              "calibration_rows": 1301,
+              "selection_threshold_pct": -0.01798969693481922
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": 0.027353888309777537,
+              "mean_prediction_pct": -0.08676402449737979,
+              "mae_pct": 0.61184285955364,
+              "rmse_pct": 0.8420714707660841,
+              "r2": -0.06675936963354445,
+              "rank_ic_spearman": 0.013542026319864463,
+              "selected_rows": 438,
+              "selection_rate": 0.19694244604316546,
+              "selected_mean_net_return_pct": 0.019153195850802978,
+              "selected_excess_over_all_candidates_pct": -0.008200692458974559,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": 0.04550883237065817,
+                  "selected_rows": 292,
+                  "selected_mean_net_return_pct": 0.2030594244179286
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": -0.020436011465061858,
+                  "selected_rows": 146,
+                  "selected_mean_net_return_pct": -0.34865926128344815
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6609,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": 0.056457243859767914
+            },
+            {
+              "rows": 1369,
+              "mean_target_net_return_pct": -0.163722181021379,
+              "mean_prediction_pct": -0.22012799074160294,
+              "mae_pct": 1.0992316847321242,
+              "rmse_pct": 1.5412807754177913,
+              "r2": 0.023884441802654588,
+              "rank_ic_spearman": 0.03898909136420947,
+              "selected_rows": 258,
+              "selection_rate": 0.18845872899926955,
+              "selected_mean_net_return_pct": 0.018340473141338357,
+              "selected_excess_over_all_candidates_pct": 0.18206265416271736,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.024610350284148663,
+                  "selected_rows": 91,
+                  "selected_mean_net_return_pct": -0.030484853945784932
+                },
+                "SELL": {
+                  "rows": 791,
+                  "rank_ic_spearman": 0.08558141384398807,
+                  "selected_rows": 167,
+                  "selected_mean_net_return_pct": 0.044945890895399535
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8385,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": 0.018338194116950035
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        }
+      }
+    },
+    "48h": {
+      "target": "target_48h_net_return_pct",
+      "eligible_rows": 11860,
+      "models": {
+        "calibration_mean": {
+          "overall_oos": {
+            "rows": 10015,
+            "mean_target_net_return_pct": -0.02794419361355107,
+            "mean_prediction_pct": -0.025859926356982962,
+            "mae_pct": 1.0913696697700772,
+            "rmse_pct": 1.6603494611680436,
+            "r2": -0.01212472527631081,
+            "rank_ic_spearman": -0.05854237962722671,
+            "selected_rows": 10015,
+            "selection_rate": 1.0,
+            "selected_mean_net_return_pct": -0.02794419361355107,
+            "selected_excess_over_all_candidates_pct": 0.0,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": -0.029734533632768647,
+                "selected_rows": 5604,
+                "selected_mean_net_return_pct": 0.038021084184256024
+              },
+              "SELL": {
+                "rows": 4411,
+                "rank_ic_spearman": -0.057992285194356334,
+                "selected_rows": 4411,
+                "selected_mean_net_return_pct": -0.11175045450199153
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 522,
+            "rank_ic_spearman": {
+              "median": -0.05604685153158695,
+              "lower_95": -0.1343345703853115,
+              "upper_95": 0.02203462775104993
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.034041532168825314,
+              "lower_95": -0.20404399027933917,
+              "upper_95": 0.12485439616181111
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": 0.0,
+              "lower_95": 0.0,
+              "upper_95": 0.0
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.018425117494038114,
+              "mean_prediction_pct": 0.20914213575159346,
+              "mae_pct": 0.8208565987750167,
+              "rmse_pct": 1.079446469448877,
+              "r2": -0.04651160916994934,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 2145,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.018425117494038114,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 971,
+                  "selected_mean_net_return_pct": -0.023115678139618012
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1174,
+                  "selected_mean_net_return_pct": -0.014545616312727983
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1442,
+              "calibration_rows": 363,
+              "selection_threshold_pct": 0.20914213575159346
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": 0.17981848663085281,
+              "mean_prediction_pct": -0.15962760919707078,
+              "mae_pct": 0.8437413515950192,
+              "rmse_pct": 1.1450786562024027,
+              "r2": -0.09634233823570337,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 2526,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": 0.17981848663085281,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1323,
+                  "selected_mean_net_return_pct": 0.17996030009745084
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1203,
+                  "selected_mean_net_return_pct": 0.17966252718254927
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3169,
+              "calibration_rows": 797,
+              "selection_threshold_pct": -0.1596276091970708
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.12558323407423214,
+              "mean_prediction_pct": 0.09861312418687175,
+              "mae_pct": 0.9187273618909406,
+              "rmse_pct": 1.1586895469339178,
+              "r2": -0.03889507535819936,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 1754,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.12558323407423214,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 995,
+                  "selected_mean_net_return_pct": 0.08728427314047088
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 759,
+                  "selected_mean_net_return_pct": -0.4046387935981183
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5178,
+              "calibration_rows": 1297,
+              "selection_threshold_pct": 0.09861312418687175
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.09010464989843837,
+              "mean_prediction_pct": -0.1427174560472044,
+              "mae_pct": 1.096104033418673,
+              "rmse_pct": 1.5370184018328665,
+              "r2": -0.0011730971200416551,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 2224,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.09010464989843837,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1737,
+                  "selected_mean_net_return_pct": 0.093378845991654
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 487,
+                  "selected_mean_net_return_pct": -0.7445416773339424
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6592,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": -0.1427174560472044
+            },
+            {
+              "rows": 1366,
+              "mean_target_net_return_pct": -0.20050877401479242,
+              "mean_prediction_pct": -0.1170874819878053,
+              "mae_pct": 2.1880351545871566,
+              "rmse_pct": 3.2228820514301293,
+              "r2": -0.0006704340581524804,
+              "rank_ic_spearman": 0.0,
+              "selected_rows": 1366,
+              "selection_rate": 1.0,
+              "selected_mean_net_return_pct": -0.20050877401479242,
+              "selected_excess_over_all_candidates_pct": 0.0,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 578,
+                  "selected_mean_net_return_pct": -0.4353268253443931
+                },
+                "SELL": {
+                  "rows": 788,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 788,
+                  "selected_mean_net_return_pct": -0.028269137379628363
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8380,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": -0.11708748198780529
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "direction_ridge": {
+          "overall_oos": {
+            "rows": 10015,
+            "mean_target_net_return_pct": -0.02794419361355107,
+            "mean_prediction_pct": -0.02836202996625665,
+            "mae_pct": 1.0721154490552907,
+            "rmse_pct": 1.652525916396903,
+            "r2": -0.002608960575656516,
+            "rank_ic_spearman": 0.049150826104588756,
+            "selected_rows": 5687,
+            "selection_rate": 0.5678482276585123,
+            "selected_mean_net_return_pct": 0.03454993298095244,
+            "selected_excess_over_all_candidates_pct": 0.06249412659450351,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": 0.07765689347134411,
+                "selected_rows": 3310,
+                "selected_mean_net_return_pct": -0.0007770386062802648
+              },
+              "SELL": {
+                "rows": 4411,
+                "rank_ic_spearman": -0.10365242041641314,
+                "selected_rows": 2377,
+                "selected_mean_net_return_pct": 0.08374314962114604
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 523,
+            "rank_ic_spearman": {
+              "median": 0.049554738787169844,
+              "lower_95": -0.049916920060116596,
+              "upper_95": 0.15398624244645506
+            },
+            "selected_mean_net_return_pct": {
+              "median": 0.03006271893192538,
+              "lower_95": -0.2225321654392524,
+              "upper_95": 0.2570134167957484
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": 0.06653241565742289,
+              "lower_95": -0.0971950223117784,
+              "upper_95": 0.21692897348436396
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.018425117494038114,
+              "mean_prediction_pct": -0.08187847137206643,
+              "mae_pct": 0.7893134344922248,
+              "rmse_pct": 1.0580233117222184,
+              "r2": -0.00538477322135078,
+              "rank_ic_spearman": 0.023287754467292813,
+              "selected_rows": 1174,
+              "selection_rate": 0.5473193473193473,
+              "selected_mean_net_return_pct": -0.014545616312727983,
+              "selected_excess_over_all_candidates_pct": 0.0038795011813101306,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1174,
+                  "selected_mean_net_return_pct": -0.014545616312727983
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1442,
+              "calibration_rows": 363,
+              "selection_threshold_pct": -0.037456044508034934
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": 0.17981848663085281,
+              "mean_prediction_pct": -0.04049197659006931,
+              "mae_pct": 0.8288143785992554,
+              "rmse_pct": 1.1156952798319741,
+              "r2": -0.0407986925078716,
+              "rank_ic_spearman": 0.02457411602139231,
+              "selected_rows": 1203,
+              "selection_rate": 0.47624703087885983,
+              "selected_mean_net_return_pct": 0.17966252718254927,
+              "selected_excess_over_all_candidates_pct": -0.00015595944830354425,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1203,
+                  "selected_mean_net_return_pct": 0.17966252718254927
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3169,
+              "calibration_rows": 797,
+              "selection_threshold_pct": -0.023809931763665804
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.12558323407423214,
+              "mean_prediction_pct": -0.00299409361100367,
+              "mae_pct": 0.8990756598681973,
+              "rmse_pct": 1.140488109930673,
+              "r2": -0.006512176989504459,
+              "rank_ic_spearman": 0.24569058762812918,
+              "selected_rows": 995,
+              "selection_rate": 0.5672748004561003,
+              "selected_mean_net_return_pct": 0.08728427314047088,
+              "selected_excess_over_all_candidates_pct": 0.21286750721470302,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 995,
+                  "selected_mean_net_return_pct": 0.08728427314047088
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5178,
+              "calibration_rows": 1297,
+              "selection_threshold_pct": 0.009203229399453294
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.09010464989843837,
+              "mean_prediction_pct": 0.01063578173711903,
+              "mae_pct": 1.0775789454639124,
+              "rmse_pct": 1.5379816837104658,
+              "r2": -0.0024284029879393376,
+              "rank_ic_spearman": 0.22917705521029166,
+              "selected_rows": 1737,
+              "selection_rate": 0.7810251798561151,
+              "selected_mean_net_return_pct": 0.093378845991654,
+              "selected_excess_over_all_candidates_pct": 0.18348349589009239,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 1737,
+                  "selected_mean_net_return_pct": 0.093378845991654
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6592,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": 0.014043173186391571
+            },
+            {
+              "rows": 1366,
+              "mean_target_net_return_pct": -0.20050877401479242,
+              "mean_prediction_pct": -0.017961943295838254,
+              "mae_pct": 2.17939934322155,
+              "rmse_pct": 3.2311921194164213,
+              "r2": -0.005837461564567992,
+              "rank_ic_spearman": 0.07918811193918057,
+              "selected_rows": 578,
+              "selection_rate": 0.42313323572474376,
+              "selected_mean_net_return_pct": -0.4353268253443931,
+              "selected_excess_over_all_candidates_pct": -0.23481805132960068,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 578,
+                  "selected_mean_net_return_pct": -0.4353268253443931
+                },
+                "SELL": {
+                  "rows": 788,
+                  "rank_ic_spearman": 0.0,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8380,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": 0.05105664760505659
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": true
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "smc_score_ridge": {
+          "overall_oos": {
+            "rows": 10015,
+            "mean_target_net_return_pct": -0.02794419361355107,
+            "mean_prediction_pct": -0.035907416613481194,
+            "mae_pct": 1.0781386570551186,
+            "rmse_pct": 1.6554779022195905,
+            "r2": -0.006194176303054633,
+            "rank_ic_spearman": 0.005140241005988255,
+            "selected_rows": 2592,
+            "selection_rate": 0.25881178232651025,
+            "selected_mean_net_return_pct": -0.030373780112431432,
+            "selected_excess_over_all_candidates_pct": -0.0024295864988803616,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": 0.016828401431690343,
+                "selected_rows": 1901,
+                "selected_mean_net_return_pct": -0.04248112014127747
+              },
+              "SELL": {
+                "rows": 4411,
+                "rank_ic_spearman": -0.10082826745011647,
+                "selected_rows": 691,
+                "selected_mean_net_return_pct": 0.002934546074017561
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 524,
+            "rank_ic_spearman": {
+              "median": 0.006340585184585571,
+              "lower_95": -0.07705048411226247,
+              "upper_95": 0.0966877172542023
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.011187856232911478,
+              "lower_95": -0.3541017597680387,
+              "upper_95": 0.2156204041269534
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": 0.01110079608054012,
+              "lower_95": -0.21675155797825726,
+              "upper_95": 0.2028454339541649
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.018425117494038114,
+              "mean_prediction_pct": -0.11174845692336306,
+              "mae_pct": 0.8144115337549214,
+              "rmse_pct": 1.0850947952228003,
+              "r2": -0.057492243692091716,
+              "rank_ic_spearman": -0.10078651303368108,
+              "selected_rows": 701,
+              "selection_rate": 0.32680652680652683,
+              "selected_mean_net_return_pct": -0.17801027295198588,
+              "selected_excess_over_all_candidates_pct": -0.15958515545794777,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": -0.02531425163231464,
+                  "selected_rows": 342,
+                  "selected_mean_net_return_pct": -0.13878707594462114
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": -0.16578315022735882,
+                  "selected_rows": 359,
+                  "selected_mean_net_return_pct": -0.2153761040843501
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1442,
+              "calibration_rows": 363,
+              "selection_threshold_pct": 0.004824226368620663
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": 0.17981848663085281,
+              "mean_prediction_pct": -0.040183777306768954,
+              "mae_pct": 0.8294613492430439,
+              "rmse_pct": 1.115824930976441,
+              "r2": -0.04104060189762082,
+              "rank_ic_spearman": 0.010491852357796445,
+              "selected_rows": 454,
+              "selection_rate": 0.17973079968329375,
+              "selected_mean_net_return_pct": 0.24267484842231532,
+              "selected_excess_over_all_candidates_pct": 0.0628563617914625,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.045943373284897025,
+                  "selected_rows": 342,
+                  "selected_mean_net_return_pct": 0.30228007350080965
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": -0.046446499891054184,
+                  "selected_rows": 112,
+                  "selected_mean_net_return_pct": 0.06066603612905604
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3169,
+              "calibration_rows": 797,
+              "selection_threshold_pct": -0.01679232246782029
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.12558323407423214,
+              "mean_prediction_pct": -0.008717031567568877,
+              "mae_pct": 0.9009072828527206,
+              "rmse_pct": 1.1417284020013911,
+              "r2": -0.00870255121290242,
+              "rank_ic_spearman": 0.09841417177535212,
+              "selected_rows": 494,
+              "selection_rate": 0.28164196123147095,
+              "selected_mean_net_return_pct": 0.09749105530036566,
+              "selected_excess_over_all_candidates_pct": 0.22307428937459778,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": -0.08853565204574125,
+                  "selected_rows": 485,
+                  "selected_mean_net_return_pct": 0.0905082881105099
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.03875080841293366,
+                  "selected_rows": 9,
+                  "selected_mean_net_return_pct": 0.4737846205314813
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5178,
+              "calibration_rows": 1297,
+              "selection_threshold_pct": 0.001191973211867997
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.09010464989843837,
+              "mean_prediction_pct": 0.005809223634604002,
+              "mae_pct": 1.0788149798979882,
+              "rmse_pct": 1.5388316956198387,
+              "r2": -0.0035367536953867518,
+              "rank_ic_spearman": -0.015200393613462159,
+              "selected_rows": 566,
+              "selection_rate": 0.25449640287769787,
+              "selected_mean_net_return_pct": -0.06921550606453705,
+              "selected_excess_over_all_candidates_pct": 0.020889143833901322,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": -0.16268464540402455,
+                  "selected_rows": 535,
+                  "selected_mean_net_return_pct": -0.06652525611641207
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": 0.19402814972349006,
+                  "selected_rows": 31,
+                  "selected_mean_net_return_pct": -0.11564401323379178
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6592,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": 0.010855235861964243
+            },
+            {
+              "rows": 1366,
+              "mean_target_net_return_pct": -0.20050877401479242,
+              "mean_prediction_pct": -0.011740963250619001,
+              "mae_pct": 2.178587593629561,
+              "rmse_pct": 3.226866287963741,
+              "r2": -0.0031460890857624157,
+              "rank_ic_spearman": 0.11978584877947605,
+              "selected_rows": 377,
+              "selection_rate": 0.2759882869692533,
+              "selected_mean_net_return_pct": -0.19390616122457302,
+              "selected_excess_over_all_candidates_pct": 0.006602612790219398,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.04062393014465935,
+                  "selected_rows": 197,
+                  "selected_mean_net_return_pct": -0.7359224480411258
+                },
+                "SELL": {
+                  "rows": 788,
+                  "rank_ic_spearman": 0.1825780797711033,
+                  "selected_rows": 180,
+                  "selected_mean_net_return_pct": 0.3993005526802097
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8380,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": 0.03321625612162442
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "all_features_ridge": {
+          "overall_oos": {
+            "rows": 10015,
+            "mean_target_net_return_pct": -0.02794419361355107,
+            "mean_prediction_pct": -0.44676081887171115,
+            "mae_pct": 1.1767526714940106,
+            "rmse_pct": 1.7229036993360445,
+            "r2": -0.08982566276958193,
+            "rank_ic_spearman": 0.03507290823558731,
+            "selected_rows": 1825,
+            "selection_rate": 0.18222666000998503,
+            "selected_mean_net_return_pct": 0.11352658126424381,
+            "selected_excess_over_all_candidates_pct": 0.14147077487779489,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": 0.04539198628055331,
+                "selected_rows": 653,
+                "selected_mean_net_return_pct": 0.2797614077805796
+              },
+              "SELL": {
+                "rows": 4411,
+                "rank_ic_spearman": 0.042242086289415115,
+                "selected_rows": 1172,
+                "selected_mean_net_return_pct": 0.020905982531165927
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 525,
+            "rank_ic_spearman": {
+              "median": 0.03451318180557683,
+              "lower_95": -0.051690518451190035,
+              "upper_95": 0.12223146580770551
+            },
+            "selected_mean_net_return_pct": {
+              "median": 0.11660877685542416,
+              "lower_95": -0.061376169381499264,
+              "upper_95": 0.2805695826630636
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": 0.14517217671942778,
+              "lower_95": -0.04898020018136877,
+              "upper_95": 0.347689159030442
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.018425117494038114,
+              "mean_prediction_pct": -0.5663794660217859,
+              "mae_pct": 1.0704023482756801,
+              "rmse_pct": 1.3849422785476113,
+              "r2": -0.7226822408548823,
+              "rank_ic_spearman": -0.1386851678624533,
+              "selected_rows": 349,
+              "selection_rate": 0.1627039627039627,
+              "selected_mean_net_return_pct": -0.15003264027152358,
+              "selected_excess_over_all_candidates_pct": -0.13160752277748547,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": -0.00749267255888943,
+                  "selected_rows": 88,
+                  "selected_mean_net_return_pct": -0.022181011550301714
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": -0.24586798786882977,
+                  "selected_rows": 261,
+                  "selected_mean_net_return_pct": -0.1931397028288704
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1442,
+              "calibration_rows": 363,
+              "selection_threshold_pct": 0.07555280130434634
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": 0.17981848663085281,
+              "mean_prediction_pct": -0.0473675402466565,
+              "mae_pct": 0.8221455804197955,
+              "rmse_pct": 1.1048192604679519,
+              "r2": -0.0206057717942163,
+              "rank_ic_spearman": 0.14495414672400395,
+              "selected_rows": 777,
+              "selection_rate": 0.30760095011876487,
+              "selected_mean_net_return_pct": 0.3420135524119318,
+              "selected_excess_over_all_candidates_pct": 0.162195065781079,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.10271956725037316,
+                  "selected_rows": 251,
+                  "selected_mean_net_return_pct": 0.3825066630686144
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": 0.20572290710840835,
+                  "selected_rows": 526,
+                  "selected_mean_net_return_pct": 0.3226907942848835
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3169,
+              "calibration_rows": 797,
+              "selection_threshold_pct": 0.03799364793860615
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.12558323407423214,
+              "mean_prediction_pct": -0.11327582971482866,
+              "mae_pct": 0.8992749612474467,
+              "rmse_pct": 1.1448338087612697,
+              "r2": -0.01419718845457929,
+              "rank_ic_spearman": 0.060929566272342396,
+              "selected_rows": 601,
+              "selection_rate": 0.3426453819840365,
+              "selected_mean_net_return_pct": -0.020792855568987967,
+              "selected_excess_over_all_candidates_pct": 0.10479037850524417,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": 0.07811939164842964,
+                  "selected_rows": 234,
+                  "selected_mean_net_return_pct": 0.27375643473545275
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.23944746748084153,
+                  "selected_rows": 367,
+                  "selected_mean_net_return_pct": -0.20859812513639706
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5178,
+              "calibration_rows": 1297,
+              "selection_threshold_pct": 0.0068685632821707185
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.09010464989843837,
+              "mean_prediction_pct": -0.4036764815258415,
+              "mae_pct": 1.1540970548907572,
+              "rmse_pct": 1.550950677189173,
+              "r2": -0.019405589007661428,
+              "rank_ic_spearman": 0.13538364835640482,
+              "selected_rows": 94,
+              "selection_rate": 0.04226618705035971,
+              "selected_mean_net_return_pct": 0.1815782500329298,
+              "selected_excess_over_all_candidates_pct": 0.2716828999313682,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": 0.08627863614004465,
+                  "selected_rows": 80,
+                  "selected_mean_net_return_pct": 0.30709937673533566
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": 0.17951229019888484,
+                  "selected_rows": 14,
+                  "selected_mean_net_return_pct": -0.5356853311236753
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6592,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": 0.1399721656280306
+            },
+            {
+              "rows": 1366,
+              "mean_target_net_return_pct": -0.20050877401479242,
+              "mean_prediction_pct": -1.4958367053346422,
+              "mae_pct": 2.3926684478153106,
+              "rmse_pct": 3.300734297918197,
+              "r2": -0.04959892327222404,
+              "rank_ic_spearman": 0.0862738907673915,
+              "selected_rows": 4,
+              "selection_rate": 0.0029282576866764276,
+              "selected_mean_net_return_pct": -2.692244317049486,
+              "selected_excess_over_all_candidates_pct": -2.4917355430346935,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.18734882895427007,
+                  "selected_rows": 0,
+                  "selected_mean_net_return_pct": null
+                },
+                "SELL": {
+                  "rows": 788,
+                  "rank_ic_spearman": -0.010874744522608063,
+                  "selected_rows": 4,
+                  "selected_mean_net_return_pct": -2.692244317049486
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8380,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": -0.06778255419579066
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        },
+        "all_features_xgboost": {
+          "overall_oos": {
+            "rows": 10015,
+            "mean_target_net_return_pct": -0.02794419361355107,
+            "mean_prediction_pct": -0.12491074255484402,
+            "mae_pct": 1.1382958787703243,
+            "rmse_pct": 1.6961202089411793,
+            "r2": -0.056205149903128415,
+            "rank_ic_spearman": -0.004591444102055736,
+            "selected_rows": 2244,
+            "selection_rate": 0.22406390414378433,
+            "selected_mean_net_return_pct": -0.06337718860082006,
+            "selected_excess_over_all_candidates_pct": -0.03543299498726899,
+            "by_direction": {
+              "BUY": {
+                "rows": 5604,
+                "rank_ic_spearman": 0.043147912476613245,
+                "selected_rows": 1181,
+                "selected_mean_net_return_pct": 0.14184142218096138
+              },
+              "SELL": {
+                "rows": 4411,
+                "rank_ic_spearman": -0.0736399028535176,
+                "selected_rows": 1063,
+                "selected_mean_net_return_pct": -0.2913764165719244
+              }
+            }
+          },
+          "weekly_block_intervals": {
+            "method": "calendar-week block bootstrap",
+            "weeks": 237,
+            "samples": 500,
+            "seed": 526,
+            "rank_ic_spearman": {
+              "median": -0.004657422863237199,
+              "lower_95": -0.08377023111901977,
+              "upper_95": 0.06454162336715775
+            },
+            "selected_mean_net_return_pct": {
+              "median": -0.06915246091618617,
+              "lower_95": -0.25450316365375936,
+              "upper_95": 0.11817783238791149
+            },
+            "selected_excess_over_all_candidates_pct": {
+              "median": -0.04180798380810834,
+              "lower_95": -0.21939719545485026,
+              "upper_95": 0.15993229388464691
+            }
+          },
+          "folds": [
+            {
+              "rows": 2145,
+              "mean_target_net_return_pct": -0.018425117494038114,
+              "mean_prediction_pct": -0.4315828530015836,
+              "mae_pct": 0.9366586983693529,
+              "rmse_pct": 1.2367471617227999,
+              "r2": -0.3737372501005085,
+              "rank_ic_spearman": -0.007682004131938824,
+              "selected_rows": 324,
+              "selection_rate": 0.15104895104895105,
+              "selected_mean_net_return_pct": -0.11655610976577677,
+              "selected_excess_over_all_candidates_pct": -0.09813099227173866,
+              "by_direction": {
+                "BUY": {
+                  "rows": 971,
+                  "rank_ic_spearman": 0.006510426437650411,
+                  "selected_rows": 135,
+                  "selected_mean_net_return_pct": -0.08312103579969028
+                },
+                "SELL": {
+                  "rows": 1174,
+                  "rank_ic_spearman": -0.028452820513849262,
+                  "selected_rows": 189,
+                  "selected_mean_net_return_pct": -0.14043830545583857
+                }
+              },
+              "test_year": 2022,
+              "train_rows": 1442,
+              "calibration_rows": 363,
+              "selection_threshold_pct": 0.05526603385806084
+            },
+            {
+              "rows": 2526,
+              "mean_target_net_return_pct": 0.17981848663085281,
+              "mean_prediction_pct": -0.05274622307747028,
+              "mae_pct": 0.8774253423211633,
+              "rmse_pct": 1.1600367762715869,
+              "r2": -0.12517237789580293,
+              "rank_ic_spearman": -0.00041684507855304764,
+              "selected_rows": 661,
+              "selection_rate": 0.26167854315122724,
+              "selected_mean_net_return_pct": 0.2420133187830766,
+              "selected_excess_over_all_candidates_pct": 0.062194832152223795,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1323,
+                  "rank_ic_spearman": 0.024821063469327394,
+                  "selected_rows": 336,
+                  "selected_mean_net_return_pct": 0.2886227467620103
+                },
+                "SELL": {
+                  "rows": 1203,
+                  "rank_ic_spearman": -0.026476186440722506,
+                  "selected_rows": 325,
+                  "selected_mean_net_return_pct": 0.1938263409340868
+                }
+              },
+              "test_year": 2023,
+              "train_rows": 3169,
+              "calibration_rows": 797,
+              "selection_threshold_pct": 0.07705982029438019
+            },
+            {
+              "rows": 1754,
+              "mean_target_net_return_pct": -0.12558323407423214,
+              "mean_prediction_pct": -0.015798296766991005,
+              "mae_pct": 0.9646493693200401,
+              "rmse_pct": 1.2026978437932998,
+              "r2": -0.11931049098718405,
+              "rank_ic_spearman": -0.06911702675795742,
+              "selected_rows": 515,
+              "selection_rate": 0.2936145952109464,
+              "selected_mean_net_return_pct": -0.3034236518467016,
+              "selected_excess_over_all_candidates_pct": -0.17784041777246948,
+              "by_direction": {
+                "BUY": {
+                  "rows": 995,
+                  "rank_ic_spearman": -0.016245325730021364,
+                  "selected_rows": 235,
+                  "selected_mean_net_return_pct": 0.015806311036192497
+                },
+                "SELL": {
+                  "rows": 759,
+                  "rank_ic_spearman": 0.0030334775372512926,
+                  "selected_rows": 280,
+                  "selected_mean_net_return_pct": -0.5713487992662736
+                }
+              },
+              "test_year": 2024,
+              "train_rows": 5178,
+              "calibration_rows": 1297,
+              "selection_threshold_pct": 0.12758418917655945
+            },
+            {
+              "rows": 2224,
+              "mean_target_net_return_pct": -0.09010464989843837,
+              "mean_prediction_pct": 0.04036620364836086,
+              "mae_pct": 1.100649044815822,
+              "rmse_pct": 1.542977934865731,
+              "r2": -0.008951912570690057,
+              "rank_ic_spearman": 0.02175299674107941,
+              "selected_rows": 458,
+              "selection_rate": 0.20593525179856115,
+              "selected_mean_net_return_pct": -0.15309401733813213,
+              "selected_excess_over_all_candidates_pct": -0.06298936743969376,
+              "by_direction": {
+                "BUY": {
+                  "rows": 1737,
+                  "rank_ic_spearman": 0.019133258631676055,
+                  "selected_rows": 365,
+                  "selected_mean_net_return_pct": 0.09638375481047762
+                },
+                "SELL": {
+                  "rows": 487,
+                  "rank_ic_spearman": -0.0023975934507683484,
+                  "selected_rows": 93,
+                  "selected_mean_net_return_pct": -1.1322272091041814
+                }
+              },
+              "test_year": 2025,
+              "train_rows": 6592,
+              "calibration_rows": 1654,
+              "selection_threshold_pct": 0.24820822477340698
+            },
+            {
+              "rows": 1366,
+              "mean_target_net_return_pct": -0.20050877401479242,
+              "mean_prediction_pct": -0.18599057971400318,
+              "mae_pct": 2.2215852369850206,
+              "rmse_pct": 3.2354338088914076,
+              "r2": -0.00847998504781522,
+              "rank_ic_spearman": 0.002981436038055411,
+              "selected_rows": 286,
+              "selection_rate": 0.20937042459736457,
+              "selected_mean_net_return_pct": -0.1330237577965955,
+              "selected_excess_over_all_candidates_pct": 0.06748501621819691,
+              "by_direction": {
+                "BUY": {
+                  "rows": 578,
+                  "rank_ic_spearman": 0.12625676479894296,
+                  "selected_rows": 110,
+                  "selected_mean_net_return_pct": 0.389675117430078
+                },
+                "SELL": {
+                  "rows": 788,
+                  "rank_ic_spearman": -0.08077038043420781,
+                  "selected_rows": 176,
+                  "selected_mean_net_return_pct": -0.4597105548132665
+                }
+              },
+              "test_year": 2026,
+              "train_rows": 8380,
+              "calibration_rows": 2099,
+              "selection_threshold_pct": 0.09869825839996338
+            }
+          ],
+          "exploratory_gates": {
+            "rank_ic_lower_95_above_zero": false,
+            "selected_return_lower_95_above_zero": false,
+            "selected_excess_lower_95_above_zero": false,
+            "positive_selected_return_in_at_least_three_folds": false
+          },
+          "all_exploratory_gates_pass": false
+        }
+      }
+    }
+  }
+}

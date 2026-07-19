@@ -137,6 +137,20 @@ shopping. The original gates are development thresholds, not a pristine
 pre-registration: their code predates v3 but the local v2 artifact predates the
 gate commit.
 
+`research/benchmark_return_targets.py` tests whether the fixed candidate-time
+features rank 1h/4h/12h/48h executable-side after-cost returns. It uses a
+constant calibration-mean baseline, direction-only and SMC-score ridge
+baselines, all-feature ridge and a fixed XGBoost regressor. Folds are
+chronological, every boundary is purged by actual target exit, training rows
+receive inverse-concurrency uniqueness weights and the live-feasible selection
+threshold comes only from the prior calibration slice. The result is
+`NO_EXPLORATORY_SIGNAL`: no model/horizon has a positive lower 95% bound for
+rank IC, selected return and selected excess while also showing positive
+selected return in at least three folds. The 48h all-feature ridge point
+estimate (+0.114% selected mean) is unstable and its weekly interval
+(-0.061% to +0.281%) includes zero. Target redesign alone therefore did not
+rescue the current information set.
+
 ## Runtime source validity
 
 The TradingView MCP runtime attempt is rejected. All requested W/D/4H/1H/15M

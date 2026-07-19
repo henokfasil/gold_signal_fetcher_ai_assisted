@@ -26,6 +26,7 @@ from research.export_forward_dataset import export
 from research.simulate_portfolio import simulate
 from research.analyze_research_evidence import label_uniqueness, weekly_block_bootstrap
 from research.relabel_candidate_targets import relabel
+from research.benchmark_return_targets import _prepare as prepare_return_target
 
 
 class FakeClaude:
@@ -145,6 +146,25 @@ class ResearchPipelineTests(unittest.TestCase):
         self.assertAlmostEqual(
             result["net_return_pct"], (101 - 100.5 - .2) / 100.5 * 100,
         )
+
+    def test_return_target_purge_time_uses_actual_executable_exit(self):
+        from agent.ml_feature_engineer_gold import GoldFeatureEngineer
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "targets.csv"
+            row = {
+                "timestamp": "2026-01-02T20:00:00Z", "direction": "BUY",
+                "target_48h_net_return_pct": 0.1,
+                "target_48h_actual_exit_hours": 50.25,
+            }
+            row.update({name: 0.0 for name in GoldFeatureEngineer.FEATURE_COLS})
+            row["rr_ratio"] = 2.0
+            pd.DataFrame([row]).to_csv(path, index=False)
+            prepared, target = prepare_return_target(path, 48)
+            self.assertEqual(target, "target_48h_net_return_pct")
+            self.assertEqual(
+                prepared.iloc[0]["target_exit_time"],
+                pd.Timestamp("2026-01-04T22:15:00Z"),
+            )
 
     def test_forward_journal_preserves_exact_candidate_features(self):
         from agent.ml_feature_engineer_gold import GoldFeatureEngineer

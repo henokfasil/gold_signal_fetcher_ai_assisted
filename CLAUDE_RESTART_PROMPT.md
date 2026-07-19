@@ -32,6 +32,10 @@ Important evidence already established:
 - Simple prevalence/direction/SMC-score/all-feature logistic benchmarks do not
   reveal predictive signal either; their dependence-aware uncertainty includes
   chance/zero.
+- Alternative 1h/4h/12h/48h after-cost return/ranking targets also returned
+  `NO_EXPLORATORY_SIGNAL` across constant, direction/SMC-score ridge,
+  all-feature ridge and fixed XGBoost regressors. The 48h ridge's positive point
+  estimate has an interval spanning zero and unstable fold selection.
 - No validated ML model exists. Do not create metadata claiming otherwise.
 - Lifecycle portfolio result: -2.33% return, profit factor 0.992, maximum
   drawdown 36.42%; BUY P&L positive and SELL P&L negative.
@@ -58,9 +62,10 @@ Continue with these objectives in order:
    and frozen contract hash without inspecting interim return performance.
 2. Build a versioned `gold_context` availability/source contract for new
    point-in-time economic information.
-3. Implement registered multi-horizon after-cost return, MFE/MAE, time-to-event
-   and utility/ranking targets from executable bid/ask history.
-4. Run each new feature/target experiment through the same simple-baseline-first
+3. Use the existing registered multi-horizon after-cost return/MFE/MAE targets
+   as diagnostics; do not rerun or tune them until genuinely new point-in-time
+   information has been added.
+4. Run each new feature experiment through the same simple-baseline-first
    chronological folds, purge, calibration and weekly-block uncertainty.
 5. Keep SELL shadow-only unless its separate pre-registered research track
    passes all gates.

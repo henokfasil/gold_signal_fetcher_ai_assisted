@@ -32,6 +32,13 @@ Current research state at handoff:
   include chance and selected-return intervals that include zero. This
   localizes the failure to the tested information/target rather than showing
   that a more fashionable model class will fix it.
+- Replacing the barrier label with 1h/4h/12h/48h after-cost return/ranking
+  targets also produced `NO_EXPLORATORY_SIGNAL`. Constant, direction, SMC-score,
+  all-feature ridge and XGBoost regressors used chronological actual-exit
+  purging, prior-slice thresholds and uniqueness weights. None passed all four
+  exploratory gates. The strongest-looking 48h ridge point estimate selected
+  +0.114%, but its weekly 95% interval was -0.061% to +0.281% and selection
+  collapsed to four rows in 2026; it is not a usable model.
 - The lifecycle portfolio diagnostic opens 2,695 positions from 40,792 raw
   candidates after cooldown/risk gates. It returns -2.33%, profit factor 0.992
   and maximum drawdown 36.42%. BUY contributes +$1,576.10; SELL contributes
@@ -459,7 +466,8 @@ registered there before evaluation.
    about 15.3%; it
    cannot by itself confirm profitability.
 4. Continue independent research now: construct new point-in-time context
-   features and economic targets under separately named protocols.
+   features under a separately named protocol. The existing multi-horizon
+   return targets did not rescue the candidate-time feature set.
 5. Build the DXY/real-yield/VIX snapshot producer with timestamp and source
    provenance.
 6. Add model/prompt/dataset lineage, drift and calibration monitoring.
@@ -539,6 +547,19 @@ python -m research.export_forward_dataset data/research/forward_matured.csv
 
 Historical and forward observations must remain separate. Never use forward
 results to repeatedly retune the frozen model being evaluated.
+
+### Alternative return-target benchmark
+
+`research/benchmark_return_targets.py` evaluates 1h/4h/12h/48h after-cost
+returns with a constant calibration mean, direction-only ridge, SMC-score
+ridge, all-feature ridge and fixed XGBoost regressor. It purges each boundary by
+the target's actual executable exit, weights training rows by inverse interval
+concurrency, fixes the selection threshold at the prior calibration slice's
+80th score percentile, reports BUY/SELL separately and uses calendar-week block
+bootstrap intervals. The canonical report is
+`data/research/return_target_benchmarks_v1.json`; its result is
+`NO_EXPLORATORY_SIGNAL`. This is evidence against the present information set,
+not against ML in general.
 
 ## Security and operations
 
