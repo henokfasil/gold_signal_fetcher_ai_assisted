@@ -92,6 +92,13 @@ Important evidence already established:
   2027-01-23 23:04:38 UTC. No interim performance analysis or confirmation
   claim is permitted. Continue independent feature/target research while it
   runs.
+- Dashboard users still open `http://187.55.229.4:8502/`. A listener shown as
+  `0.0.0.0:8502` is only the server-side bind meaning that port 8502 accepts
+  traffic on the VPS interfaces; it does not change the public URL.
+- The engineering baseline is operating, but the project is not finished: no
+  validated profitable edge or deployable ML model exists. The next research
+  task is a new candidate-generation/setup-taxonomy experiment, not another
+  model fitted to the already rejected feature set.
 
 Continue with these objectives in order:
 
@@ -106,11 +113,21 @@ Continue with these objectives in order:
    information has been added.
 4. Preserve rejected execution-state v1 and do not tune or promote its 4h
    secondary diagnostic.
-5. Run each genuinely new-information experiment through the same simple-baseline-first
-   chronological folds, purge, calibration and weekly-block uncertainty.
-6. Keep SELL shadow-only unless its separate pre-registered research track
+5. Register `candidate-generation-20260719-v2` before inspecting its outcome
+   comparison. Freeze causal setup-family definitions, BUY/SELL separation,
+   executable-side targets, costs, chronological folds, actual-exit purge,
+   simple controls and dependence-aware gates in a machine-readable contract.
+6. Implement the frozen setup taxonomy and compare each family against a
+   trade-all control and simple-rule baseline before fitting ML. Preserve all
+   attempted families and failed results.
+7. Run each later genuinely new-information experiment through the same
+   simple-baseline-first chronological folds, purge, calibration and
+   weekly-block uncertainty.
+8. Keep SELL shadow-only unless its separate pre-registered research track
    passes all gates.
-7. Update `CLAUDE.md`, `RESEARCH_PROTOCOL.md`, tests, Git and the canonical VPS
+9. Keep the public dashboard at `http://187.55.229.4:8502/`; treat domain,
+   HTTPS and authentication as a separate operations-hardening milestone.
+10. Update `CLAUDE.md`, `RESEARCH_PROTOCOL.md`, tests, Git and the canonical VPS
    together only after local verification.
 
 Required methodological constraints:
@@ -127,8 +144,9 @@ Required methodological constraints:
   to design a separately frozen, adequately powered confirmation if warranted.
 
 Begin by summarizing your understanding of the current state in no more than
-ten bullets. Then show the exact local verification results and propose the
-smallest next implementation step. Proceed autonomously with safe read-only
+ten bullets. Then show the exact local verification results and start the
+smallest next implementation step: the pre-analysis contract and tests for
+`candidate-generation-20260719-v2`. Proceed autonomously with safe read-only
 diagnostics and locally authorized research changes, but stop before any live
 trading, secret handling, destructive operation or unrequested external
 action.

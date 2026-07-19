@@ -144,6 +144,23 @@ Current research state at handoff:
   evaluation or confirmatory edge claim. Assignments cannot approve a paper
   trade, send Telegram or select/train a model.
 
+Completion checkpoint:
+
+- The engineering baseline is operating: the dashboard, scheduled paper
+  scanner, fail-closed Dukascopy collection, append-only evidence ledgers,
+  Telegram integration, tests and integrity monitoring are in place.
+- The research objective is **not complete**. No tested ML model has passed the
+  promotion gates, no profitable edge has been demonstrated and the system is
+  not ready for live capital or commercial claims.
+- Rejected experiments are useful completed work: they prevent the same weak
+  information from being repackaged under another model name. They do not mean
+  that the whole AI-assisted research program failed.
+- The next active research task is a separately versioned candidate-generation
+  experiment, provisionally named `candidate-generation-20260719-v2`. It is
+  not registered or frozen yet. Before reading its outcome comparison, create
+  a machine-readable contract that fixes the setup taxonomy, causal inputs,
+  BUY/SELL separation, targets, costs, folds, baselines and promotion gates.
+
 Resume in this order:
 
 1. Verify `git status`, run the verification commands below and confirm the
@@ -157,11 +174,17 @@ Resume in this order:
    diagnostic, tune its features or change its gates after seeing the result.
 5. Monitor prospective context source health, counts and missingness without
    inspecting interim returns or giving the fields approval/Telegram effect.
-6. Run genuinely new-information feature/target experiments through identical baselines,
-   chronological folds, purge, calibration and dependence-aware uncertainty.
-7. Add causal regime/session diagnostics only inside chronological training
+6. Register and implement `candidate-generation-20260719-v2`: classify the
+   existing causal SMC objects into explicit setup families (for example sweep,
+   BOS/CHoCH, FVG/order-block proximity, session and trend/regime combinations)
+   without using outcome data to define the families.
+7. Compare those frozen families and a trade-all control separately for BUY and
+   SELL using the existing executable-side targets, identical chronological
+   folds, actual-exit purge, costs and dependence-aware uncertainty. Only then
+   decide whether ML has a better candidate universe to rank.
+8. Add causal regime/session diagnostics only inside chronological training
    folds. Register every proposed filter before examining its next-fold result.
-8. Freeze a revision only if the underlying non-ML baseline and any ML filter
+9. Freeze a revision only if the underlying non-ML baseline and any ML filter
    pass development gates. Final evidence must come from future forward paper
    observations with no mid-test changes.
 
@@ -187,6 +210,12 @@ Canonical VPS facts as of 2026-07-19:
 - Canonical host: `187.55.229.4` (`srv1831821`).
 - Dashboard: `http://187.55.229.4:8502/` via
   `gold-signal-fetcher.service`.
+- `0.0.0.0:8502` is the process's server-side bind address, not a replacement
+  dashboard URL. It means “accept port 8502 traffic arriving on any VPS network
+  interface”; users still browse only to `http://187.55.229.4:8502/`.
+  Binding to `127.0.0.1:8502` would make the dashboard reachable only from the
+  VPS itself. Do not change the working bind merely to make it resemble the
+  public URL.
 - Repository: `/root/gold_signal_fetcher_ai_assisted`.
 - The paper scanner is designed to run every 15 minutes through the canonical
   wrapper. Dukascopy collection failure or any source/cadence/quote/freshness
@@ -542,11 +571,16 @@ registered there before evaluation.
    test fold; its positive 4h diagnostic cannot select a new model or horizon.
 6. Keep the prospective runtime context contract unchanged; monitor only exact
    source health, staleness, candidate counts and missingness until evaluation.
-7. Seek a genuinely new information source or candidate-generation hypothesis,
-   write its source/timing/target/gates contract first, and compare it against
-   the same simple baselines. Do not try another model class on these 62 fields.
+7. Make the next local task `candidate-generation-20260719-v2`. First freeze a
+   setup-taxonomy contract; then test each causal setup family against trade-all
+   and simple-rule controls, separately for BUY and SELL, with the existing
+   executable-side targets and leakage-safe evaluation. Do not try another
+   model class on the same rejected 62-field information set.
 8. Continue model/prompt/dataset lineage, drift and calibration monitoring.
-9. Do not design live-capital execution unless a later frozen forward test
+9. Secure the public dashboard with a reverse proxy, HTTPS and authentication
+   before treating it as a customer-facing service. This is an operations gate,
+   not evidence of trading performance.
+10. Do not design live-capital execution unless a later frozen forward test
    passes the registered gates; this experiment remains paper-only.
 
 ### Validation decision rule

@@ -106,3 +106,17 @@ its primary 4h rank-IC and selected-return intervals still crossed zero. It
 therefore passed three of five gates and was rejected. BUY is a weak prospective
 hypothesis; SELL remains negative. The next engineering step is append-only
 prospective context capture, not retrospective threshold tuning.
+
+The append-only context capture and evidence-integrity monitor are now
+implemented. The subsequent registered execution-state experiment also
+completed and was rejected: all primary 1-hour execution-state models selected
+negative after-cost returns in every test fold, and no direction qualified.
+Its positive-looking 4-hour secondary diagnostic has an uncertainty interval
+spanning zero and cannot be promoted under the frozen contract.
+
+The next local research priority is therefore candidate generation rather than
+another model-class substitution. A new `candidate-generation-20260719-v2`
+contract must freeze causal SMC setup families and compare them with trade-all
+and simple-rule controls separately for BUY and SELL before any ML ranking is
+attempted. The prospective pilot continues unchanged while this independent
+development work proceeds.

@@ -18,6 +18,21 @@ The locked wrapper collects and validates a fresh atomic snapshot before every
 scan. Collection failure aborts the scan. `PAPER_TRADING=true` is forced by the
 wrapper and no broker execution method exists.
 
+## Dashboard address and bind
+
+The user-facing address is always `http://187.55.229.4:8502/`. The Flask
+process intentionally listens on `0.0.0.0:8502`; `0.0.0.0` is not a URL and
+does not replace the public IP. It tells Linux to accept port 8502 connections
+on all VPS interfaces, including the interface reached through
+`187.55.229.4`. A `127.0.0.1:8502` bind would pass the local curl check but
+would make the dashboard unavailable from the user's browser.
+
+The current direct-IP HTTP endpoint is suitable for controlled paper-research
+access, not a customer-facing production service. Add a domain, reverse proxy,
+TLS/HTTPS, authentication and a restrictive firewall policy before commercial
+exposure. Do not change the working application bind as a substitute for those
+controls.
+
 ## Deploy
 
 ```bash

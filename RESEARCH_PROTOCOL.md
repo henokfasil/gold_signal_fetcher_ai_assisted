@@ -259,6 +259,28 @@ No model artifact may be created or deployed from it. Hyperparameter search on
 the same years is prohibited until the event lifecycle, dependence weighting
 and directional research questions above are implemented.
 
+## Next planned experiment: candidate generation v2
+
+`candidate-generation-20260719-v2` is the next planned research task, but it is
+not yet registered or frozen. Its result must not be evaluated until a
+machine-readable pre-analysis contract and matching tests fix all of the
+following:
+
+- causal setup-family definitions derived from candidate-time SMC objects;
+- an unchanged trade-all control and frozen simple-rule baselines;
+- separate BUY and SELL hypotheses and promotion decisions;
+- executable bid/ask targets, costs and cost-stress assumptions;
+- chronological folds purged by actual label exit, calibration boundaries and
+  uniqueness/dependence treatment;
+- minimum sample/effective-sample requirements, fold stability and weekly
+  block-bootstrap confidence gates; and
+- an attempt registry that retains every family tested, including failures.
+
+The purpose is to test whether the candidate universe is too heterogeneous and
+can be defined more coherently using causal information. It is not permission
+to mine arbitrary SMC combinations on the full 2020-2026 outcomes. The frozen
+forward pilot and context observation continue unchanged in parallel.
+
 `research/benchmark_candidate_models.py` runs prevalence, direction-only,
 SMC-score-only logistic, all-feature logistic and XGBoost through the same
 folds, purge, calibration and selection rule. No model has an AUC interval
