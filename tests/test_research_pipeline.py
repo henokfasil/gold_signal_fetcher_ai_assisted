@@ -10,13 +10,17 @@ import pandas as pd
 from agent.claude_analyst import AITradingDecider
 from agent.gold_correlations import GoldCorrelationValidator
 from agent.ml_signal_generator import MLSignalGenerator
+from agent.ml_feature_engineer_gold import GoldFeatureEngineer
 from agent.notifier import Notifier
 from agent.smc_gold_scanner import (
     _build_smc_signal, _candles_to_df, _run_from_price_snapshot,
     _run_from_tradingview_snapshot,
     detect_bos_down,
 )
-from dashboard import get_context_health, get_feed_health, get_shadow_variants
+from dashboard import (
+    get_context_health, get_evidence_integrity, get_feed_health,
+    get_shadow_variants,
+)
 from main_orchestrator import (
     AIAssistedOrchestrator, ForwardContextJournal, ForwardFeatureJournal,
     ForwardOutcomeJournal, ForwardVariantJournal,
@@ -24,6 +28,9 @@ from main_orchestrator import (
 from agent.gold_context_snapshot import (
     CONTEXT_FEATURES, canonical_snapshot_sha256, load_forward_context_contract,
     load_validated_context_snapshot,
+)
+from agent.evidence_integrity import (
+    build_evidence_integrity_report, drift_report, load_integrity_contract,
 )
 from ops.collect_gold_context_snapshot import collect as collect_gold_context
 from research.build_historical_dataset import label_candidate, load_ohlcv
@@ -104,6 +111,66 @@ class ResearchPipelineTests(unittest.TestCase):
             ]}}
         }
         return payload, xau
+
+    @staticmethod
+    def _integrity_fixture(root, rows=1, shifted=False):
+        started = datetime(2026, 7, 19, 13, 30, tzinfo=timezone.utc)
+        canonical, features, outcomes, variants, contexts = [], [], [], [], []
+        for index in range(rows):
+            timestamp = (started + timedelta(minutes=15 * index)).isoformat()
+            candidate_id = f"{index + 1:012X}"
+            direction = "BUY" if index % 2 == 0 else "SELL"
+            canonical.append({
+                "candidate_id": candidate_id, "timestamp": timestamp,
+                "direction": direction, "paper_trading": True,
+            })
+            feature_value = 100.0 if shifted and index >= rows // 2 else float(index % 5)
+            feature_row = {
+                "candidate_id": candidate_id, "timestamp": timestamp, "direction": direction,
+            }
+            feature_row.update({name: feature_value for name in GoldFeatureEngineer.FEATURE_COLS})
+            features.append(feature_row)
+            outcomes.append({
+                "candidate_id": candidate_id, "candidate_time": timestamp,
+                "direction": direction, "status": "TRACKING",
+                "net_return_pct": "FORBIDDEN_VALUE_MUST_NOT_BE_READ",
+            })
+            variants.append({
+                "candidate_id": candidate_id, "timestamp": timestamp,
+                "experiment_version": "forward-pilot-20260719-v3",
+                "contract_sha256": ForwardVariantJournal.EXPECTED_CONTRACT_SHA256,
+                "direction": direction, "baseline_v1": 1, "paper_trading": True,
+            })
+            context_row = {
+                "candidate_id": candidate_id, "timestamp": timestamp,
+                "experiment_version": "forward-context-buy-20260719-v1",
+                "contract_sha256": (
+                    "97e7d3b4bf2ad00809c00c9e2b6cb6dfd6961b40c70e26da7772b42ef8048b70"
+                ),
+                "feature_schema_sha256": (
+                    "4100208e9e086f5399dedf3f23a7165ed1444bd8994228b5492adc1525c320c6"
+                ),
+                "direction": direction, "context_available": 1,
+                "baseline_context_capture_v1": 1,
+                "buy_context_hypothesis_v1": int(direction == "BUY"),
+                "paper_trading": True,
+            }
+            context_row.update({name: feature_value for name in CONTEXT_FEATURES})
+            for name in ("dollar_idx", "silver", "volatility_idx", "treasury_bond"):
+                context_row[f"ctx_{name}_missing"] = 0
+            contexts.append(context_row)
+        paths = {
+            "ledger_path": root / "ledger.csv", "features_path": root / "features.csv",
+            "outcomes_path": root / "outcomes.csv", "variants_path": root / "variants.csv",
+            "context_path": root / "context.csv",
+        }
+        for key, values in (
+            ("ledger_path", canonical), ("features_path", features),
+            ("outcomes_path", outcomes), ("variants_path", variants),
+            ("context_path", contexts),
+        ):
+            pd.DataFrame(values).to_csv(paths[key], index=False)
+        return paths
 
     def test_label_uniqueness_discounts_overlapping_outcomes(self):
         frame = pd.DataFrame({
@@ -354,6 +421,83 @@ class ResearchPipelineTests(unittest.TestCase):
             self.assertEqual(health["buy_hypothesis_candidates"], 1)
             self.assertEqual(health["sell_observations"], 1)
             self.assertNotIn("return", health)
+
+    def test_evidence_integrity_contract_is_hash_locked_and_performance_is_forbidden(self):
+        contract, digest = load_integrity_contract()
+        self.assertEqual(
+            digest, "7aa62452c2cfd8e0c454163d35b82eb0e45612daa04ad2b88cd27d2c93550934",
+        )
+        self.assertFalse(contract["isolation"]["may_read_outcome_performance_columns"])
+        self.assertFalse(contract["isolation"]["may_evaluate_interim_profitability"])
+
+    def test_evidence_integrity_reconciles_complete_candidate_without_returns(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._integrity_fixture(Path(directory))
+            original_read_csv = pd.read_csv
+
+            def guarded_read_csv(path, *args, **kwargs):
+                if Path(path) == paths["outcomes_path"] and kwargs.get("nrows") is None:
+                    forbidden = {"net_return_pct", "label_profitable", "pnl_pct", "pnl_usd"}
+                    self.assertFalse(set(kwargs.get("usecols", [])) & forbidden)
+                return original_read_csv(path, *args, **kwargs)
+
+            with patch("agent.evidence_integrity.pd.read_csv", side_effect=guarded_read_csv):
+                report = build_evidence_integrity_report(**paths)
+            self.assertEqual(report["status"], "HEALTHY · DRIFT BASELINE COLLECTING")
+            self.assertEqual(report["performance_columns_read"], [])
+            self.assertTrue(all(item["status"] == "PASS" for item in report["ledgers"]))
+
+    def test_evidence_integrity_degrades_on_missing_outcome_and_context(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._integrity_fixture(Path(directory))
+            pd.DataFrame(columns=[
+                "candidate_id", "candidate_time", "direction", "status",
+            ]).to_csv(paths["outcomes_path"], index=False)
+            context = pd.read_csv(paths["context_path"])
+            context.loc[0, "context_available"] = 0
+            context.loc[0, "ctx_silver_missing"] = 1
+            context.to_csv(paths["context_path"], index=False)
+            report = build_evidence_integrity_report(**paths)
+            self.assertEqual(report["status"], "DEGRADED")
+            by_name = {item["name"]: item for item in report["ledgers"]}
+            self.assertEqual(by_name["Shadow outcomes"]["missing"], 1)
+            self.assertEqual(by_name["Context observations"]["missing_capture_rows"], 1)
+
+    def test_evidence_integrity_detects_duplicates_orphans_and_timestamp_drift(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._integrity_fixture(Path(directory))
+            features = pd.read_csv(paths["features_path"], dtype=str)
+            features.loc[0, "timestamp"] = "2026-07-19T13:31:00+00:00"
+            duplicate = features.iloc[[0]].copy()
+            orphan = features.iloc[[0]].copy()
+            orphan.loc[:, "candidate_id"] = "FFFFFFFFFFFF"
+            features = pd.concat([features, duplicate, orphan], ignore_index=True)
+            features.to_csv(paths["features_path"], index=False)
+            report = build_evidence_integrity_report(**paths)
+            technical = next(item for item in report["ledgers"]
+                             if item["name"] == "Technical features")
+            self.assertEqual(report["status"], "DEGRADED")
+            self.assertEqual(technical["duplicates"], 1)
+            self.assertEqual(technical["orphan"], 1)
+            self.assertEqual(technical["identity_mismatches"], 1)
+
+    def test_registered_psi_detects_large_prospective_feature_shift(self):
+        contract, _ = load_integrity_contract()
+        frame = pd.DataFrame({
+            "_timestamp": pd.date_range("2026-01-01", periods=200, freq="h", tz="UTC"),
+            "feature": [0.0] * 100 + [10.0] * 100,
+        })
+        report = drift_report(frame, ["feature"], contract)
+        self.assertEqual(report["status"], "ALERT")
+        self.assertGreaterEqual(report["max_psi"], 0.25)
+
+    def test_dashboard_evidence_integrity_reports_counts_not_performance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._integrity_fixture(Path(directory))
+            report = get_evidence_integrity(**paths, status_path=Path(directory) / "missing.json")
+            self.assertEqual(report["status"], "HEALTHY · DRIFT BASELINE COLLECTING")
+            self.assertEqual(report["performance_access"], "NEVER")
+            self.assertEqual(report["pilot_candidates"], 1)
 
     def test_forward_journal_preserves_exact_candidate_features(self):
         from agent.ml_feature_engineer_gold import GoldFeatureEngineer

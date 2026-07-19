@@ -88,6 +88,14 @@ FORWARD_CONTEXT_CONFIG = Path(
     os.getenv('FORWARD_CONTEXT_CONFIG',
               PROJECT_ROOT / 'config' / 'forward_context_observation_v1.json')
 )
+EVIDENCE_INTEGRITY_CONFIG = Path(
+    os.getenv('EVIDENCE_INTEGRITY_CONFIG',
+              PROJECT_ROOT / 'config' / 'evidence_integrity_v1.json')
+)
+EVIDENCE_INTEGRITY_STATUS_PATH = Path(
+    os.getenv('EVIDENCE_INTEGRITY_STATUS_PATH',
+              PROJECT_ROOT / 'data' / 'evidence_integrity_status.json')
+)
 RESEARCH_SPREAD_POINTS = float(os.getenv('RESEARCH_SPREAD_POINTS', '0.35'))
 RESEARCH_SLIPPAGE_POINTS = float(os.getenv('RESEARCH_SLIPPAGE_POINTS', '0.10'))
 SYSTEM_A_CSV = Path(os.getenv('SYSTEM_A_CSV', '/root/Gold_Signal_Fetcher/data/paper_trades.csv'))

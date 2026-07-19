@@ -16,6 +16,7 @@ from agent.gold_context_snapshot import (
     load_forward_context_contract,
     load_validated_context_snapshot,
 )
+from agent.evidence_integrity import build_evidence_integrity_report
 from agent.liquidity_manager import is_market_closed
 from config import settings
 
@@ -383,6 +384,60 @@ def get_context_health(snapshot_path=None, journal_path=None, contract_path=None
     return result
 
 
+def get_evidence_integrity(
+    ledger_path=None, features_path=None, outcomes_path=None,
+    variants_path=None, context_path=None, config_path=None,
+    variant_contract_path=None, context_contract_path=None, status_path=None,
+):
+    """Reconcile evidence files without reading any performance values."""
+    try:
+        report = build_evidence_integrity_report(
+            ledger_path=Path(ledger_path or settings.PAPER_TRADES_CSV),
+            features_path=Path(features_path or settings.FORWARD_FEATURES_CSV),
+            outcomes_path=Path(outcomes_path or settings.FORWARD_OUTCOMES_CSV),
+            variants_path=Path(variants_path or settings.FORWARD_VARIANT_ASSIGNMENTS_CSV),
+            context_path=Path(context_path or settings.FORWARD_CONTEXT_CSV),
+            config_path=Path(config_path or settings.EVIDENCE_INTEGRITY_CONFIG),
+            variant_contract_path=Path(variant_contract_path or settings.RESEARCH_VARIANT_CONFIG),
+            context_contract_path=Path(context_contract_path or settings.FORWARD_CONTEXT_CONFIG),
+        )
+    except (OSError, RuntimeError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+        return {
+            "status": "CONFIG ERROR", "status_class": "bad", "monitor_version": "—",
+            "canonical_candidates_total": 0, "pilot_candidates": 0,
+            "context_scope_candidates": 0, "ledgers": [],
+            "technical_drift": {"status": "UNAVAILABLE", "max_psi_display": "—"},
+            "context_drift": {"status": "UNAVAILABLE", "max_psi_display": "—"},
+            "issue_summary": str(exc)[:240], "scheduled_check": "Unavailable",
+            "performance_access": "NEVER", "effect": "None — operational monitoring only",
+        }
+
+    for key in ("technical_drift", "context_drift"):
+        value = report[key].get("max_psi")
+        report[key]["max_psi_display"] = "—" if value is None else f"{value:.3f}"
+    report["issue_summary"] = (
+        "; ".join(report["issues"][:4]) if report["issues"] else "None"
+    )
+    report["performance_access"] = (
+        "NEVER" if not report["performance_columns_read"] else "CONTRACT VIOLATION"
+    )
+    report["scheduled_check"] = "Awaiting first scheduled audit"
+    try:
+        artifact = json.loads(Path(
+            status_path or settings.EVIDENCE_INTEGRITY_STATUS_PATH
+        ).read_text())
+        if (artifact.get("monitor_version") == report["monitor_version"] and
+                artifact.get("contract_sha256") == report["contract_sha256"]):
+            generated = datetime.fromisoformat(
+                artifact["generated_at"].replace("Z", "+00:00")
+            ).astimezone(timezone.utc)
+            age = max(0, int((datetime.now(timezone.utc) - generated).total_seconds()))
+            report["scheduled_check"] = f"{age // 60}m {age % 60}s ago · {artifact['status']}"
+    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+        pass
+    return report
+
+
 TEMPLATE = """
 <!doctype html><html><head><title>Gold Signal Research</title>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -402,6 +457,12 @@ TEMPLATE = """
 {% for label,value in [('Experiment',context.experiment),('Provider',context.provider),('Snapshot captured',context.captured_at),('Snapshot age',context.snapshot_age),('Assignment cutoff',context.assignment_cutoff),('Evaluate once',context.evaluation_at),('Context candidates',context.captured_candidates),('Capture rate',context.capture_rate),('BUY hypothesis observations',context.buy_hypothesis_candidates),('SELL baseline observations',context.sell_observations),('Missing captures',context.missing_captures),('Decision / Telegram effect',context.effect)] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
 </div><table class="quality"><thead><tr><th>Context input</th><th>Exact symbol</th><th>Price sides</th><th>Analysis price</th><th>Bars</th><th>Cadence</th><th>Latest available UTC</th><th>Current staleness</th><th>Candidate missing rate</th></tr></thead><tbody>{% for name,q in context.instruments.items() %}<tr><td>{{ name }}</td><td>{{ q.symbol }}</td><td>{{ q.sides }}</td><td>{{ q.analysis }}</td><td>{{ q.count }}</td><td>{{ q.cadence }}</td><td>{{ q.latest }}</td><td>{{ q.staleness }}</td><td>{{ q.missing_rate }}</td></tr>{% endfor %}</tbody></table>
 <div class="note">Operational monitoring only: exact source, sides, completed-candle cadence, staleness, missingness and counts. Interim returns are intentionally absent. These fields cannot score or approve a candidate, influence Claude, send Telegram, or place an order.</div></section>
+
+<section class="panel"><div class="panel-head"><h2>Research Evidence Integrity</h2><span class="pill {{ integrity.status_class }}">{{ integrity.status }}</span></div>
+<div class="grid">
+{% for label,value in [('Monitor',integrity.monitor_version),('Canonical candidates',integrity.canonical_candidates_total),('Pilot-scope candidates',integrity.pilot_candidates),('Context-scope candidates',integrity.context_scope_candidates),('Technical drift',integrity.technical_drift.status),('Technical max PSI',integrity.technical_drift.max_psi_display),('Context drift',integrity.context_drift.status),('Context max PSI',integrity.context_drift.max_psi_display),('Scheduled audit',integrity.scheduled_check),('Performance columns read',integrity.performance_access),('Decision / Telegram effect',integrity.effect),('Current issues',integrity.issue_summary)] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
+</div><table class="quality"><thead><tr><th>Evidence ledger</th><th>Status</th><th>Expected</th><th>Rows</th><th>Missing</th><th>Orphans</th><th>Duplicates</th><th>Identity mismatch</th><th>Invalid rows</th><th>Schema</th></tr></thead><tbody>{% for q in integrity.ledgers %}<tr><td>{{ q.name }}</td><td class="{{ 'ok' if q.status in ['PASS','READY'] else 'no' }}">{{ q.status }}</td><td>{{ q.expected }}</td><td>{{ q.rows }}</td><td>{{ q.missing }}</td><td>{{ q.orphan }}</td><td>{{ q.duplicates }}</td><td>{{ q.identity_mismatches }}</td><td>{{ q.invalid_rows|default(0) }}</td><td>{{ q.schema }}</td></tr>{% endfor %}</tbody></table>
+<div class="note">File-only reconciliation of IDs, timestamps, directions, schemas, frozen hashes, memberships and missingness. PSI starts only after 200 prospective rows using the frozen first 100 versus latest 100. It is a distribution-shift heuristic, not a profitability or model-decay conclusion; outcome returns and P&amp;L are never read.</div></section>
 
 <section class="panel"><div class="panel-head"><h2>Prospective Shadow Variants</h2><span class="pill {{ variants.status_class }}">{{ variants.status }}</span></div>
 <div class="grid">
@@ -424,6 +485,7 @@ def dashboard():
                                   rows=get_recent_trades(settings.PAPER_TRADES_CSV),
                                   feed=get_feed_health(),
                                   context=get_context_health(),
+                                  integrity=get_evidence_integrity(),
                                   variants=get_shadow_variants(),
                                   now=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
 

@@ -72,6 +72,20 @@ Current research state at handoff:
   Telegram, broker or training effect. Assignment ends 2027-01-17 12:49:25
   UTC and evaluation is once on 2027-01-24 12:49:25 UTC. Do not inspect
   interim returns.
+- Evidence reconciliation is frozen as `evidence-integrity-20260719-v1` in
+  `config/evidence_integrity_v1.json` (SHA-256
+  `7aa62452c2cfd8e0c454163d35b82eb0e45612daa04ad2b88cd27d2c93550934`).
+  After every scan it checks candidate coverage across technical features,
+  shadow outcomes, variant assignments and context; it also detects duplicate
+  IDs, orphans, timestamp/direction mismatches, invalid lifecycle states,
+  missing context, and frozen schema/contract drift. The dashboard exposes
+  these counts. Outcome returns, P&L, win rate and profit factor are excluded
+  from the monitor's CSV reads, so it cannot reveal interim performance.
+- Prospective input PSI begins only after 200 rows per ledger. The immutable
+  first 100 rows define reference-only decile bins and the latest 100 form the
+  non-overlapping current window. Registered PSI warning/alert thresholds are
+  0.10/0.25. PSI is an operational distribution heuristic, not proof of model
+  decay, predictive skill or profitability.
 - The lifecycle portfolio diagnostic opens 2,695 positions from 40,792 raw
   candidates after cooldown/risk gates. It returns -2.33%, profit factor 0.992
   and maximum drawdown 36.42%. BUY contributes +$1,576.10; SELL contributes
@@ -115,8 +129,8 @@ Resume in this order:
 1. Verify `git status`, run the verification commands below and confirm the
    canonical VPS revision/services without touching secrets or historical data.
 2. Monitor snapshot cadence, latest-complete-bar lag and append-only pilot
-   assignments/outcomes; operational monitoring must not reveal interim
-   profitability.
+   assignments/outcomes plus evidence-integrity status; operational monitoring
+   must not reveal interim profitability.
 3. Preserve context v2 as a failed-but-informative experiment; do not tune its
    features or thresholds on the same outcomes. Do not modify the frozen pilot.
 4. Monitor prospective context source health, counts and missingness without
@@ -588,6 +602,14 @@ wall time because it fetched seven source/side series. Cached checks took about
 one second and do not materially load the VPS. The dashboard reads these files
 only and exposes health, exact symbols/sides, staleness, missingness and
 counts—not interim performance.
+
+`agent/evidence_integrity.py` reconciles candidate identity and coverage across
+all forward ledgers without selecting outcome performance columns. The scanner
+wrapper runs `python -m ops.check_evidence_integrity` after every completed
+scan and atomically writes `data/evidence_integrity_status.json`; the file is a
+generated operational artifact and is ignored by Git. A degraded audit is
+visible in logs and the dashboard but cannot alter the already completed paper
+decision. No-candidate state is reported as ready rather than as a failure.
 
 Historical and forward observations must remain separate. Never use forward
 results to repeatedly retune the frozen model being evaluated.

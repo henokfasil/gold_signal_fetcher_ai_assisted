@@ -23,6 +23,8 @@ files_to_check = [
     'agent/ml_feature_engineer.py',
     'agent/ml_signal_generator.py',
     'agent/claude_analyst.py',
+    'agent/evidence_integrity.py',
+    'ops/check_evidence_integrity.py',
     'dashboard.py',
     'send_daily_metrics.py',
 ]
@@ -80,6 +82,8 @@ checks = [
     ('agent/claude_analyst.py', 'AITradingDecider', True),
     ('main_orchestrator.py', 'AIAssistedOrchestrator', True),
     ('dashboard.py', 'calculate_metrics', False),
+    ('dashboard.py', 'get_evidence_integrity', False),
+    ('agent/evidence_integrity.py', 'build_evidence_integrity_report', False),
     ('send_daily_metrics.py', 'get_metrics', False),
 ]
 
@@ -153,6 +157,7 @@ config_files = [
     'requirements.txt',
     'CLAUDE.md',
     'VPS_DEPLOYMENT.md',
+    'config/evidence_integrity_v1.json',
 ]
 
 all_configs = True

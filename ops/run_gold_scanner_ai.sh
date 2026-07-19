@@ -68,4 +68,15 @@ elif [[ "${PRICE_DATA_PROVIDER:-dukascopy}" == "dukascopy" ]]; then
   fi
 fi
 
-exec "${PYTHON_BIN}" "${PROJECT_DIR}/main_orchestrator.py" >> "${LOG_FILE}" 2>&1
+if ! "${PYTHON_BIN}" "${PROJECT_DIR}/main_orchestrator.py" >> "${LOG_FILE}" 2>&1; then
+  echo "Paper orchestrator failed" >> "${LOG_FILE}"
+  exit 1
+fi
+
+# Reconcile the append-only research evidence after each scan.  A degraded
+# audit is visible on the dashboard and in logs but cannot retroactively alter
+# the completed candidate decision.
+if ! EVIDENCE_INTEGRITY_STATUS_PATH="${EVIDENCE_INTEGRITY_STATUS_PATH:-${PROJECT_DIR}/data/evidence_integrity_status.json}" \
+    "${PYTHON_BIN}" -m ops.check_evidence_integrity >> "${LOG_FILE}" 2>&1; then
+  echo "Evidence-integrity monitor reports DEGRADED; paper decisions remain unchanged" >> "${LOG_FILE}"
+fi

@@ -55,6 +55,13 @@ Important evidence already established:
   `data/forward_candidate_context_v1.csv` for both BUY and SELL candidates.
   Failures become explicit missing rows. It has no scoring, approval, Claude,
   Telegram, broker or training effect and no interim returns may be inspected.
+- Evidence reconciliation and prospective input drift monitoring are frozen as
+  `evidence-integrity-20260719-v1` (SHA-256
+  `7aa62452c2cfd8e0c454163d35b82eb0e45612daa04ad2b88cd27d2c93550934`).
+  Every scan checks missing, duplicate, orphan and mismatched candidate rows
+  across all forward ledgers plus schema/contract drift. PSI is evaluated only
+  after 200 rows using the fixed first 100 versus latest 100. The monitor never
+  reads outcome returns or P&L and has no decision or notification effect.
 - No validated ML model exists. Do not create metadata claiming otherwise.
 - Lifecycle portfolio result: -2.33% return, profit factor 0.992, maximum
   drawdown 36.42%; BUY P&L positive and SELL P&L negative.
@@ -78,7 +85,8 @@ Important evidence already established:
 Continue with these objectives in order:
 
 1. Verify the active source snapshot, cron, dashboard, append-only pilot files
-   and frozen contract hash without inspecting interim return performance.
+   and frozen contract hashes plus evidence-integrity status without inspecting
+   interim return performance.
 2. Preserve context v2 and monitor prospective context source health,
    staleness, counts and missingness without inspecting interim performance or
    changing approval/Telegram behavior.

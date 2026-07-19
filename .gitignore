@@ -16,3 +16,4 @@ build/
 *.png
 .DS_Store
 .claude/
+data/evidence_integrity_status.json
