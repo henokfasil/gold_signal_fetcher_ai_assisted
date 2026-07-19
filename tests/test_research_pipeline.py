@@ -41,6 +41,13 @@ from research.relabel_candidate_targets import relabel
 from research.benchmark_return_targets import _prepare as prepare_return_target
 from research.download_gold_context import combine_sides, load_contract
 from research.build_gold_context_dataset import instrument_features
+from research.build_execution_state_dataset import (
+    EXECUTION_FEATURES, compute_execution_features,
+    join_candidate_features, load_contract as load_execution_state_contract,
+)
+from research.benchmark_execution_state import (
+    _stressed_target, _validate_registered_evaluation,
+)
 
 
 class FakeClaude:
@@ -190,6 +197,98 @@ class ResearchPipelineTests(unittest.TestCase):
         first = weekly_block_bootstrap(opened, samples=50, seed=7)
         second = weekly_block_bootstrap(opened, samples=50, seed=7)
         self.assertEqual(first, second)
+
+    def test_execution_state_contract_and_feature_schema_are_hash_locked(self):
+        contract, digest = load_execution_state_contract()
+        self.assertEqual(
+            digest,
+            "e2931d0f80525ca9f9b16d3f9ab2ca5c710b99f41a70dfd08ac8921adecf2232",
+        )
+        self.assertEqual(contract["feature_contract"]["registered_features"],
+                         EXECUTION_FEATURES)
+        self.assertEqual(contract["evaluation_contract"]["primary_target"],
+                         "target_1h_net_return_pct")
+        self.assertTrue(contract["paper_research_only"])
+
+    @staticmethod
+    def _execution_bars(rows=2105):
+        timestamp = pd.date_range("2025-01-01", periods=rows, freq="15min", tz="UTC")
+        trend = pd.Series(range(rows), dtype=float) * 0.01
+        midpoint = 2000.0 + trend + pd.Series(range(rows), dtype=float).mod(17) * 0.002
+        spread = 0.18 + pd.Series(range(rows), dtype=float).mod(11) * 0.001
+        bid = midpoint - spread / 2
+        ask = midpoint + spread / 2
+        return pd.DataFrame({
+            "timestamp": timestamp,
+            "available_at": timestamp + pd.Timedelta(minutes=15),
+            "open": midpoint - 0.02,
+            "high": midpoint + 0.20,
+            "low": midpoint - 0.20,
+            "close": midpoint,
+            "spread_close": spread,
+            "bid_volume": 10.0 + pd.Series(range(rows), dtype=float).mod(13),
+            "ask_volume": 11.0 + pd.Series(range(rows), dtype=float).mod(7),
+        })
+
+    def test_execution_state_features_do_not_read_future_bars(self):
+        raw = self._execution_bars()
+        cutoff = 2000
+        original = compute_execution_features(raw).iloc[cutoff]
+        changed = raw.copy()
+        future = changed.index > cutoff
+        changed.loc[future, ["open", "high", "low", "close"]] += 1000
+        changed.loc[future, "spread_close"] += 20
+        changed.loc[future, ["bid_volume", "ask_volume"]] *= 50
+        recomputed = compute_execution_features(changed).iloc[cutoff]
+        pd.testing.assert_series_equal(original, recomputed)
+        computed_features = [
+            name for name in EXECUTION_FEATURES if name != "exec_spread_to_atr_1h"
+        ]
+        self.assertTrue(original[computed_features].notna().all())
+        self.assertEqual(
+            int(original[[name for name in EXECUTION_FEATURES
+                          if name.startswith("exec_window_")]].sum()),
+            1,
+        )
+
+    def test_execution_state_join_is_exact_and_preserves_registered_order(self):
+        raw = self._execution_bars()
+        features = compute_execution_features(raw)
+        timestamp = features.iloc[2000]["timestamp"]
+        candidates = pd.DataFrame({"timestamp": [timestamp], "atr_14": [2.0]})
+        joined = join_candidate_features(candidates, features)
+        self.assertEqual(list(joined.columns[-len(EXECUTION_FEATURES):]),
+                         EXECUTION_FEATURES)
+        self.assertAlmostEqual(
+            joined.iloc[0]["exec_spread_to_atr_1h"],
+            joined.iloc[0]["exec_spread_close_points"] / 2.0,
+        )
+        missing_time = pd.DataFrame({
+            "timestamp": [timestamp + pd.Timedelta(seconds=1)], "atr_14": [2.0],
+        })
+        missed = join_candidate_features(missing_time, features)
+        self.assertTrue(missed["exec_spread_close_points"].isna().all())
+
+    def test_execution_state_slippage_stress_is_two_sided_and_incremental(self):
+        frame = pd.DataFrame({
+            "target_1h_net_return_pct": [1.0], "executable_entry": [2000.0],
+        })
+        self.assertAlmostEqual(
+            _stressed_target(frame, "target_1h_net_return_pct", 0.10).iloc[0],
+            1.0,
+        )
+        self.assertAlmostEqual(
+            _stressed_target(frame, "target_1h_net_return_pct", 0.25).iloc[0],
+            1.0 - 0.30 / 2000.0 * 100,
+        )
+
+    def test_execution_state_benchmark_refuses_unregistered_sampling(self):
+        contract, _ = load_execution_state_contract()
+        _validate_registered_evaluation(contract, 500, 42)
+        with self.assertRaisesRegex(RuntimeError, "registered bootstrap samples"):
+            _validate_registered_evaluation(contract, 499, 42)
+        with self.assertRaisesRegex(RuntimeError, "registered seed"):
+            _validate_registered_evaluation(contract, 500, 43)
 
     def test_portfolio_simulator_enforces_setup_cooldown(self):
         rows = pd.DataFrame([

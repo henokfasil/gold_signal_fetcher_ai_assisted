@@ -20,6 +20,14 @@ missing rows, duplicates, orphans, identity/schema/contract drift and
 prospective feature PSI, while deliberately never reading interim return or
 P&L columns.
 
+The registered `execution-state-20260719-v1` experiment added 29 causal
+spread, volatility, fixed-UTC liquidity-window, range/gap and feed-specific
+tick-volume fields to the frozen historical candidates. Its primary 1-hour
+walk-forward result is `REJECT_EXECUTION_STATE_MODELS`: selected returns were
+negative after costs in every test fold, so no model or runtime behavior was
+created. The machine-readable result is
+`data/research/execution_state_benchmarks_v1.json`.
+
 See [CLAUDE.md](CLAUDE.md) for architecture, data contracts, operational status
 and the research roadmap. The skeptical-review response and implemented
 decisions are in

@@ -60,6 +60,26 @@ Current research state at handoff:
   It passed three of five gates, not all five. BUY selected mean was +0.0226%
   with interval -0.0132% to +0.0661%; SELL was negative. No context model
   artifact may be created or deployed.
+- Execution-state v1 is complete under the pre-analysis contract
+  `config/execution_state_v1.json` (SHA-256
+  `e2931d0f80525ca9f9b16d3f9ab2ca5c710b99f41a70dfd08ac8921adecf2232`).
+  The exact-close dataset preserves all 40,792 candidates and adds all 29
+  registered completed-bar spread, volatility, fixed-UTC window, range/gap and
+  feed-specific tick-volume fields with no missing candidate values. Dataset
+  SHA-256 is
+  `6f53daabc9ccf06c958d5bf3115eb76ffbc5e541085bf233d2676d36a2b506a5`.
+- The canonical result is `REJECT_EXECUTION_STATE_MODELS` in
+  `data/research/execution_state_benchmarks_v1.json` (SHA-256
+  `6142e374e18fd1c77c6a5baa111e48f7a3e4e1403e93c1f09947d111b2221e3c`).
+  On the primary 1h target, execution-only Ridge selected -0.0282% mean return
+  with weekly 95% interval -0.0420% to -0.0131%. Technical-plus-execution
+  Ridge selected -0.0240% (-0.0393% to -0.0103%), and the matching XGBoost
+  selected -0.0258% (-0.0392% to -0.0133%). Every primary model had zero
+  positive test folds; no direction was eligible and no model passed.
+- The secondary 4h execution-only Ridge diagnostic had positive rank IC 0.0419
+  and selected +0.0105%, but its selected-return interval was -0.0197% to
+  +0.0418%. The contract forbids using secondary diagnostics to select a
+  horizon, model or threshold. It is not a shadow authorization or an edge.
 - Prospective context observation is frozen as
   `forward-context-buy-20260719-v1` in
   `config/forward_context_observation_v1.json` (SHA-256
@@ -133,13 +153,15 @@ Resume in this order:
    must not reveal interim profitability.
 3. Preserve context v2 as a failed-but-informative experiment; do not tune its
    features or thresholds on the same outcomes. Do not modify the frozen pilot.
-4. Monitor prospective context source health, counts and missingness without
+4. Preserve execution-state v1 as rejected. Do not promote its secondary 4h
+   diagnostic, tune its features or change its gates after seeing the result.
+5. Monitor prospective context source health, counts and missingness without
    inspecting interim returns or giving the fields approval/Telegram effect.
-5. Run genuinely new feature/target experiments through identical baselines,
+6. Run genuinely new-information feature/target experiments through identical baselines,
    chronological folds, purge, calibration and dependence-aware uncertainty.
-6. Add causal regime/session diagnostics only inside chronological training
+7. Add causal regime/session diagnostics only inside chronological training
    folds. Register every proposed filter before examining its next-fold result.
-7. Freeze a revision only if the underlying non-ML baseline and any ML filter
+8. Freeze a revision only if the underlying non-ML baseline and any ML filter
    pass development gates. Final evidence must come from future forward paper
    observations with no mid-test changes.
 
@@ -516,10 +538,15 @@ registered there before evaluation.
    cannot by itself confirm profitability.
 4. Preserve the rejected context-v2 result; its weak BUY/context lead is
    hypothesis-generating only and cannot be tuned on the same years.
-5. Keep the prospective runtime context contract unchanged; monitor only exact
+5. Preserve rejected execution-state v1. Its 1h models lost after cost in every
+   test fold; its positive 4h diagnostic cannot select a new model or horizon.
+6. Keep the prospective runtime context contract unchanged; monitor only exact
    source health, staleness, candidate counts and missingness until evaluation.
-6. Add model/prompt/dataset lineage, drift and calibration monitoring.
-7. Do not design live-capital execution unless a later frozen forward test
+7. Seek a genuinely new information source or candidate-generation hypothesis,
+   write its source/timing/target/gates contract first, and compare it against
+   the same simple baselines. Do not try another model class on these 62 fields.
+8. Continue model/prompt/dataset lineage, drift and calibration monitoring.
+9. Do not design live-capital execution unless a later frozen forward test
    passes the registered gates; this experiment remains paper-only.
 
 ### Validation decision rule
@@ -661,6 +688,33 @@ python -m research.benchmark_gold_context \
 The canonical result is `REJECT_CONTEXT_MODELS`. A weak context-only BUY lead
 does not pass selected-return uncertainty and may be used only to register a
 future hypothesis, never to deploy or retroactively relax the gates.
+
+### Execution-state v1 benchmark
+
+`research/build_execution_state_dataset.py` verifies the frozen raw/candidate
+hashes, interprets raw timestamps as candle opens, makes fields available only
+at open plus 15 minutes and requires an exact candidate-close join. It adds the
+29 features registered by `config/execution_state_v1.json`; raw and joined CSVs
+remain local because their redistribution rights have not been reviewed.
+
+```bash
+python -m research.build_execution_state_dataset \
+  data/research/xauusd_smc_candidates_v4.csv \
+  data/raw/dukascopy_xauusd_15m_2020_2026.csv \
+  data/research/xauusd_smc_candidates_execution_state_v1.csv
+
+python -m research.benchmark_execution_state \
+  data/research/xauusd_smc_candidates_execution_state_v1.csv \
+  --output data/research/execution_state_benchmarks_v1.json \
+  --bootstrap-samples 500 --seed 42
+```
+
+The benchmark hard-fails if its registered feature schema, model ladder,
+paired controls, XGBoost parameters, cost grid, bootstrap count or seed drift.
+The canonical primary result is `REJECT_EXECUTION_STATE_MODELS`: all three
+eligible execution models fail every positive-return gate, with zero positive
+1h test folds and no separately eligible direction. No model artifact, runtime
+score, approval rule or Telegram behavior may be created from this result.
 
 ## Security and operations
 

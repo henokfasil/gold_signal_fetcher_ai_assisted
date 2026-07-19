@@ -48,6 +48,17 @@ Important evidence already established:
   primary gates but failed rank-IC and selected-return lower bounds. Its BUY
   selected return was +0.0226% with a 95% interval spanning zero; SELL was
   negative. Do not tune or deploy this result.
+- Execution-state v1 is complete under the frozen contract
+  `config/execution_state_v1.json` (SHA-256
+  `e2931d0f80525ca9f9b16d3f9ab2ca5c710b99f41a70dfd08ac8921adecf2232`).
+  Its 29 completed-bar spread/volatility/window/range/volume fields preserve all
+  40,792 candidates with exact-close joins and no missing feature values.
+  The canonical decision is `REJECT_EXECUTION_STATE_MODELS`; all primary 1h
+  execution models selected negative after-cost returns in every test fold.
+  No model, score, approval or Telegram behavior was created.
+- A positive-looking secondary 4h execution-only diagnostic is not eligible
+  for promotion: its selected-return interval includes zero and the contract
+  forbids using a secondary diagnostic to choose a horizon/model/threshold.
 - Prospective context observation is implemented under the frozen contract
   `forward-context-buy-20260719-v1` (SHA-256
   `97e7d3b4bf2ad00809c00c9e2b6cb6dfd6961b40c70e26da7772b42ef8048b70`).
@@ -93,11 +104,13 @@ Continue with these objectives in order:
 3. Use the existing registered multi-horizon after-cost return/MFE/MAE targets
    as diagnostics; do not rerun or tune them until genuinely new point-in-time
    information has been added.
-4. Run each new feature experiment through the same simple-baseline-first
+4. Preserve rejected execution-state v1 and do not tune or promote its 4h
+   secondary diagnostic.
+5. Run each genuinely new-information experiment through the same simple-baseline-first
    chronological folds, purge, calibration and weekly-block uncertainty.
-5. Keep SELL shadow-only unless its separate pre-registered research track
+6. Keep SELL shadow-only unless its separate pre-registered research track
    passes all gates.
-6. Update `CLAUDE.md`, `RESEARCH_PROTOCOL.md`, tests, Git and the canonical VPS
+7. Update `CLAUDE.md`, `RESEARCH_PROTOCOL.md`, tests, Git and the canonical VPS
    together only after local verification.
 
 Required methodological constraints:

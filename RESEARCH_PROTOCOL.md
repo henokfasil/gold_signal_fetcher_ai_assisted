@@ -175,6 +175,27 @@ least one separately eligible BUY or SELL direction. A development pass can
 only register a future shadow hypothesis; failure creates no model artifact or
 runtime behavior.
 
+This registered experiment is complete. The exact-close joined dataset has
+40,792 rows, no missing registered candidate features and SHA-256
+`6f53daabc9ccf06c958d5bf3115eb76ffbc5e541085bf233d2676d36a2b506a5`.
+The canonical report is `data/research/execution_state_benchmarks_v1.json`,
+SHA-256 `6142e374e18fd1c77c6a5baa111e48f7a3e4e1403e93c1f09947d111b2221e3c`,
+with decision `REJECT_EXECUTION_STATE_MODELS`.
+
+On the primary 1h target, execution-only Ridge selected -0.0282% mean after
+cost (weekly 95% interval -0.0420% to -0.0131%); technical-plus-execution
+Ridge selected -0.0240% (-0.0393% to -0.0103%); and
+technical-plus-execution XGBoost selected -0.0258% (-0.0392% to -0.0133%).
+All had zero positive-return test folds. Their rank-IC, selected-excess,
+paired-improvement and stressed-return lower bounds also failed the applicable
+gates, and neither BUY nor SELL was independently eligible.
+
+Execution-only Ridge's secondary 4h diagnostic ranked positively (rank IC
+0.0419) and selected +0.0105%, but its selected-return interval was -0.0197%
+to +0.0418%. This does not override the primary rejection. Under the frozen
+contract it cannot choose a new primary horizon, model, threshold or shadow
+variant. No execution-state artifact or runtime behavior was created.
+
 ### 6. Frozen forward paper pilot and later confirmation
 
 Forward candidate features and shadow outcomes remain append-only and separate
