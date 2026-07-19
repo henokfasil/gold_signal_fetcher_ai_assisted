@@ -48,6 +48,12 @@ from research.build_execution_state_dataset import (
 from research.benchmark_execution_state import (
     _stressed_target, _validate_registered_evaluation,
 )
+from research.benchmark_candidate_generation import (
+    _stress_returns as stress_candidate_generation_returns,
+    _validate_registered_evaluation as validate_candidate_generation_evaluation,
+    load_contract as load_candidate_generation_contract,
+    variant_masks as candidate_generation_variant_masks,
+)
 
 
 class FakeClaude:
@@ -289,6 +295,70 @@ class ResearchPipelineTests(unittest.TestCase):
             _validate_registered_evaluation(contract, 499, 42)
         with self.assertRaisesRegex(RuntimeError, "registered seed"):
             _validate_registered_evaluation(contract, 500, 43)
+
+    def test_candidate_generation_contract_is_hash_locked(self):
+        contract, digest = load_candidate_generation_contract()
+        self.assertEqual(
+            digest,
+            "484246c8c1c4cc464a7da9059fac9da1235ebf4d5ad90442fbb2c68642130da9",
+        )
+        self.assertEqual(
+            contract["evaluation_contract"]["primary_variant"],
+            "sweep_value_retest_primary",
+        )
+        self.assertTrue(contract["paper_research_only"])
+        self.assertFalse(contract["decision_rule"]["paper_approval_authorized"])
+
+    def test_candidate_generation_primary_membership_is_directional_and_causal(self):
+        frame = pd.DataFrame([
+            {
+                "direction": "BUY", "rr_ratio": 2.0, "smc_score": 90,
+                "structure_1d_encoded": 1, "structure_1h_encoded": 1,
+                "choch_4h_present": 0, "choch_15m_present": 1,
+                "liquidity_sweep_1h_present": 1, "price_at_ob": 1,
+                "fvg_1h_present": 0, "premium_discount_position": 0.4,
+            },
+            {
+                "direction": "SELL", "rr_ratio": 2.0, "smc_score": 80,
+                "structure_1d_encoded": -1, "structure_1h_encoded": -1,
+                "choch_4h_present": 1, "choch_15m_present": 0,
+                "liquidity_sweep_1h_present": 1, "price_at_ob": 0,
+                "fvg_1h_present": 1, "premium_discount_position": 0.6,
+            },
+            {
+                "direction": "BUY", "rr_ratio": 2.0, "smc_score": 90,
+                "structure_1d_encoded": 1, "structure_1h_encoded": -1,
+                "choch_4h_present": 0, "choch_15m_present": 0,
+                "liquidity_sweep_1h_present": 1, "price_at_ob": 1,
+                "fvg_1h_present": 1, "premium_discount_position": 0.7,
+            },
+        ])
+        masks = candidate_generation_variant_masks(frame)
+        self.assertEqual(masks["sweep_value_retest_primary"].tolist(),
+                         [True, True, False])
+        self.assertEqual(masks["multi_timeframe_alignment_only"].tolist(),
+                         [True, True, False])
+        self.assertEqual(masks["smc_score_85_control"].tolist(),
+                         [True, False, True])
+
+    def test_candidate_generation_cost_stress_is_two_sided_and_incremental(self):
+        contract, _ = load_candidate_generation_contract()
+        frame = pd.DataFrame({
+            "net_return_pct": [1.0], "executable_entry": [2000.0],
+        })
+        stressed = stress_candidate_generation_returns(frame, contract)
+        self.assertAlmostEqual(
+            stressed.iloc[0]["net_return_pct"],
+            1.0 - 0.30 / 2000.0 * 100,
+        )
+
+    def test_candidate_generation_refuses_unregistered_sampling(self):
+        contract, _ = load_candidate_generation_contract()
+        validate_candidate_generation_evaluation(contract, 2000, 42)
+        with self.assertRaisesRegex(RuntimeError, "bootstrap samples"):
+            validate_candidate_generation_evaluation(contract, 1999, 42)
+        with self.assertRaisesRegex(RuntimeError, "bootstrap seed"):
+            validate_candidate_generation_evaluation(contract, 2000, 43)
 
     def test_portfolio_simulator_enforces_setup_cooldown(self):
         rows = pd.DataFrame([
