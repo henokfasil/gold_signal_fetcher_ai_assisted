@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "contract_version": "execution-state-20260719-v1",
+  "frozen_at_utc": "2026-07-19T14:00:47Z",
+  "implementation_parent_revision": "013d7f3de6ec63cd772748b80eadf1fe5074660f",
+  "paper_research_only": true,
+  "purpose": "Test whether causal XAUUSD execution, liquidity-window and volatility state improves candidate ranking after observed bid/ask costs",
+  "development_contamination_disclosed": true,
+  "source_contract": {
+    "provider": "dukascopy-public",
+    "instrument": "XAUUSD",
+    "raw_file": "data/raw/dukascopy_xauusd_15m_2020_2026.csv",
+    "raw_file_sha256": "c61a27b37628972377aff01817a223631fb57253ddc5dcd217cf0a6f6d3ddeeb",
+    "raw_interval": "15M",
+    "raw_timestamp_semantics": "candle open UTC",
+    "feature_available_at": "raw candle open + 15 minutes",
+    "forming_candles_excluded": true,
+    "price_components": ["bid", "ask", "midpoint"],
+    "volume_semantics": "Dukascopy side-specific tick-volume proxy, not exchange trade volume or signed order flow",
+    "candidate_file": "data/research/xauusd_smc_candidates_v4.csv",
+    "candidate_file_sha256": "0b74895cbd58917e485043acaee470815b1149a7d1647a662d93f08cda919520",
+    "candidate_timestamp_semantics": "decision candle close UTC",
+    "join": "exact candidate timestamp equals feature available_at; nearest and future joins forbidden"
+  },
+  "feature_contract": {
+    "schema_sha256": "4a37a6d9e5d0fe8ac3f64ab67dce45cbaa37e812256d14bc6cb6562fe2bba84e",
+    "feature_count": 29,
+    "registered_features": [
+      "exec_spread_close_points",
+      "exec_spread_close_bps",
+      "exec_spread_to_atr_1h",
+      "exec_spread_median_96bars_points",
+      "exec_spread_ratio_to_median_96bars",
+      "exec_spread_percentile_480bars",
+      "exec_spread_change_4bars_points",
+      "exec_mid_return_4bars_pct",
+      "exec_mid_return_16bars_pct",
+      "exec_mid_return_96bars_pct",
+      "exec_realized_volatility_4bars_pct",
+      "exec_realized_volatility_16bars_pct",
+      "exec_realized_volatility_96bars_pct",
+      "exec_volatility_16bars_percentile_1920bars",
+      "exec_true_range_bps",
+      "exec_gap_from_previous_close_bps",
+      "exec_session_range_bps",
+      "exec_distance_to_session_high_bps",
+      "exec_distance_to_session_low_bps",
+      "exec_bars_since_market_reopen",
+      "exec_minute_of_day_sin",
+      "exec_minute_of_day_cos",
+      "exec_window_asia",
+      "exec_window_london_pre_overlap",
+      "exec_window_london_new_york_overlap",
+      "exec_window_new_york_late",
+      "exec_window_rollover",
+      "exec_tick_volume_side_imbalance",
+      "exec_tick_volume_ratio_to_median_96bars"
+    ],
+    "rolling_semantics": {
+      "4bars": "current and prior completed bars; approximately one traded hour",
+      "16bars": "current and prior completed bars; approximately four traded hours",
+      "96bars": "completed traded bars; approximately one traded day",
+      "480bars": "completed traded bars; approximately five traded days",
+      "1920bars": "completed traded bars; approximately twenty traded days"
+    },
+    "rolling_windows_are_backward_only_and_include_current_completed_bar": true,
+    "full_sample_normalization_forbidden": true,
+    "fixed_utc_liquidity_windows": {
+      "asia": "00:00-06:59 UTC",
+      "london_pre_overlap": "07:00-11:59 UTC",
+      "london_new_york_overlap": "12:00-15:59 UTC",
+      "new_york_late": "16:00-20:59 UTC",
+      "rollover": "21:00-23:59 UTC",
+      "disclosure": "Descriptive liquidity windows, not official exchange sessions; deliberately fixed in UTC and not DST-adjusted"
+    },
+    "session_range_reset": "UTC date plus fixed liquidity-window membership",
+    "market_reopen_reset": "timestamp gap greater than 30 minutes",
+    "missing_policy": "Preserve nulls; model imputation is fitted inside each training fold only"
+  },
+  "evaluation_contract": {
+    "primary_target": "target_1h_net_return_pct",
+    "secondary_diagnostic_targets": [
+      "target_4h_net_return_pct",
+      "target_12h_net_return_pct",
+      "target_48h_net_return_pct"
+    ],
+    "candidate_minimum_risk_reward": 2.0,
+    "folds": "expanding calendar-year test folds beginning 2022",
+    "purge": "actual executable target exit must precede calibration or test boundary",
+    "calibration": "latest 20 percent of each prior chronological fold after purge",
+    "selection_threshold": "80th percentile of scores in the prior calibration slice",
+    "fit_weighting": "average inverse target-interval concurrency normalized to mean one",
+    "uncertainty": "calendar-week block bootstrap with 500 registered samples and seed 42",
+    "direction_reporting": "BUY and SELL separately plus combined",
+    "models": {
+      "calibration_mean": "constant prior-calibration mean",
+      "direction_ridge": "direction only, Ridge alpha 10",
+      "smc_score_ridge": "SMC score only, Ridge alpha 10",
+      "execution_only_ridge": "29 execution-state features, fold-local median imputation, scaling, Ridge alpha 10",
+      "technical_only_ridge_control": "existing 33 features, fold-local median imputation, scaling, Ridge alpha 10",
+      "technical_plus_execution_ridge": "existing 33 plus 29 execution features, same Ridge pipeline",
+      "technical_only_xgboost_control": "fixed shallow XGBoost control",
+      "technical_plus_execution_xgboost": "same fixed shallow XGBoost with execution features"
+    },
+    "paired_controls": {
+      "execution_only_ridge": "calibration_mean",
+      "technical_plus_execution_ridge": "technical_only_ridge_control",
+      "technical_plus_execution_xgboost": "technical_only_xgboost_control"
+    },
+    "xgboost_parameters": {
+      "max_depth": 3,
+      "n_estimators": 250,
+      "learning_rate": 0.03,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "min_child_weight": 10,
+      "reg_lambda": 2,
+      "random_state": 42,
+      "n_jobs": 4
+    },
+    "cost_stress_slippage_points_per_side": [0.10, 0.25, 0.50],
+    "cost_stress_method": "Do not refit scores; subtract incremental two-sided slippage from each realized target using executable entry",
+    "primary_development_gates": [
+      "rank-IC lower 95 percent bound above zero",
+      "selected base-cost return lower 95 percent bound above zero",
+      "selected excess over all candidates lower 95 percent bound above zero",
+      "positive selected base-cost return in at least three test folds",
+      "paired selected-return improvement over matched control lower 95 percent bound above zero",
+      "selected return at 0.25 points slippage per side lower 95 percent bound above zero",
+      "at least one separately eligible direction"
+    ],
+    "direction_eligibility": [
+      "direction rank-IC lower 95 percent bound above zero",
+      "direction selected return at 0.25 points slippage per side lower 95 percent bound above zero",
+      "at least 200 selected out-of-sample candidates",
+      "selected candidates represented in at least 50 calendar weeks"
+    ],
+    "only_primary_target_can_pass_development_gates": true,
+    "secondary_results_cannot_select_a_horizon_model_or_threshold": true
+  },
+  "decision_rule": {
+    "pass": "All primary gates pass for an eligible execution-state model; result remains development-contaminated and may only register a new prospective shadow hypothesis",
+    "fail": "Preserve REJECT_EXECUTION_STATE_MODELS; create no model artifact, runtime score, approval rule or Telegram behavior",
+    "live_or_paper_approval_authorized_by_development_pass": false
+  },
+  "commercial_rights_status": "NOT_REVIEWED_DO_NOT_RESELL_OR_REDISTRIBUTE_SOURCE_DATA",
+  "change_rule": "Any source, timing, feature, window, target, model, cost stress, threshold, gate or direction rule change requires a new contract version before affected results are inspected."
+}

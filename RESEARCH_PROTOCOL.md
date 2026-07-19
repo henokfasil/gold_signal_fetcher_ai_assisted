@@ -151,6 +151,30 @@ about model decay or profitability. Outcome return, P&L, win-rate and
 profit-factor columns are forbidden inputs. The monitor cannot affect scoring,
 approval, Claude, Telegram, paper positions, training or model promotion.
 
+#### Registered execution-state experiment: `execution-state-20260719-v1`
+
+The machine-readable pre-analysis contract is
+`config/execution_state_v1.json`. It registers 29 candidate-time XAUUSD
+features derived from completed Dukascopy 15-minute bid/ask bars: observed
+spread state, traded-bar returns and realized volatility, causal rolling
+percentiles, true range and gaps, fixed-UTC liquidity-window state, range and
+level distance, bars since a market gap, cyclic time and source-specific side
+tick-volume diagnostics. The liquidity-window names are descriptive and are
+not official exchange sessions. Tick volume is not exchange volume or signed
+order flow.
+
+The primary target is the existing executable-side 1h after-cost return;
+4h/12h/48h are secondary diagnostics that cannot select a model or horizon.
+The fixed model ladder begins with constant, direction and SMC-score controls,
+then compares execution-only Ridge and technical-plus-execution Ridge/XGBoost
+against matched no-execution controls. Thresholds come from prior calibration,
+folds purge by actual exits, training uses uniqueness weights and uncertainty
+uses calendar-week blocks. A primary pass additionally requires the selected
+return lower bound to remain positive at 0.25 points slippage per side and at
+least one separately eligible BUY or SELL direction. A development pass can
+only register a future shadow hypothesis; failure creates no model artifact or
+runtime behavior.
+
 ### 6. Frozen forward paper pilot and later confirmation
 
 Forward candidate features and shadow outcomes remain append-only and separate
