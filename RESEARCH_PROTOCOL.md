@@ -308,6 +308,32 @@ must obtain genuinely new upstream information by regenerating a pre-score,
 event-first universe with unique structural event identity and continuous
 candidate-time geometry; it must be separately registered before evaluation.
 
+## Registered experiment: event-first candidate universe v1
+
+`event-candidate-universe-20260719-v1` is registered before dataset generation
+or outcome inspection in `config/event_candidate_universe_v1.json`. It removes
+the existing 4H-direction, minimum-score and minimum-R:R gates from universe
+formation. A unique event is emitted only when a new completed-bar 1H sweep,
+1H CHoCH, 1H FVG, 4H BOS or 4H CHoCH becomes observable. Stable IDs bind event
+type, direction and source event-bar time so repeated scans cannot become new
+observations.
+
+Every event uses fixed 1H-ATR research geometry (one ATR stop, two ATR target)
+and retains observed bid/ask for executable-side targets. The 55 registered
+features measure continuous event/object geometry, including sweep depth and
+reclaim, displacement, time since BOS/CHoCH, structure transitions,
+ATR-normalized order-block/FVG age/width/distance, mitigation state, value
+location and spread. Missing objects remain explicit rather than becoming
+invented neutral values.
+
+The primary target is 4h after-cost return. Direction/event-type Ridge is the
+simple learned control; geometry Ridge and fixed shallow XGBoost are the only
+gate-eligible models. Folds, actual-exit purge, prior calibration threshold,
+uniqueness weighting, weekly blocks, cost stress and separate directional
+eligibility are frozen. Secondary horizons and event-type diagnostics cannot
+select a replacement target, model or event family. At registration time the
+new event dataset and its outcomes do not exist.
+
 `research/benchmark_candidate_models.py` runs prevalence, direction-only,
 SMC-score-only logistic, all-feature logistic and XGBoost through the same
 folds, purge, calibration and selection rule. No model has an AUC interval

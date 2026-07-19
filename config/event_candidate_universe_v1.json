@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "contract_version": "event-candidate-universe-20260719-v1",
+  "registered_at_utc": "2026-07-19T16:18:43Z",
+  "paper_research_only": true,
+  "hypothesis": "A deduplicated universe formed when structural SMC events first become observable, with continuous causal event/object geometry, ranks short-horizon after-cost XAUUSD returns better than direction and event-type controls.",
+  "evidence_boundary": {
+    "status": "CONTAMINATED_DEVELOPMENT_HISTORY_NEW_DATASET_NOT_YET_BUILT",
+    "disclosure": "Existing 2020-2026 candidate outcomes, the BUY liquidity-sweep lead, rejected candidate-generation v2 and prior ML failures influenced the decision to collect these event types and geometry families. No rows or outcomes from this new event universe existed or were inspected when this contract was written. A pass can only register a prospective shadow hypothesis.",
+    "new_event_outcomes_inspected_at_registration": false,
+    "implementation_parent_revision": "2608bb6"
+  },
+  "source_contract": {
+    "provider": "dukascopy-public",
+    "symbol": "DUKASCOPY:XAUUSD",
+    "source_path": "data/raw/dukascopy_xauusd_15m_2020_2026.csv",
+    "source_sha256": "c61a27b37628972377aff01817a223631fb57253ddc5dcd217cf0a6f6d3ddeeb",
+    "source_manifest_path": "data/raw/dukascopy_xauusd_15m_2020_2026.csv.manifest.json",
+    "source_manifest_sha256": "3019d16da736ec431d4fb6a959b49edf1846c013e788c2a48a21d9009b88b1ef",
+    "raw_timestamp_semantics": "15-minute candle open UTC; visible at open plus 15 minutes",
+    "analysis_price": "midpoint OHLC",
+    "execution_prices": "direction-correct observed bid/ask",
+    "forming_bars_permitted": false,
+    "maximum_visible_bars_per_timeframe": 200,
+    "minimum_visible_bars_per_timeframe": 52
+  },
+  "event_universe_contract": {
+    "decision_schedule": "each completed 1H bar",
+    "directions": [
+      "BUY",
+      "SELL"
+    ],
+    "four_hour_structure_gate_required": false,
+    "minimum_smc_score_required": false,
+    "minimum_risk_reward_gate_required_for_universe": false,
+    "event_types": {
+      "SWEEP_1H": "Bullish or bearish 1H liquidity sweep/reclaim returned by the frozen detector with sweep_index equal to the newest completed 1H bar.",
+      "CHOCH_1H": "Bullish or bearish 1H CHoCH returned by the frozen detector with choch_index equal to the newest completed 1H bar.",
+      "FVG_1H": "Bullish or bearish 1H FVG returned by the frozen detector whose three-candle confirmation completes on the newest 1H bar.",
+      "BOS_4H": "Bullish or bearish 4H BOS returned by the frozen detector with bos_index equal to the newest completed 4H bar; emitted only on a 4H close.",
+      "CHOCH_4H": "Bullish or bearish 4H CHoCH returned by the frozen detector with choch_index equal to the newest completed 4H bar; emitted only on a 4H close."
+    },
+    "detector_source": "agent/smc_gold_scanner.py at implementation_parent_revision",
+    "stable_event_id": "first 24 hexadecimal characters of SHA-256(contract_version|symbol|direction|event_type|source_event_bar_close_utc)",
+    "duplicate_policy": "Each stable event ID is emitted once at its first observable decision time; duplicate IDs or a source event time after decision time hard-fail.",
+    "simultaneous_event_policy": "Different registered event types or directions at the same timestamp remain separate auditable events.",
+    "entry": "midpoint close of the exact completed 15-minute bar at decision time",
+    "atr_definition": "14-period completed-bar Average True Range on 1H midpoint OHLC",
+    "stop_loss": "one 1H ATR from midpoint entry, below for BUY and above for SELL",
+    "take_profit": "two 1H ATR from midpoint entry, above for BUY and below for SELL",
+    "nominal_risk_reward_ratio": 2.0,
+    "label_expiry_hours_utc_clock": 48,
+    "alternative_return_horizons_hours": [
+      1,
+      4,
+      12,
+      48
+    ],
+    "slippage_points_per_side": 0.1,
+    "same_bar_tp_sl_policy": "AMBIGUOUS_EXCLUDED"
+  },
+  "geometry_feature_contract": {
+    "feature_count": 55,
+    "schema_sha256": "346753a3c3effc9f53d42ddde0f9fba296d736ecf38c883515f96995c5d0c252",
+    "registered_features": [
+      "event_direction_encoded",
+      "event_type_sweep_1h",
+      "event_type_choch_1h",
+      "event_type_fvg_1h",
+      "event_type_bos_4h",
+      "event_type_choch_4h",
+      "event_break_distance_atr",
+      "event_body_atr",
+      "event_range_atr",
+      "sweep_present",
+      "sweep_age_bars_1h",
+      "sweep_depth_atr_1h",
+      "sweep_reclaim_atr_1h",
+      "sweep_reclaim_fraction",
+      "distance_to_swept_level_atr_1h",
+      "bos_age_bars_4h",
+      "choch_age_bars_4h",
+      "bos_age_bars_1h",
+      "choch_age_bars_1h",
+      "bos_age_bars_15m",
+      "choch_age_bars_15m",
+      "structure_1w_encoded",
+      "structure_1d_encoded",
+      "structure_4h_encoded",
+      "structure_1h_encoded",
+      "structure_15m_encoded",
+      "structure_alignment_count",
+      "structure_4h_transition",
+      "structure_1h_transition",
+      "value_position_4h_raw",
+      "value_position_4h_clipped",
+      "ob_present",
+      "ob_timeframe_encoded",
+      "ob_age_bars",
+      "ob_width_atr",
+      "ob_distance_atr",
+      "ob_mitigated",
+      "ob_mitigation_touch_count",
+      "fvg_present",
+      "fvg_age_bars_1h",
+      "fvg_width_atr_1h",
+      "fvg_distance_atr_1h",
+      "atr_1h_pct",
+      "spread_close_bps",
+      "hour_sin",
+      "hour_cos",
+      "sweep_missing",
+      "ob_missing",
+      "fvg_missing",
+      "bos_4h_missing",
+      "choch_4h_missing",
+      "bos_1h_missing",
+      "choch_1h_missing",
+      "bos_15m_missing",
+      "choch_15m_missing"
+    ],
+    "availability": "Every feature uses only completed bars with close time at or before the event decision time.",
+    "object_selection": "Order-block geometry uses the nearest normalized-distance object among directional 15M, 1H and 4H objects returned by the frozen detector, including explicit mitigation state. FVG geometry uses the most recent directional 1H unmitigated object.",
+    "structure_transition": "current encoded structure minus the structure computed from the same visible frame excluding its newest completed bar",
+    "missing_policy": "Unavailable object geometry remains null and receives its registered missing indicator; fold-local median imputation is permitted only inside model pipelines.",
+    "non_finite_policy": "Infinite feature values hard-fail; null values without the corresponding registered missing indicator hard-fail."
+  },
+  "dataset_quality_gates": {
+    "minimum_total_matured_unambiguous_events": 2000,
+    "minimum_matured_unambiguous_events_per_direction": 500,
+    "minimum_matured_unambiguous_events_per_event_type": 100,
+    "duplicate_event_ids_allowed": 0,
+    "future_source_event_times_allowed": 0,
+    "invalid_direction_or_event_type_rows_allowed": 0,
+    "source_or_contract_hash_drift_allowed": false
+  },
+  "evaluation_contract": {
+    "primary_target": "target_4h_net_return_pct",
+    "secondary_diagnostic_targets": [
+      "target_1h_net_return_pct",
+      "target_12h_net_return_pct",
+      "target_48h_net_return_pct",
+      "net_return_pct"
+    ],
+    "candidate_year_folds": [
+      2022,
+      2023,
+      2024,
+      2025,
+      2026
+    ],
+    "train_calibration_split": "last 20 percent of purged prior observations by timestamp is calibration",
+    "purge": "actual target exit must precede every calibration or test boundary",
+    "fit_weighting": "average inverse target-interval concurrency normalized to mean one",
+    "selection_threshold": "prediction at or above the prior calibration slice 80th percentile",
+    "models": {
+      "calibration_mean": "prior calibration target mean; trade-all control",
+      "direction_event_type_ridge": "direction and five frozen event-type indicators; fold-local median imputation, scaling, Ridge alpha 10",
+      "geometry_ridge": "all 55 registered geometry features; fold-local median imputation, scaling, Ridge alpha 10",
+      "geometry_xgboost": "all 55 registered geometry features; fixed shallow XGBoost regression"
+    },
+    "model_feature_sets": {
+      "calibration_mean": [],
+      "direction_event_type_ridge": [
+        "event_direction_encoded",
+        "event_type_sweep_1h",
+        "event_type_choch_1h",
+        "event_type_fvg_1h",
+        "event_type_bos_4h",
+        "event_type_choch_4h"
+      ],
+      "geometry_ridge": "ALL_REGISTERED_GEOMETRY_FEATURES",
+      "geometry_xgboost": "ALL_REGISTERED_GEOMETRY_FEATURES"
+    },
+    "paired_controls": {
+      "geometry_ridge": "direction_event_type_ridge",
+      "geometry_xgboost": "direction_event_type_ridge"
+    },
+    "ridge_alpha": 10.0,
+    "xgboost_parameters": {
+      "max_depth": 3,
+      "n_estimators": 250,
+      "learning_rate": 0.03,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "min_child_weight": 10,
+      "reg_lambda": 2,
+      "random_state": 42,
+      "n_jobs": 4
+    },
+    "bootstrap_method": "calendar-week block bootstrap",
+    "bootstrap_samples": 500,
+    "bootstrap_seed": 42,
+    "base_slippage_points_per_side": 0.1,
+    "stress_slippage_points_per_side": 0.25,
+    "only_primary_target_can_pass_development_gates": true,
+    "secondary_results_cannot_select_a_horizon_model_threshold_or_event_type": true
+  },
+  "primary_model_promotion_gates": [
+    "rank-IC weekly-block-bootstrap lower 95 percent bound above zero",
+    "selected mean after-cost return weekly-block-bootstrap lower 95 percent bound above zero",
+    "selected excess over all events weekly-block-bootstrap lower 95 percent bound above zero",
+    "positive selected mean return in at least three calendar folds",
+    "paired improvement over direction-event-type Ridge lower 95 percent bound above zero",
+    "selected return at 0.25 points slippage per side lower 95 percent bound above zero",
+    "at least one separately eligible direction"
+  ],
+  "direction_eligibility_gates": [
+    "direction rank-IC lower 95 percent bound above zero",
+    "direction stressed selected return lower 95 percent bound above zero",
+    "at least 200 selected out-of-sample events",
+    "selected events represented in at least 50 calendar weeks"
+  ],
+  "decision_rule": {
+    "pass": "All primary gates pass for an eligible geometry model and at least one direction; the result remains development-contaminated and may only register a new prospective shadow hypothesis.",
+    "fail": "Preserve REJECT_EVENT_CANDIDATE_UNIVERSE_MODELS; create no model artifact, runtime event filter, approval rule, Claude rule or Telegram behavior.",
+    "model_artifact_created_by_benchmark": false,
+    "paper_approval_authorized": false,
+    "broker_execution_authorized": false
+  },
+  "tradingview_claude_role": {
+    "permitted": "Separate prospective visual/structured annotation study using the same stable event ID after MCP cadence validation.",
+    "historical_label_or_price_source": false,
+    "runtime_decision_effect_under_this_contract": false,
+    "required_isolation": "TradingView/Pine/Claude annotations must be stored separately with exact symbol, timeframe, completed-bar timestamp, prompt/model and source provenance."
+  },
+  "commercial_rights_status": "NOT_REVIEWED_DO_NOT_RESELL_OR_REDISTRIBUTE_SOURCE_DATA",
+  "change_rule": "Any event type, timing, identity, geometry definition, source, target, cost, fold, feature, model, comparator, threshold or gate change requires a new contract version before affected outcomes are inspected."
+}
