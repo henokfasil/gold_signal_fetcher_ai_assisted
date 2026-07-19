@@ -135,6 +135,22 @@ per-instrument missingness/staleness, and raw point-in-time levels for audit.
 Collection or validation failure must create a missing observation and must
 not veto or approve the underlying paper candidate.
 
+#### Frozen evidence-integrity monitor: `evidence-integrity-20260719-v1`
+
+The machine-readable operational contract is
+`config/evidence_integrity_v1.json`. It reconciles in-scope canonical candidate
+IDs, timestamps and directions against the technical-feature, shadow-outcome,
+variant-assignment and context ledgers. Missing rows, duplicates, orphans,
+identity drift, schema drift and contract drift are operational failures.
+
+Input-distribution drift uses reference-only decile bins and population
+stability index after at least 200 prospective rows: the first 100 are the
+fixed reference and the latest non-overlapping 100 are current. PSI 0.10 is a
+warning and PSI 0.25 is degraded; these are monitoring heuristics, not claims
+about model decay or profitability. Outcome return, P&L, win-rate and
+profit-factor columns are forbidden inputs. The monitor cannot affect scoring,
+approval, Claude, Telegram, paper positions, training or model promotion.
+
 ### 6. Frozen forward paper pilot and later confirmation
 
 Forward candidate features and shadow outcomes remain append-only and separate

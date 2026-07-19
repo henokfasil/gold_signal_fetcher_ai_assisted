@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "monitor_version": "evidence-integrity-20260719-v1",
+  "frozen_at_utc": "2026-07-19T13:23:48Z",
+  "paper_research_only": true,
+  "purpose": "Operational candidate-ledger reconciliation and input-distribution drift monitoring without interim performance inspection",
+  "candidate_source": {
+    "path": "data/paper_trades_ai.csv",
+    "identity_fields": ["candidate_id", "timestamp", "direction"],
+    "paper_trading_must_be_true": true,
+    "candidate_id_must_be_unique": true
+  },
+  "reconciliation": {
+    "pilot_scope": {
+      "start_at_utc": "2026-07-18T23:04:38Z",
+      "assignment_cutoff_at_utc": "2027-01-16T23:04:38Z",
+      "variant_contract_sha256": "1af9f22e4fe21bacbc6766d85911a65c206fb857a512c782888133b8c1dfdcba",
+      "required_ledgers": [
+        "data/forward_candidate_features_v2.csv",
+        "data/forward_candidate_outcomes.csv",
+        "data/forward_variant_assignments.csv"
+      ]
+    },
+    "context_scope": {
+      "start_at_utc": "2026-07-19T12:49:25Z",
+      "assignment_cutoff_at_utc": "2027-01-17T12:49:25Z",
+      "context_contract_sha256": "97e7d3b4bf2ad00809c00c9e2b6cb6dfd6961b40c70e26da7772b42ef8048b70",
+      "required_ledger": "data/forward_candidate_context_v1.csv"
+    },
+    "technical_feature_schema_sha256": "8e567c3aa764cc894bf1892e6ceae8011aa4933b69a23f4e80bfaa996063e965",
+    "context_feature_schema_sha256": "4100208e9e086f5399dedf3f23a7165ed1444bd8994228b5492adc1525c320c6",
+    "candidate_timestamp_match_tolerance_seconds": 0,
+    "direction_must_match": true,
+    "orphan_rows_permitted": false,
+    "duplicate_candidate_rows_permitted": false,
+    "allowed_outcome_states": ["TRACKING", "TP", "SL", "EXPIRY", "AMBIGUOUS"],
+    "performance_columns_forbidden": [
+      "label_profitable", "net_return_pct", "pnl_pct", "pnl_usd",
+      "exit_price", "profit_factor", "win_rate"
+    ]
+  },
+  "drift_monitor": {
+    "method": "population_stability_index",
+    "reference_window": "first 100 chronological prospective rows",
+    "current_window": "latest 100 chronological prospective rows, non-overlapping with reference",
+    "minimum_total_rows": 200,
+    "minimum_non_missing_per_feature_per_window": 80,
+    "quantile_bins_fitted_on_reference_only": 10,
+    "bin_pseudocount": 0.5,
+    "warning_psi": 0.10,
+    "alert_psi": 0.25,
+    "missingness_warning_absolute_increase": 0.10,
+    "missingness_alert_absolute_increase": 0.25,
+    "technical_features": "exact registered 33-feature runtime schema",
+    "context_features": "exact registered 26-feature context schema",
+    "raw_nonstationary_context_levels_included": false,
+    "interpretation": "PSI is an operational distribution-shift heuristic, not evidence of model decay, predictive edge or profitability"
+  },
+  "status_rules": {
+    "awaiting_candidates_is_not_failure": true,
+    "any_missing_required_candidate_row": "DEGRADED",
+    "any_duplicate_or_orphan_row": "DEGRADED",
+    "any_identity_timestamp_direction_schema_or_contract_mismatch": "DEGRADED",
+    "any_context_capture_or_registered_instrument_missing": "DEGRADED",
+    "psi_at_or_above_alert": "DEGRADED",
+    "psi_at_or_above_warning": "WARNING"
+  },
+  "isolation": {
+    "may_read_outcome_performance_columns": false,
+    "may_evaluate_interim_profitability": false,
+    "may_score_or_approve_candidate": false,
+    "may_change_ml_or_claude_decision": false,
+    "may_send_telegram": false,
+    "may_place_broker_order": false,
+    "may_train_select_or_promote_model": false
+  },
+  "change_rule": "Any scope, required ledger, identity, schema, contract, window, binning, threshold, status or isolation change requires a new monitor version before affected observations are interpreted."
+}
