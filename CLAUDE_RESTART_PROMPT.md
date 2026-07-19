@@ -36,9 +36,12 @@ Important evidence already established:
   `NO_EXPLORATORY_SIGNAL` across constant, direction/SMC-score ridge,
   all-feature ridge and fixed XGBoost regressors. The 48h ridge's positive point
   estimate has an interval spanning zero and unstable fold selection.
-- The next experiment is pre-registered as `gold-context-20260719-v1` in
-  `config/gold_context_v1.json`, SHA-256
-  `df70a9670eda2aa524a2ccc0f476ec3e8313a1b963021bc259b82a6387ecb118`.
+- Context v1 failed source preflight because the volatility proxy had no ask
+  candles. The active experiment is pre-registered as
+  `gold-context-20260719-v2` in `config/gold_context_v2.json`; it explicitly
+  registers that proxy as bid-only and the other three as bid/ask midpoints.
+  Contract SHA-256 is
+  `a8d2f252ce2b4f06a0828a8b0639088e5fae216b8559134a79e89175e5462e50`.
   Preserve its exact instruments, timing, joins, features and gates or create a
   new version before inspecting affected outcomes.
 - No validated ML model exists. Do not create metadata claiming otherwise.

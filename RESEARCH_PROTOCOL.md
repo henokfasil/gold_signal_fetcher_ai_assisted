@@ -89,6 +89,13 @@ selected-excess and fold-stability gates. Results on 2020-2026 remain
 development-contaminated even if every gate passes. Source-data commercial
 rights have not been reviewed, so raw data may not be redistributed or sold.
 
+Source preflight rejected v1 before any historical outcome join: Dukascopy
+returned no ask candles for `VOL.IDX/USD`, so the v1 assumption that every
+instrument supplied bid and ask was false. The active contract is therefore
+`gold-context-20260719-v2` in `config/gold_context_v2.json`. It preserves every
+feature, target and gate above while registering `VOL.IDX/USD` as a bid-only
+context series. No synthetic ask or midpoint is permitted for that proxy.
+
 ### 6. Frozen forward paper pilot and later confirmation
 
 Forward candidate features and shadow outcomes remain append-only and separate

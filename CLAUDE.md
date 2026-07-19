@@ -39,13 +39,16 @@ Current research state at handoff:
   exploratory gates. The strongest-looking 48h ridge point estimate selected
   +0.114%, but its weekly 95% interval was -0.061% to +0.281% and selection
   collapsed to four rows in 2026; it is not a usable model.
-- The next information experiment is pre-registered before historical joining
-  as `gold-context-20260719-v1` in `config/gold_context_v1.json` (SHA-256
-  `df70a9670eda2aa524a2ccc0f476ec3e8313a1b963021bc259b82a6387ecb118`).
+- Context contract v1 was rejected at source preflight because `VOL.IDX/USD`
+  returned no ask candles. No outcome was joined or inspected. The active next
+  information experiment is `gold-context-20260719-v2` in
+  `config/gold_context_v2.json` (SHA-256
+  `a8d2f252ce2b4f06a0828a8b0639088e5fae216b8559134a79e89175e5462e50`).
   It uses precise Dukascopy dollar-index, silver, volatility-index and
   Treasury-bond CFD proxy identities with completed-candle availability and
-  backward-only as-of joins. Source-data commercial rights are not yet
-  reviewed; do not redistribute or sell it.
+  backward-only as-of joins. Volatility is explicitly bid-only; the other
+  three use matched bid/ask midpoints. Source-data commercial rights are not
+  yet reviewed; do not redistribute or sell it.
 - The lifecycle portfolio diagnostic opens 2,695 positions from 40,792 raw
   candidates after cooldown/risk gates. It returns -2.33%, profit factor 0.992
   and maximum drawdown 36.42%. BUY contributes +$1,576.10; SELL contributes

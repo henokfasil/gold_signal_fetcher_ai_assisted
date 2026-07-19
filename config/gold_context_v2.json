@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "contract_version": "gold-context-20260719-v2",
+  "registered_at_utc": "2026-07-19T12:14:39Z",
+  "implementation_parent_revision": "04674b160e7d65ec1a4bedcb1c9e097037aadb9a",
+  "supersedes": "gold-context-20260719-v1",
+  "supersession_reason": "Source preflight found no ask candles for VOL.IDX/USD; v2 registers that context proxy as bid-only before any historical outcome join or evaluation.",
+  "purpose": "Exploratory point-in-time cross-asset information for XAUUSD paper research; no signal or deployment authorization",
+  "paper_research_only": true,
+  "commercial_rights_status": "NOT_REVIEWED_DO_NOT_RESELL_OR_REDISTRIBUTE_SOURCE_DATA",
+  "provider": {
+    "name": "dukascopy-public",
+    "access": "account-free public historical candle endpoint via dukascopy-python",
+    "raw_candle_interval": "1H",
+    "timestamp_semantics": "candle open UTC",
+    "availability_semantics": "a 1H candle becomes observable only at open_time + 1 hour",
+    "forming_candles_excluded": true
+  },
+  "instruments": {
+    "dollar_idx": {
+      "provider_symbol": "DOLLAR.IDX/USD",
+      "role": "Dukascopy dollar-index CFD; USD-strength proxy",
+      "price_input": "midpoint derived from matched bid and ask OHLC",
+      "required_sides": ["bid", "ask"],
+      "must_not_be_called": "official ICE DXY"
+    },
+    "silver": {
+      "provider_symbol": "XAG/USD",
+      "role": "related precious-metal spot/CFD proxy",
+      "price_input": "midpoint derived from matched bid and ask OHLC",
+      "required_sides": ["bid", "ask"]
+    },
+    "volatility_idx": {
+      "provider_symbol": "VOL.IDX/USD",
+      "role": "Dukascopy volatility-index CFD; risk-volatility proxy",
+      "price_input": "bid OHLC only; source preflight returned no ask candles",
+      "required_sides": ["bid"],
+      "must_not_be_called": "official CBOE VIX"
+    },
+    "treasury_bond": {
+      "provider_symbol": "USTBOND.TR/USD",
+      "role": "Dukascopy US Treasury-bond total-return CFD; duration/rates-direction proxy",
+      "price_input": "midpoint derived from matched bid and ask OHLC",
+      "required_sides": ["bid", "ask"],
+      "must_not_be_called": "Treasury yield or real yield"
+    }
+  },
+  "join_contract": {
+    "candidate_timestamp_semantics": "information available at XAUUSD candidate decision close",
+    "method": "backward as-of join on context available_at_utc <= candidate timestamp",
+    "maximum_staleness_minutes": 4320,
+    "missing_policy": "preserve missing values, add per-instrument missing and staleness features, and fit any imputation on training folds only",
+    "holiday_policy": "carry the most recently observable value only inside the maximum-staleness limit",
+    "future_or_nearest_join_forbidden": true
+  },
+  "registered_features": {
+    "per_instrument": [
+      "return_1h_pct",
+      "return_4h_pct",
+      "return_24h_pct",
+      "realized_volatility_24h_pct",
+      "staleness_minutes",
+      "missing"
+    ],
+    "cross_market": [
+      "xau_xag_ratio_return_4h_pct",
+      "xau_xag_ratio_return_24h_pct"
+    ],
+    "raw_nonstationary_levels_are_model_features": false
+  },
+  "research_hypothesis": {
+    "primary_target": "target_4h_net_return_pct",
+    "secondary_targets": [
+      "target_12h_net_return_pct",
+      "target_48h_net_return_pct",
+      "label_profitable"
+    ],
+    "economic_rationale": [
+      "Dollar strength may condition gold direction and follow-through.",
+      "Silver and the gold/silver ratio may identify precious-metals confirmation or divergence.",
+      "Volatility and Treasury-bond proxies may identify risk and rates-direction regimes."
+    ],
+    "null": "Point-in-time context features do not improve chronological candidate ranking over the matching no-context baselines."
+  },
+  "evaluation_contract": {
+    "dataset": "data/research/xauusd_smc_candidates_v4.csv",
+    "dataset_sha256": "0b74895cbd58917e485043acaee470815b1149a7d1647a662d93f08cda919520",
+    "history_is_development_contaminated": true,
+    "folds": "same expanding calendar-year folds beginning 2022",
+    "purge": "actual target exit must precede calibration or test boundary",
+    "selection_threshold": "80th percentile of model scores in the prior calibration slice",
+    "fit_weighting": "average inverse target-interval concurrency normalized to mean one",
+    "uncertainty": "calendar-week block bootstrap",
+    "direction_reporting": "BUY and SELL separate plus combined",
+    "model_ladder": [
+      "calibration mean",
+      "direction-only ridge",
+      "SMC-score-only ridge",
+      "context-only ridge",
+      "technical-plus-context ridge",
+      "fixed technical-plus-context XGBoost"
+    ],
+    "primary_development_gates": [
+      "primary-target rank-IC lower 95% bound greater than zero",
+      "primary-target selected-return lower 95% bound greater than zero",
+      "primary-target selected-excess lower 95% bound greater than zero",
+      "positive primary-target selected return in at least three folds",
+      "paired weekly-bootstrap improvement over the matched no-context model lower 95% bound greater than zero"
+    ],
+    "passing_does_not_authorize_runtime_model_or_live_trading": true
+  },
+  "change_rule": "Any instrument, feature, timing, staleness, target, model-ladder or gate change requires a new contract version before inspecting the affected result."
+}
