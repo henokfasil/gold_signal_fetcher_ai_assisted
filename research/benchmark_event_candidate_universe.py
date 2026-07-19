@@ -271,7 +271,7 @@ def benchmark(path: Path, bootstrap_samples=500, seed=42,
             )
             weights, _ = label_uniqueness(intervals)
             weights = weights.to_numpy(float)
-            weights /= weights.mean()
+            weights = weights / weights.mean()
             for name in MODEL_FEATURES:
                 score, threshold = _fit_predict(
                     name, train, calibration, test, target, weights,
