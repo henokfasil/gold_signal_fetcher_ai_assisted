@@ -78,8 +78,15 @@ FORWARD_VARIANT_ASSIGNMENTS_CSV = Path(
     os.getenv('FORWARD_VARIANT_ASSIGNMENTS_CSV',
               PROJECT_ROOT / 'data' / 'forward_variant_assignments.csv')
 )
+FORWARD_CONTEXT_CSV = Path(
+    os.getenv('FORWARD_CONTEXT_CSV', PROJECT_ROOT / 'data' / 'forward_candidate_context_v1.csv')
+)
 RESEARCH_VARIANT_CONFIG = Path(
     os.getenv('RESEARCH_VARIANT_CONFIG', PROJECT_ROOT / 'config' / 'research_variants.json')
+)
+FORWARD_CONTEXT_CONFIG = Path(
+    os.getenv('FORWARD_CONTEXT_CONFIG',
+              PROJECT_ROOT / 'config' / 'forward_context_observation_v1.json')
 )
 RESEARCH_SPREAD_POINTS = float(os.getenv('RESEARCH_SPREAD_POINTS', '0.35'))
 RESEARCH_SLIPPAGE_POINTS = float(os.getenv('RESEARCH_SLIPPAGE_POINTS', '0.10'))
@@ -90,8 +97,14 @@ TRADINGVIEW_SNAPSHOT_PATH = Path(
 DUKASCOPY_SNAPSHOT_PATH = Path(
     os.getenv('DUKASCOPY_SNAPSHOT_PATH', '/tmp/dukascopy_snapshot.json')
 )
+GOLD_CONTEXT_SNAPSHOT_PATH = Path(
+    os.getenv('GOLD_CONTEXT_SNAPSHOT_PATH', '/tmp/gold_context_snapshot.json')
+)
 MACRO_SNAPSHOT_PATH = Path(os.getenv('MACRO_SNAPSHOT_PATH', '/tmp/gold_macro_snapshot.json'))
 SNAPSHOT_MAX_AGE_SECONDS = int(os.getenv('SNAPSHOT_MAX_AGE_SECONDS', '900'))
+CONTEXT_SNAPSHOT_MAX_AGE_SECONDS = int(
+    os.getenv('CONTEXT_SNAPSHOT_MAX_AGE_SECONDS', '7200')
+)
 DASHBOARD_FEED_MAX_AGE_SECONDS = int(os.getenv('DASHBOARD_FEED_MAX_AGE_SECONDS', '1200'))
 PRICE_BAR_MAX_LAG_SECONDS = int(os.getenv('PRICE_BAR_MAX_LAG_SECONDS', '1800'))
 

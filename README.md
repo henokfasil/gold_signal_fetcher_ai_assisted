@@ -8,6 +8,12 @@ This repository does not execute broker orders and does not currently claim a
 profitable edge. Missing ML or Claude evidence causes a candidate to be logged
 as rejected rather than approved with fabricated fallback confidence.
 
+A separate hash-locked observation layer captures 26 cross-market context
+fields prospectively for every unique BUY and SELL paper candidate. It is
+disconnected from scoring, approvals, Claude, Telegram and broker execution;
+the dashboard reports only source health, staleness, missingness and counts
+until the fixed evaluation date.
+
 See [CLAUDE.md](CLAUDE.md) for architecture, data contracts, operational status
 and the research roadmap. The skeptical-review response and implemented
 decisions are in

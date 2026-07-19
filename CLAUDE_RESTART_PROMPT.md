@@ -48,6 +48,13 @@ Important evidence already established:
   primary gates but failed rank-IC and selected-return lower bounds. Its BUY
   selected return was +0.0226% with a 95% interval spanning zero; SELL was
   negative. Do not tune or deploy this result.
+- Prospective context observation is implemented under the frozen contract
+  `forward-context-buy-20260719-v1` (SHA-256
+  `97e7d3b4bf2ad00809c00c9e2b6cb6dfd6961b40c70e26da7772b42ef8048b70`).
+  It appends all 26 registered backward-as-of fields plus source provenance to
+  `data/forward_candidate_context_v1.csv` for both BUY and SELL candidates.
+  Failures become explicit missing rows. It has no scoring, approval, Claude,
+  Telegram, broker or training effect and no interim returns may be inspected.
 - No validated ML model exists. Do not create metadata claiming otherwise.
 - Lifecycle portfolio result: -2.33% return, profit factor 0.992, maximum
   drawdown 36.42%; BUY P&L positive and SELL P&L negative.
@@ -72,8 +79,9 @@ Continue with these objectives in order:
 
 1. Verify the active source snapshot, cron, dashboard, append-only pilot files
    and frozen contract hash without inspecting interim return performance.
-2. Preserve context v2 and implement prospective context capture without
-   changing approval or Telegram behavior.
+2. Preserve context v2 and monitor prospective context source health,
+   staleness, counts and missingness without inspecting interim performance or
+   changing approval/Telegram behavior.
 3. Use the existing registered multi-horizon after-cost return/MFE/MAE targets
    as diagnostics; do not rerun or tune them until genuinely new point-in-time
    information has been added.

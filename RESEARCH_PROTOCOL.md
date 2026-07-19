@@ -127,6 +127,14 @@ monitored. The historical BUY effect is too uncertain for this pilot to claim
 confirmation, so its purpose is prospective availability, stability and
 variance evidence.
 
+Runtime collection writes the atomic raw snapshot to
+`/tmp/gold_context_snapshot.json` and one append-only candidate row to
+`data/forward_candidate_context_v1.csv`. A validated capture contains the exact
+contract and snapshot hashes, 26 registered backward-as-of fields, explicit
+per-instrument missingness/staleness, and raw point-in-time levels for audit.
+Collection or validation failure must create a missing observation and must
+not veto or approve the underlying paper candidate.
+
 ### 6. Frozen forward paper pilot and later confirmation
 
 Forward candidate features and shadow outcomes remain append-only and separate

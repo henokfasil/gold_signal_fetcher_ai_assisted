@@ -53,6 +53,19 @@ elif [[ "${PRICE_DATA_PROVIDER:-dukascopy}" == "dukascopy" ]]; then
     echo "Dukascopy collection failed; paper scan aborted" >> "${LOG_FILE}"
     exit 1
   fi
+
+  # Prospective context is deliberately non-blocking and observational.  A
+  # failure is journalled as missing context by the orchestrator and cannot
+  # change candidate approval, Claude, Telegram or paper positions.
+  CONTEXT_COLLECTOR="/usr/local/lib/gold-signal-fetcher/collect_gold_context_snapshot.py"
+  CONTEXT_SNAPSHOT="${GOLD_CONTEXT_SNAPSHOT_PATH:-/tmp/gold_context_snapshot.json}"
+  if [[ ! -x "${CONTEXT_COLLECTOR}" ]]; then
+    echo "Gold-context collector missing; candidate context will be recorded missing" >> "${LOG_FILE}"
+  elif ! GOLD_CONTEXT_SNAPSHOT_PATH="${CONTEXT_SNAPSHOT}" \
+      FORWARD_CONTEXT_CONFIG="${FORWARD_CONTEXT_CONFIG:-${PROJECT_DIR}/config/forward_context_observation_v1.json}" \
+      "${PYTHON_BIN}" "${CONTEXT_COLLECTOR}" >> "${LOG_FILE}" 2>&1; then
+    echo "Gold-context collection failed; candidate context will be recorded missing" >> "${LOG_FILE}"
+  fi
 fi
 
 exec "${PYTHON_BIN}" "${PROJECT_DIR}/main_orchestrator.py" >> "${LOG_FILE}" 2>&1

@@ -60,6 +60,18 @@ Current research state at handoff:
   It passed three of five gates, not all five. BUY selected mean was +0.0226%
   with interval -0.0132% to +0.0661%; SELL was negative. No context model
   artifact may be created or deployed.
+- Prospective context observation is frozen as
+  `forward-context-buy-20260719-v1` in
+  `config/forward_context_observation_v1.json` (SHA-256
+  `97e7d3b4bf2ad00809c00c9e2b6cb6dfd6961b40c70e26da7772b42ef8048b70`).
+  The runtime collector retains 200 completed 1H bars for the four exact v2
+  proxies and validates source, sides, cadence and OHLC. Every unique BUY or
+  SELL candidate receives the 26 backward-as-of fields, raw audit levels and
+  snapshot/contract provenance in `data/forward_candidate_context_v1.csv`;
+  failures are explicit missing rows. Context has no score, approval, Claude,
+  Telegram, broker or training effect. Assignment ends 2027-01-17 12:49:25
+  UTC and evaluation is once on 2027-01-24 12:49:25 UTC. Do not inspect
+  interim returns.
 - The lifecycle portfolio diagnostic opens 2,695 positions from 40,792 raw
   candidates after cooldown/risk gates. It returns -2.33%, profit factor 0.992
   and maximum drawdown 36.42%. BUY contributes +$1,576.10; SELL contributes
@@ -107,8 +119,8 @@ Resume in this order:
    profitability.
 3. Preserve context v2 as a failed-but-informative experiment; do not tune its
    features or thresholds on the same outcomes. Do not modify the frozen pilot.
-4. Capture registered context fields prospectively for every paper candidate,
-   without giving them approval or Telegram effect.
+4. Monitor prospective context source health, counts and missingness without
+   inspecting interim returns or giving the fields approval/Telegram effect.
 5. Run genuinely new feature/target experiments through identical baselines,
    chronological folds, purge, calibration and dependence-aware uncertainty.
 6. Add causal regime/session diagnostics only inside chronological training
@@ -490,8 +502,8 @@ registered there before evaluation.
    cannot by itself confirm profitability.
 4. Preserve the rejected context-v2 result; its weak BUY/context lead is
    hypothesis-generating only and cannot be tuned on the same years.
-5. Build a runtime context snapshot using the registered proxy identities and
-   append it to prospective candidate records with no approval/Telegram effect.
+5. Keep the prospective runtime context contract unchanged; monitor only exact
+   source health, staleness, candidate counts and missingness until evaluation.
 6. Add model/prompt/dataset lineage, drift and calibration monitoring.
 7. Do not design live-capital execution unless a later frozen forward test
    passes the registered gates; this experiment remains paper-only.
@@ -566,6 +578,16 @@ with:
 ```bash
 python -m research.export_forward_dataset data/research/forward_matured.csv
 ```
+
+The separate prospective context ledger is
+`data/forward_candidate_context_v1.csv`, registered by
+`config/forward_context_observation_v1.json`. The wrapper refreshes
+`/tmp/gold_context_snapshot.json` at most about hourly; cached scans only
+validate the existing file. The initial local collection took about 45 seconds
+wall time because it fetched seven source/side series. Cached checks took about
+one second and do not materially load the VPS. The dashboard reads these files
+only and exposes health, exact symbols/sides, staleness, missingness and
+counts—not interim performance.
 
 Historical and forward observations must remain separate. Never use forward
 results to repeatedly retune the frozen model being evaluated.

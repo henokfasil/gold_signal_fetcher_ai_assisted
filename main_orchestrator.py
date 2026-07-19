@@ -18,6 +18,14 @@ import pandas as pd
 from config import settings
 from agent.claude_analyst import AITradingDecider
 from agent.gold_correlations import GoldCorrelationValidator
+from agent.gold_context_snapshot import (
+    CONTEXT_FEATURES,
+    CONTEXT_NAMES,
+    EXPECTED_CONTRACT_SHA256 as EXPECTED_FORWARD_CONTEXT_CONTRACT_SHA256,
+    extract_candidate_context,
+    load_forward_context_contract,
+    load_validated_context_snapshot,
+)
 from agent.liquidity_manager import get_session_description, is_market_closed
 from agent.ml_signal_generator import MLSignalFilter
 from agent.ml_feature_engineer_gold import GoldFeatureEngineer
@@ -433,6 +441,105 @@ class ForwardVariantJournal:
             writer.writerow(row)
 
 
+class ForwardContextJournal:
+    """Append-only prospective context, isolated from all trading decisions."""
+
+    RAW_COLUMNS = [
+        column
+        for name in (*CONTEXT_NAMES, "xau")
+        for column in (f"ctx_{name}_analysis_close", f"ctx_{name}_available_at")
+    ]
+    COLUMNS = [
+        "candidate_id", "timestamp", "experiment_version", "contract_sha256",
+        "feature_schema_sha256", "provider", "context_snapshot_sha256",
+        "context_snapshot_captured_at", "context_available", "context_reason",
+        "direction", "baseline_context_capture_v1", "buy_context_hypothesis_v1",
+        "paper_trading", "assignment_note", *CONTEXT_FEATURES, *RAW_COLUMNS,
+    ]
+
+    def __init__(self, path=settings.FORWARD_CONTEXT_CSV,
+                 contract_path=settings.FORWARD_CONTEXT_CONFIG,
+                 snapshot_path=settings.GOLD_CONTEXT_SNAPSHOT_PATH):
+        self.path = path
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.contract_path = contract_path
+        self.snapshot_path = snapshot_path
+        contract, digest = load_forward_context_contract(contract_path)
+        if digest != EXPECTED_FORWARD_CONTEXT_CONTRACT_SHA256:
+            raise RuntimeError("prospective context contract hash mismatch")
+        stopping = contract.get("stopping_rule", {})
+        try:
+            self.assignment_cutoff = parse_utc(stopping["assignment_cutoff_at_utc"])
+            evaluation_at = parse_utc(stopping["evaluate_once_at_utc"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise RuntimeError("prospective context has invalid fixed timestamps") from exc
+        if (evaluation_at <= self.assignment_cutoff or
+                stopping.get("interim_performance_evaluation_permitted") is not False):
+            raise RuntimeError("prospective context stopping rule is invalid")
+        self.contract = contract
+        self.contract_sha256 = digest
+
+    def append(self, candidate_id: str, timestamp: str, signal: dict,
+               xau_payload: dict | None = None, upstream_reason: str | None = None) -> None:
+        candidate_time = parse_utc(timestamp)
+        if candidate_time > self.assignment_cutoff:
+            logger.info(
+                "Context observation skipped after frozen cutoff: %s (%s)",
+                candidate_id, self.assignment_cutoff.isoformat(),
+            )
+            return
+        direction = str(signal.get("direction", "")).upper()
+        row = {
+            "candidate_id": candidate_id,
+            "timestamp": timestamp,
+            "experiment_version": self.contract["experiment_version"],
+            "contract_sha256": self.contract_sha256,
+            "feature_schema_sha256": self.contract["feature_contract"]["schema_sha256"],
+            "provider": self.contract["source_contract"]["provider"],
+            "context_available": 0,
+            "context_reason": upstream_reason or "CONTEXT_SNAPSHOT_UNAVAILABLE",
+            "direction": direction,
+            "baseline_context_capture_v1": int(direction in {"BUY", "SELL"}),
+            "buy_context_hypothesis_v1": int(direction == "BUY"),
+            "paper_trading": True,
+            "assignment_note": "OBSERVATION_ONLY_NO_SCORE_APPROVAL_CLAUDE_TELEGRAM_OR_BROKER_EFFECT",
+        }
+        row.update({column: "" for column in CONTEXT_FEATURES})
+        row.update({column: "" for column in self.RAW_COLUMNS})
+        for name in CONTEXT_NAMES:
+            row[f"ctx_{name}_missing"] = 1
+        try:
+            if xau_payload is None:
+                raise ValueError(upstream_reason or "validated XAU snapshot unavailable")
+            payload, _ = load_validated_context_snapshot(
+                self.snapshot_path, self.contract_path, observed_at=candidate_time,
+            )
+            extracted = extract_candidate_context(
+                payload, xau_payload, candidate_time, self.contract,
+            )
+            row.update(extracted["features"])
+            row.update(extracted["raw_levels"])
+            row.update({
+                "context_snapshot_sha256": payload["content_sha256"],
+                "context_snapshot_captured_at": payload["captured_at"],
+                "context_available": 1,
+                "context_reason": "VALIDATED_BACKWARD_ASOF_CAPTURE",
+            })
+        # This is an explicit isolation boundary: any context computation
+        # failure becomes a missing observation and cannot escape into the
+        # candidate decision path.
+        except Exception as exc:
+            row["context_reason"] = f"MISSING:{type(exc).__name__}:{str(exc)[:180]}"
+            logger.warning("Prospective context unavailable for %s: %s", candidate_id, exc)
+
+        exists = self.path.exists() and self.path.stat().st_size > 0
+        with self.path.open("a", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=self.COLUMNS, extrasaction="ignore")
+            if not exists:
+                writer.writeheader()
+            writer.writerow({column: row.get(column, "") for column in self.COLUMNS})
+
+
 class AIAssistedOrchestrator:
     def __init__(self):
         if not settings.PAPER_TRADING:
@@ -441,6 +548,11 @@ class AIAssistedOrchestrator:
         self.forward_features = ForwardFeatureJournal()
         self.forward_outcomes = ForwardOutcomeJournal()
         self.forward_variants = ForwardVariantJournal()
+        try:
+            self.forward_context = ForwardContextJournal()
+        except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as exc:
+            self.forward_context = None
+            logger.error("Prospective context journal disabled without decision effect: %s", exc)
         self.ml_filter = MLSignalFilter()
         self.correlation = GoldCorrelationValidator()
         self.ai_decider = AITradingDecider()
@@ -600,6 +712,23 @@ class AIAssistedOrchestrator:
         self.forward_features.append(candidate_id, timestamp, signal)
         self.forward_outcomes.append(candidate_id, timestamp, signal)
         self.forward_variants.append(candidate_id, timestamp, signal, decision)
+        if self.forward_context is not None:
+            try:
+                try:
+                    xau_payload = load_validated_price_snapshot()
+                    upstream_reason = None
+                except (OSError, KeyError, ValueError, TypeError, json.JSONDecodeError) as exc:
+                    xau_payload = None
+                    upstream_reason = f"validated XAU snapshot unavailable: {exc}"
+                self.forward_context.append(
+                    candidate_id, timestamp, signal, xau_payload, upstream_reason,
+                )
+            except (OSError, RuntimeError, ValueError, KeyError, TypeError,
+                    json.JSONDecodeError) as exc:
+                logger.error(
+                    "Prospective context write failed without decision effect for %s: %s",
+                    candidate_id, exc,
+                )
         return candidate_id
 
     def run_scan(self):

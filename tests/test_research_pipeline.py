@@ -16,11 +16,16 @@ from agent.smc_gold_scanner import (
     _run_from_tradingview_snapshot,
     detect_bos_down,
 )
-from dashboard import get_feed_health, get_shadow_variants
+from dashboard import get_context_health, get_feed_health, get_shadow_variants
 from main_orchestrator import (
-    AIAssistedOrchestrator, ForwardFeatureJournal, ForwardOutcomeJournal,
-    ForwardVariantJournal,
+    AIAssistedOrchestrator, ForwardContextJournal, ForwardFeatureJournal,
+    ForwardOutcomeJournal, ForwardVariantJournal,
 )
+from agent.gold_context_snapshot import (
+    CONTEXT_FEATURES, canonical_snapshot_sha256, load_forward_context_contract,
+    load_validated_context_snapshot,
+)
+from ops.collect_gold_context_snapshot import collect as collect_gold_context
 from research.build_historical_dataset import label_candidate, load_ohlcv
 from research.export_forward_dataset import export
 from research.simulate_portfolio import simulate
@@ -43,6 +48,63 @@ class FakeClaude:
 
 
 class ResearchPipelineTests(unittest.TestCase):
+    @staticmethod
+    def _forward_context_fixture(captured_at):
+        contract, contract_sha = load_forward_context_contract()
+        last_open = captured_at.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
+        times = [int((last_open - timedelta(hours=199 - i)).timestamp()) for i in range(200)]
+        instruments = {}
+        for offset, (name, spec) in enumerate(
+                contract["source_contract"]["instruments"].items()):
+            bars = []
+            for index, timestamp in enumerate(times):
+                bid = 20.0 + offset * 10 + index * 0.01
+                analysis = bid if spec["required_sides"] == ["bid"] else bid + 0.05
+                bar = {
+                    "time": timestamp,
+                    "analysis_open": analysis, "analysis_high": analysis + 0.2,
+                    "analysis_low": analysis - 0.2, "analysis_close": analysis + 0.05,
+                    "analysis_volume": 10.0,
+                    "bid_open": bid, "bid_high": bid + 0.2,
+                    "bid_low": bid - 0.2, "bid_close": bid + 0.05,
+                    "bid_volume": 10.0,
+                }
+                if spec["required_sides"] == ["bid", "ask"]:
+                    bar.update({
+                        "ask_open": bid + 0.1, "ask_high": bid + 0.3,
+                        "ask_low": bid - 0.1, "ask_close": bid + 0.15,
+                        "ask_volume": 12.0, "spread_open": 0.1, "spread_close": 0.1,
+                    })
+                bars.append(bar)
+            instruments[name] = {
+                "symbol": spec["symbol"], "required_sides": spec["required_sides"],
+                "analysis_price": spec["analysis_price"], "resolution": "1H",
+                "bar_count": 200, "median_cadence_seconds": 3600.0,
+                "latest_available_at": datetime.fromtimestamp(
+                    times[-1] + 3600, timezone.utc,
+                ).isoformat(),
+                "bars": bars,
+            }
+        payload = {
+            "schema_version": 1, "experiment_version": contract["experiment_version"],
+            "contract_sha256": contract_sha, "provider": "dukascopy-public",
+            "captured_at": captured_at.isoformat(),
+            "timestamp_semantics": "candle_open_utc; available_at=open+1h; forming candles excluded",
+            "paper_research_only": True, "collection_elapsed_seconds": 1.0,
+            "instruments": instruments,
+        }
+        payload["content_sha256"] = canonical_snapshot_sha256(payload)
+        xau_last_open = captured_at.replace(second=0, microsecond=0) - timedelta(minutes=15)
+        xau_last_open -= timedelta(minutes=xau_last_open.minute % 15)
+        xau = {
+            "timeframes": {"15M": {"bars": [
+                {"time": int((xau_last_open - timedelta(minutes=15 * (199 - i))).timestamp()),
+                 "close": 2000 + i * 0.1}
+                for i in range(200)
+            ]}}
+        }
+        return payload, xau
+
     def test_label_uniqueness_discounts_overlapping_outcomes(self):
         frame = pd.DataFrame({
             "timestamp": ["2026-01-02T10:00:00Z", "2026-01-02T10:15:00Z"],
@@ -207,6 +269,91 @@ class ResearchPipelineTests(unittest.TestCase):
         self.assertAlmostEqual(result["ctx_test_realized_volatility_24h_pct"], 0.2)
         self.assertEqual(result["ctx_test_staleness_minutes"], 30.0)
         self.assertEqual(result["ctx_test_missing"], 0)
+
+    def test_forward_context_contract_is_hash_locked_and_isolated(self):
+        contract, digest = load_forward_context_contract()
+        self.assertEqual(
+            digest, "97e7d3b4bf2ad00809c00c9e2b6cb6dfd6961b40c70e26da7772b42ef8048b70",
+        )
+        self.assertFalse(contract["isolation"]["may_score_or_approve_paper_trade"])
+        self.assertFalse(contract["isolation"]["may_send_telegram"])
+
+    def test_context_collector_uses_registered_sides_and_complete_bars(self):
+        with tempfile.TemporaryDirectory() as directory:
+            captured_at = datetime.now(timezone.utc).replace(minute=30, second=0, microsecond=0)
+            last_open = captured_at.replace(minute=0) - timedelta(hours=1)
+            index = pd.date_range(end=last_open, periods=240, freq="h", tz="UTC")
+
+            def fake_fetch(symbol, start, end, side):
+                base = 100.0 + (0.1 if side == "ask" else 0.0)
+                values = pd.Series(range(len(index)), index=index, dtype=float) * 0.01 + base
+                return pd.DataFrame({
+                    "open": values, "high": values + 0.2, "low": values - 0.2,
+                    "close": values + 0.05, "volume": 10.0,
+                }, index=index)
+
+            output = Path(directory) / "snapshot.json"
+            with patch("ops.collect_gold_context_snapshot._fetch", side_effect=fake_fetch) as fetch:
+                payload = collect_gold_context(
+                    output, Path("config/forward_context_observation_v1.json"),
+                    captured_at, use_cache=False,
+                )
+            self.assertEqual(fetch.call_count, 7)
+            self.assertEqual(payload["instruments"]["volatility_idx"]["required_sides"], ["bid"])
+            self.assertNotIn("ask_close", payload["instruments"]["volatility_idx"]["bars"][-1])
+            self.assertTrue(all(item["bar_count"] == 200
+                                for item in payload["instruments"].values()))
+            validated, _ = load_validated_context_snapshot(
+                output, observed_at=captured_at,
+            )
+            self.assertEqual(validated["content_sha256"], payload["content_sha256"])
+
+    def test_forward_context_records_both_directions_without_decision_effect(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            captured_at = datetime.now(timezone.utc).replace(microsecond=0)
+            payload, xau = self._forward_context_fixture(captured_at)
+            snapshot = root / "context.json"
+            snapshot.write_text(json.dumps(payload))
+            journal = ForwardContextJournal(root / "rows.csv", snapshot_path=snapshot)
+            journal.append("BUY1", captured_at.isoformat(), {"direction": "BUY"}, xau)
+            journal.append("SELL1", captured_at.isoformat(), {"direction": "SELL"}, xau)
+            rows = pd.read_csv(root / "rows.csv").set_index("candidate_id")
+            self.assertEqual(rows.loc["BUY1", "buy_context_hypothesis_v1"], 1)
+            self.assertEqual(rows.loc["SELL1", "buy_context_hypothesis_v1"], 0)
+            self.assertEqual(rows.loc["SELL1", "baseline_context_capture_v1"], 1)
+            self.assertTrue((rows["context_available"] == 1).all())
+            self.assertTrue(all(column in rows.columns for column in CONTEXT_FEATURES))
+            self.assertIn("NO_SCORE_APPROVAL_CLAUDE_TELEGRAM_OR_BROKER_EFFECT",
+                          rows.loc["BUY1", "assignment_note"])
+
+    def test_forward_context_failure_is_journalled_missing_not_raised(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "rows.csv"
+            journal = ForwardContextJournal(path, snapshot_path=Path(directory) / "missing.json")
+            timestamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+            journal.append("MISSING1", timestamp, {"direction": "BUY"}, {"timeframes": {}})
+            row = pd.read_csv(path).iloc[0]
+            self.assertEqual(row["context_available"], 0)
+            self.assertEqual(row["ctx_silver_missing"], 1)
+            self.assertTrue(str(row["context_reason"]).startswith("MISSING:"))
+
+    def test_dashboard_context_panel_reports_health_and_counts_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            captured_at = datetime.now(timezone.utc).replace(microsecond=0)
+            payload, xau = self._forward_context_fixture(captured_at)
+            snapshot = root / "context.json"
+            snapshot.write_text(json.dumps(payload))
+            journal = ForwardContextJournal(root / "rows.csv", snapshot_path=snapshot)
+            journal.append("BUY1", captured_at.isoformat(), {"direction": "BUY"}, xau)
+            journal.append("SELL1", captured_at.isoformat(), {"direction": "SELL"}, xau)
+            health = get_context_health(snapshot, root / "rows.csv")
+            self.assertEqual(health["status"], "HEALTHY · COLLECTING")
+            self.assertEqual(health["captured_candidates"], 2)
+            self.assertEqual(health["buy_hypothesis_candidates"], 1)
+            self.assertEqual(health["sell_observations"], 1)
+            self.assertNotIn("return", health)
 
     def test_forward_journal_preserves_exact_candidate_features(self):
         from agent.ml_feature_engineer_gold import GoldFeatureEngineer

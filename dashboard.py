@@ -11,6 +11,11 @@ from pathlib import Path
 import pandas as pd
 from flask import Flask, render_template_string
 
+from agent.gold_context_snapshot import (
+    CONTEXT_NAMES,
+    load_forward_context_contract,
+    load_validated_context_snapshot,
+)
 from agent.liquidity_manager import is_market_closed
 from config import settings
 
@@ -275,6 +280,109 @@ def get_shadow_variants(assignments_path=None, outcomes_path=None, contract_path
     return result
 
 
+def get_context_health(snapshot_path=None, journal_path=None, contract_path=None):
+    """Report context source/capture integrity without inspecting outcomes."""
+    contract_path = Path(contract_path or settings.FORWARD_CONTEXT_CONFIG)
+    result = {
+        "status": "UNAVAILABLE", "status_class": "bad", "experiment": "—",
+        "provider": "—", "captured_at": "—", "snapshot_age": "—",
+        "assignment_cutoff": "—", "evaluation_at": "—", "instruments": {},
+        "captured_candidates": 0, "buy_hypothesis_candidates": 0,
+        "sell_observations": 0, "missing_captures": 0, "capture_rate": "—",
+        "effect": "None — observation only",
+    }
+    try:
+        contract, contract_sha = load_forward_context_contract(contract_path)
+        result["experiment"] = contract["experiment_version"]
+        result["provider"] = contract["source_contract"]["provider"]
+        stopping = contract["stopping_rule"]
+        result["assignment_cutoff"] = str(stopping["assignment_cutoff_at_utc"]).replace(
+            "T", " ").replace("Z", " UTC")
+        result["evaluation_at"] = str(stopping["evaluate_once_at_utc"]).replace(
+            "T", " ").replace("Z", " UTC")
+    except (OSError, RuntimeError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+        result.update({"status": "CONFIG ERROR", "status_class": "bad"})
+        return result
+
+    snapshot_ok = False
+    try:
+        payload, _ = load_validated_context_snapshot(
+            Path(snapshot_path or settings.GOLD_CONTEXT_SNAPSHOT_PATH), contract_path,
+        )
+        captured = datetime.fromisoformat(payload["captured_at"].replace("Z", "+00:00")).astimezone(
+            timezone.utc
+        )
+        age_seconds = max(0, int((datetime.now(timezone.utc) - captured).total_seconds()))
+        result["captured_at"] = captured.strftime("%Y-%m-%d %H:%M:%S UTC")
+        result["snapshot_age"] = f"{age_seconds // 60}m {age_seconds % 60}s"
+        now_epoch = datetime.now(timezone.utc).timestamp()
+        for name in CONTEXT_NAMES:
+            item = payload["instruments"][name]
+            latest_available = int(item["bars"][-1]["time"]) + 3600
+            staleness_minutes = max(0, int((now_epoch - latest_available) / 60))
+            result["instruments"][name] = {
+                "symbol": item["symbol"],
+                "sides": "+".join(item["required_sides"]),
+                "analysis": item["analysis_price"],
+                "count": item["bar_count"],
+                "cadence": f"{float(item['median_cadence_seconds']):.0f}s",
+                "latest": datetime.fromtimestamp(latest_available, timezone.utc).strftime(
+                    "%Y-%m-%d %H:%M UTC"
+                ),
+                "staleness": f"{staleness_minutes}m",
+                "missing_rate": "Awaiting candidates",
+            }
+        snapshot_ok = True
+    except (OSError, RuntimeError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+        for name, spec in contract["source_contract"]["instruments"].items():
+            result["instruments"][name] = {
+                "symbol": spec["symbol"], "sides": "+".join(spec["required_sides"]),
+                "analysis": spec["analysis_price"], "count": 0, "cadence": "—",
+                "latest": "—", "staleness": "—", "missing_rate": "—",
+            }
+
+    journal = load_trades(journal_path or settings.FORWARD_CONTEXT_CSV)
+    journal_ok = True
+    if not journal.empty:
+        required = {
+            "candidate_id", "experiment_version", "contract_sha256", "direction",
+            "context_available", "baseline_context_capture_v1",
+            "buy_context_hypothesis_v1",
+        }
+        if not required.issubset(journal.columns):
+            journal_ok = False
+        else:
+            current_version = (
+                journal["experiment_version"].eq(result["experiment"]) &
+                journal["contract_sha256"].eq(contract_sha)
+            )
+            journal_ok = bool(current_version.all())
+            journal = journal[current_version].copy()
+            if journal["candidate_id"].astype(str).duplicated().any():
+                journal_ok = False
+            available = pd.to_numeric(journal["context_available"], errors="coerce").fillna(0).eq(1)
+            direction = journal["direction"].astype(str).str.upper()
+            result.update({
+                "captured_candidates": len(journal),
+                "buy_hypothesis_candidates": int(direction.eq("BUY").sum()),
+                "sell_observations": int(direction.eq("SELL").sum()),
+                "missing_captures": int((~available).sum()),
+                "capture_rate": f"{available.mean() * 100:.1f}%" if len(journal) else "—",
+            })
+            for name in CONTEXT_NAMES:
+                column = f"ctx_{name}_missing"
+                if column in journal and len(journal):
+                    missing = pd.to_numeric(journal[column], errors="coerce").fillna(1).eq(1)
+                    result["instruments"][name]["missing_rate"] = f"{missing.mean() * 100:.1f}%"
+
+    healthy = snapshot_ok and journal_ok and result["missing_captures"] == 0
+    result.update({
+        "status": "HEALTHY · COLLECTING" if healthy else "DEGRADED",
+        "status_class": "good" if healthy else "warn",
+    })
+    return result
+
+
 TEMPLATE = """
 <!doctype html><html><head><title>Gold Signal Research</title>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -288,6 +396,12 @@ TEMPLATE = """
 {% for label,value in [('Provider',feed.provider),('Exact symbol',feed.symbol),('Snapshot age',feed.age),('Latest 15M close age',feed.bar_age),('Captured',feed.captured_at),('OHLC integrity',feed.integrity),('Latest-close dispersion',feed.price_consistency),('Last scan',feed.last_scan),('Market',feed.market),('Paper mode',feed.paper_mode),('Telegram',feed.telegram),('Schedule','Every 15 minutes'),('Execution','No broker orders')] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
 </div><table class="quality"><thead><tr><th>Timeframe</th><th>Bars</th><th>Ordered</th><th>Unique</th><th>OHLC valid</th><th>Bid/ask valid</th><th>Cadence</th><th>Median interval</th><th>Latest bar UTC</th></tr></thead><tbody>{% for name,q in feed.frames.items() %}<tr><td>{{ name }}</td><td>{{ q.count }}</td><td class="{{ 'ok' if q.ordered else 'no' }}">{{ 'PASS' if q.ordered else 'FAIL' }}</td><td class="{{ 'ok' if q.unique else 'no' }}">{{ 'PASS' if q.unique else 'FAIL' }}</td><td class="{{ 'ok' if q.ohlc else 'no' }}">{{ 'PASS' if q.ohlc else 'FAIL' }}</td><td class="{{ 'ok' if q.quotes else 'no' }}">{{ 'PASS' if q.quotes else 'N/A' }}</td><td class="{{ 'ok' if q.cadence else 'no' }}">{{ 'PASS' if q.cadence else 'FAIL' }}</td><td>{{ q.interval }}</td><td>{{ q.latest }}</td></tr>{% endfor %}</tbody></table>
 <div class="note">File-only validation: page views make no provider, Telegram, Claude, or scanner calls. Health includes exact source identity, independent cadence, OHLC, ordering, uniqueness and executable quote checks—not bar counts alone.</div></section>
+
+<section class="panel feed"><div class="panel-head"><h2>Prospective Gold Context</h2><span class="pill {{ context.status_class }}">{{ context.status }}</span></div>
+<div class="grid">
+{% for label,value in [('Experiment',context.experiment),('Provider',context.provider),('Snapshot captured',context.captured_at),('Snapshot age',context.snapshot_age),('Assignment cutoff',context.assignment_cutoff),('Evaluate once',context.evaluation_at),('Context candidates',context.captured_candidates),('Capture rate',context.capture_rate),('BUY hypothesis observations',context.buy_hypothesis_candidates),('SELL baseline observations',context.sell_observations),('Missing captures',context.missing_captures),('Decision / Telegram effect',context.effect)] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
+</div><table class="quality"><thead><tr><th>Context input</th><th>Exact symbol</th><th>Price sides</th><th>Analysis price</th><th>Bars</th><th>Cadence</th><th>Latest available UTC</th><th>Current staleness</th><th>Candidate missing rate</th></tr></thead><tbody>{% for name,q in context.instruments.items() %}<tr><td>{{ name }}</td><td>{{ q.symbol }}</td><td>{{ q.sides }}</td><td>{{ q.analysis }}</td><td>{{ q.count }}</td><td>{{ q.cadence }}</td><td>{{ q.latest }}</td><td>{{ q.staleness }}</td><td>{{ q.missing_rate }}</td></tr>{% endfor %}</tbody></table>
+<div class="note">Operational monitoring only: exact source, sides, completed-candle cadence, staleness, missingness and counts. Interim returns are intentionally absent. These fields cannot score or approve a candidate, influence Claude, send Telegram, or place an order.</div></section>
 
 <section class="panel"><div class="panel-head"><h2>Prospective Shadow Variants</h2><span class="pill {{ variants.status_class }}">{{ variants.status }}</span></div>
 <div class="grid">
@@ -309,6 +423,7 @@ def dashboard():
     return render_template_string(TEMPLATE, m=calculate_metrics(settings.PAPER_TRADES_CSV),
                                   rows=get_recent_trades(settings.PAPER_TRADES_CSV),
                                   feed=get_feed_health(),
+                                  context=get_context_health(),
                                   variants=get_shadow_variants(),
                                   now=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
 
