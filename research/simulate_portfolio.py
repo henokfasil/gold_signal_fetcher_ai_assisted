@@ -83,7 +83,15 @@ def simulate(frame: pd.DataFrame, starting_capital=10_000.0, notional=5_000.0,
         max_concurrent = max(max_concurrent, len(open_heap))
     settle(pd.Timestamp.max.tz_localize("UTC"))
     output = pd.DataFrame(records)
-    opened = output[output.decision == "OPEN"].copy()
+    if output.empty:
+        output = pd.DataFrame(columns=[
+            "timestamp", "exit_time", "direction", "entry", "rr_ratio",
+            "label_status", "net_return_pct", "pnl_usd", "decision", "reason",
+            "equity_at_entry", "equity_after_exit",
+        ])
+        opened = output.copy()
+    else:
+        opened = output[output.decision == "OPEN"].copy()
     wins = opened[opened.pnl_usd > 0].pnl_usd.sum()
     losses = abs(opened[opened.pnl_usd < 0].pnl_usd.sum())
     by_direction = {}

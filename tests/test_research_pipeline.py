@@ -373,6 +373,16 @@ class ResearchPipelineTests(unittest.TestCase):
         self.assertEqual(report["opened"], 1)
         self.assertEqual(events.iloc[1]["reason"], "SETUP_COOLDOWN")
 
+    def test_portfolio_simulator_handles_empty_variant_fold(self):
+        empty = pd.DataFrame(columns=[
+            "timestamp", "exit_time", "direction", "entry", "rr_ratio",
+            "label_profitable", "label_status", "net_return_pct",
+        ])
+        events, report = simulate(empty)
+        self.assertTrue(events.empty)
+        self.assertEqual(report["opened"], 0)
+        self.assertEqual(report["return_pct"], 0.0)
+
     def test_historical_open_timestamp_becomes_visible_at_close(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "bars.csv"
