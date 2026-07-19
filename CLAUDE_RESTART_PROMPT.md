@@ -72,6 +72,20 @@ Important evidence already established:
 - Candidate-generation v2 created no model, shadow variant, runtime approval or
   Telegram change. Do not select a replacement rule from its secondary
   diagnostics.
+- Event-candidate-universe v1 is complete under
+  `config/event_candidate_universe_v1.json` (SHA-256
+  `2b57fac00d70b60452a19e14b2daa8d264316016d89fc2425bebf3e05ad40c12`).
+  It generated 6,368 unique first-observable 1H/4H structural events with all
+  55 registered causal geometry fields. All identity, timing, finiteness and
+  minimum-sample data-quality gates passed.
+- Its canonical result is `REJECT_EVENT_CANDIDATE_UNIVERSE_MODELS` in
+  `data/research/event_candidate_universe_benchmarks_v1.json` (SHA-256
+  `e39f38e456f2ed24335231242fe529f3b57406bbc4d7d53dafeb0f4eb78f979c`).
+  Primary 4h geometry XGBoost selected +0.0046% mean, but its weekly interval
+  was -0.0255% to +0.0325%; rank IC, paired improvement and cost stress also
+  failed, and neither direction was eligible. Geometry Ridge was negative.
+  Do not mine event types, directions, secondary horizons or thresholds from
+  this inspected history, and do not create a model/runtime/Telegram rule.
 - Prospective context observation is implemented under the frozen contract
   `forward-context-buy-20260719-v1` (SHA-256
   `97e7d3b4bf2ad00809c00c9e2b6cb6dfd6961b40c70e26da7772b42ef8048b70`).
@@ -109,9 +123,11 @@ Important evidence already established:
   `0.0.0.0:8502` is only the server-side bind meaning that port 8502 accepts
   traffic on the VPS interfaces; it does not change the public URL.
 - The engineering baseline is operating, but the project is not finished: no
-  validated profitable edge or deployable ML model exists. The next research
-  task must regenerate an upstream event-first candidate universe with new
-  causal geometry, not recombine or remodel the rejected candidate rows.
+  validated profitable edge or deployable ML model exists. The event-first
+  historical milestone is now complete and rejected. The next research task is
+  isolated prospective collection of the same stable event schema and/or a
+  separately registered genuinely new information source, not another remodel
+  or post-hoc filter over the inspected rows.
 
 Continue with these objectives in order:
 
@@ -128,12 +144,13 @@ Continue with these objectives in order:
    secondary diagnostic.
 5. Preserve candidate-generation v2 as rejected; do not promote the BUY point
    estimate or any secondary setup family.
-6. Register the next event-candidate-universe contract before implementation.
-   It must define unique structural event identity and point-in-time continuous
-   geometry such as age, ATR-normalized distance, sweep depth/reclaim,
-   displacement, zone width/mitigation and time since structure transition.
-7. Regenerate the broader pre-score event universe and test fixed rule families
-   against simple baselines before fitting ML.
+6. Preserve event-candidate-universe v1 as rejected. Do not promote the
+   positive XGBoost point estimate or select a direction, event type, horizon,
+   threshold or feature subset from the inspected diagnostics.
+7. Implement an append-only prospective event journal using the exact frozen
+   IDs and 55-field schema, initially disconnected from approval, Claude,
+   Telegram and broker logic. Validate cadence, duplicates, missingness, drift
+   and historical/runtime feature concordance without interim return analysis.
 8. Run each later genuinely new-information experiment through the same
    simple-baseline-first chronological folds, purge, calibration and
    weekly-block uncertainty.
@@ -159,8 +176,8 @@ Required methodological constraints:
 
 Begin by summarizing your understanding of the current state in no more than
 ten bullets. Then show the exact local verification results and propose the
-smallest outcome-blind event-candidate-universe contract; do not run its
-outcome comparison until the contract and tests are frozen. Proceed
+smallest isolated prospective event-journal contract; do not inspect interim
+outcomes or connect it to decisions. Proceed
 autonomously with safe read-only diagnostics and locally authorized research
 changes, but stop before any live trading, secret handling, destructive
 operation or unrequested external action.

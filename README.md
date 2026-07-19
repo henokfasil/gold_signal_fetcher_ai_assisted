@@ -39,10 +39,18 @@ and paired-control gates; SELL was negative in every fold. No model or runtime
 behavior was created. The engineering baseline is running, but the research
 program and profitable-edge objective are not complete.
 
-The next research step is an upstream event-first candidate universe with
-unique structural event identity and richer causal SMC geometry. It must be
-registered before outcome comparison and beat simple fixed-rule baselines
-before further ML is considered.
+The pre-registered upstream event-first universe is also complete. It produced
+6,368 unique first-observable structural events with 55 causal geometry fields
+and passed every dataset-integrity gate, but both registered geometry models
+failed the primary 4-hour uncertainty, paired-control, cost-stress and
+directional gates. Its canonical status is
+`REJECT_EVENT_CANDIDATE_UNIVERSE_MODELS`; no runtime behavior was created.
+
+The next research step is an isolated prospective journal using the same stable
+event IDs and schema. It will validate runtime event rate, source/cadence,
+feature drift and historical/runtime concordance without affecting approvals,
+Claude, Telegram or execution. Further outcome research must add genuinely new
+pre-registered information rather than mine the inspected 2020-2026 events.
 
 See [CLAUDE.md](CLAUDE.md) for architecture, data contracts, operational status
 and the research roadmap. The skeptical-review response and implemented

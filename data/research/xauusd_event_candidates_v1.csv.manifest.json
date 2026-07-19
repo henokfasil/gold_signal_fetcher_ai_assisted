@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "target_version": "bid_ask_fixed_clock_v1",
+  "candidate_source": "data/research/xauusd_event_features_v1.csv",
+  "candidate_source_sha256": "f6333fec4957e8f383a4e3192e8c3da24eb543c34e61ea113ee7e7a1736dddfe",
+  "price_source": "data/raw/dukascopy_xauusd_15m_2020_2026.csv",
+  "price_source_sha256": "c61a27b37628972377aff01817a223631fb57253ddc5dcd217cf0a6f6d3ddeeb",
+  "dataset_sha256": "c79a3a33ef2bad4a3c062aa0a6d8a09476de115b8801f155150e734b21b5109d",
+  "rows": 6368,
+  "expiry_hours_utc_clock": 48,
+  "expiry_execution": "first executable 15M close at/after cutoff",
+  "barrier_monitoring": "candidate close < bar close <= UTC cutoff",
+  "post_cutoff_bar_range_used_for_barrier": false,
+  "slippage_points_per_side": 0.1,
+  "spread": "observed bid/ask",
+  "alternative_horizons_hours": [
+    1,
+    4,
+    12,
+    48
+  ],
+  "ambiguous_rows": 20,
+  "unmatured_rows": 2,
+  "labels_over_48_clock_hours": 373,
+  "max_label_duration_hours": 85.25,
+  "research_warning": "Candidate/feature design remains contaminated by inspected 2020-2026 history; new targets do not create an untouched test."
+}

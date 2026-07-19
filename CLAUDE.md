@@ -100,6 +100,26 @@ Current research state at handoff:
   approval or Telegram change was created. The positive BUY point estimate is
   not an edge, and the secondary setup family results cannot be mined into a
   replacement primary rule under the frozen contract.
+- Event-first candidate-universe v1 is complete under the pre-analysis contract
+  `config/event_candidate_universe_v1.json` (SHA-256
+  `2b57fac00d70b60452a19e14b2daa8d264316016d89fc2425bebf3e05ad40c12`).
+  The outcome-free extractor generated 6,368 unique first-observable events
+  across 1H sweeps/CHoCH/FVG and 4H BOS/CHoCH, with all 55 registered causal
+  geometry fields. Feature dataset SHA-256 is
+  `f6333fec4957e8f383a4e3192e8c3da24eb543c34e61ea113ee7e7a1736dddfe`.
+  There are no duplicate IDs, future source-event times, invalid event types or
+  infinite feature values; all sample-size and data-quality gates passed.
+- The canonical event-first result is
+  `REJECT_EVENT_CANDIDATE_UNIVERSE_MODELS` in
+  `data/research/event_candidate_universe_benchmarks_v1.json` (SHA-256
+  `e39f38e456f2ed24335231242fe529f3b57406bbc4d7d53dafeb0f4eb78f979c`).
+  On 5,247 primary 4h out-of-sample events, geometry XGBoost selected 1,045
+  with +0.0046% mean after-cost return, but its weekly 95% interval was
+  -0.0255% to +0.0325%; rank IC was 0.0013 with interval -0.0311 to +0.0373.
+  Its paired improvement versus direction/event-type Ridge also crossed zero,
+  cost stress turned the bootstrap median negative, and neither direction was
+  separately eligible. Geometry Ridge was negative. No model, runtime filter,
+  shadow approval, Claude rule or Telegram behavior was created.
 - Prospective context observation is frozen as
   `forward-context-buy-20260719-v1` in
   `config/forward_context_observation_v1.json` (SHA-256
@@ -175,13 +195,15 @@ Completion checkpoint:
 - Rejected experiments are useful completed work: they prevent the same weak
   information from being repackaged under another model name. They do not mean
   that the whole AI-assisted research program failed.
-- The next high-information research task is upstream event-candidate capture,
-  not another Boolean combination or model over the same rows. Register a new
-  contract before implementation that regenerates a broader pre-score event
-  universe and records causal object geometry: stable setup/event IDs, object
-  age and distance in ATR units, sweep depth/reclaim, displacement magnitude,
-  order-block/FVG width and mitigation state, time since BOS/CHoCH and structure
-  transition. Do not define thresholds from the inspected outcomes.
+- The event-first extraction milestone is complete and rejected at its model
+  gates. The next high-information task is genuinely prospective collection of
+  this stable event universe, not another model or post-hoc event-type filter
+  on 2020-2026. First add an append-only, outcome-blind runtime event journal
+  using the same IDs/schema and validate event rate, cadence, feature drift and
+  Dukascopy historical/runtime concordance. Any TradingView/Pine/Claude
+  annotation must be a separate prospective ledger with exact symbol,
+  timeframe, completed-bar timestamp, prompt/model and source provenance; it
+  has no decision effect unless a later frozen experiment passes.
 
 Resume in this order:
 
@@ -198,13 +220,15 @@ Resume in this order:
    inspecting interim returns or giving the fields approval/Telegram effect.
 6. Preserve candidate-generation v2 as rejected. Do not promote its BUY point
    estimate or choose a replacement rule from its secondary diagnostics.
-7. Write the next pre-analysis contract for an upstream, event-first candidate
-   universe before regenerating data or inspecting new outcome comparisons.
-   The design must distinguish unique structural events from repeated scans and
-   capture continuous causal geometry rather than only presence flags.
-8. Regenerate that event universe from completed bid/ask-aligned bars, verify
-   point-in-time availability and compare fixed rule families before any ML.
-9. Add causal regime/session diagnostics only inside chronological training
+7. Preserve event-candidate-universe v1 as rejected. Do not select its positive
+   XGBoost point estimate, its three positive folds, a direction, event type,
+   target horizon or threshold from the inspected diagnostics.
+8. Implement the same stable event IDs and 55-field schema as an append-only
+   prospective journal, initially isolated from approval, Claude, Telegram and
+   broker logic. Validate cadence, exact-close availability, duplicates,
+   missingness, drift and historical/runtime feature concordance.
+9. Add genuinely new causal regime/session or independently sourced
+   information only under a new pre-analysis contract. Fit inside chronological
    folds. Register every proposed filter before examining its next-fold result.
 10. Freeze a revision only if the underlying non-ML baseline and any ML filter
    pass development gates. Final evidence must come from future forward paper
@@ -597,15 +621,20 @@ registered there before evaluation.
    was positive but failed fold stability, uncertainty, stress and paired-
    improvement gates; SELL was negative in every fold. Do not select a
    secondary family or fit another model on the same candidate rows.
-8. Register an upstream event-candidate-universe experiment that captures
-   unique structural event identity and continuous point-in-time SMC geometry
-   before the current score gate. Compare simple fixed families first; ML is
-   eligible only if the regenerated information improves those baselines.
-9. Continue model/prompt/dataset lineage, drift and calibration monitoring.
-10. Secure the public dashboard with a reverse proxy, HTTPS and authentication
+8. Preserve `REJECT_EVENT_CANDIDATE_UNIVERSE_MODELS`. The broader upstream
+   universe and continuous geometry passed integrity gates but did not beat the
+   registered direction/event-type control with dependence-aware certainty.
+   Do not mine secondary horizons or event families from this history.
+9. Build an isolated prospective event journal with the same stable IDs and
+   causal schema. Monitor event counts, source/cadence integrity, feature
+   missingness/drift and historical/runtime concordance without interim return
+   analysis or decision effect. Register any new information source before it
+   can enter an outcome comparison.
+10. Continue model/prompt/dataset lineage, drift and calibration monitoring.
+11. Secure the public dashboard with a reverse proxy, HTTPS and authentication
    before treating it as a customer-facing service. This is an operations gate,
    not evidence of trading performance.
-11. Do not design live-capital execution unless a later frozen forward test
+12. Do not design live-capital execution unless a later frozen forward test
    passes the registered gates; this experiment remains paper-only.
 
 ### Validation decision rule
@@ -794,6 +823,40 @@ reports BUY and SELL separately, resamples whole calendar weeks and applies
 incremental two-sided slippage stress. Only `sweep_value_retest_primary` was
 eligible to pass; all other families were fixed controls or diagnostics. The
 canonical result is `REJECT_CANDIDATE_GENERATION_V2`, with no runtime effect.
+
+### Event-first candidate-universe v1 benchmark
+
+The contract was committed before extraction and outcome comparison. Rebuild
+the outcome-free universe, apply fixed-clock executable-side labels and
+reproduce the frozen evaluation with:
+
+```bash
+python -m research.build_event_candidate_universe \
+  data/raw/dukascopy_xauusd_15m_2020_2026.csv \
+  data/research/xauusd_event_features_v1.csv \
+  --contract config/event_candidate_universe_v1.json
+
+python -m research.relabel_candidate_targets \
+  data/research/xauusd_event_features_v1.csv \
+  data/raw/dukascopy_xauusd_15m_2020_2026.csv \
+  data/research/xauusd_event_candidates_v1.csv \
+  --timestamp-is open --expiry-hours 48 --slippage-points 0.10
+
+python -m research.benchmark_event_candidate_universe \
+  data/research/xauusd_event_candidates_v1.csv \
+  --output data/research/event_candidate_universe_benchmarks_v1.json \
+  --bootstrap-samples 500 --seed 42
+```
+
+The extractor emits a structural event only on its first observable completed
+bar, hard-fails on duplicate/future IDs and stores continuous geometry without
+outcomes. The evaluator verifies both manifests and every frozen evaluation
+choice, uses actual-exit purging and uniqueness weights, and reports weekly
+block uncertainty plus BUY/SELL eligibility. The canonical decision is
+`REJECT_EVENT_CANDIDATE_UNIVERSE_MODELS`: both geometry models failed the
+primary 4h gates and no direction was eligible. The CSVs remain local because
+source-data commercial rights are not reviewed; the contract, manifests and
+machine-readable benchmark report are versioned.
 
 ## Security and operations
 

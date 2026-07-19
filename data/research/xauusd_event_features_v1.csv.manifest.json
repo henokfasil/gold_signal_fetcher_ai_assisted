@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "contract_version": "event-candidate-universe-20260719-v1",
+  "contract_sha256": "2b57fac00d70b60452a19e14b2daa8d264316016d89fc2425bebf3e05ad40c12",
+  "source_path": "data/raw/dukascopy_xauusd_15m_2020_2026.csv",
+  "source_sha256": "c61a27b37628972377aff01817a223631fb57253ddc5dcd217cf0a6f6d3ddeeb",
+  "source_manifest_sha256": "3019d16da736ec431d4fb6a959b49edf1846c013e788c2a48a21d9009b88b1ef",
+  "dataset_sha256": "f6333fec4957e8f383a4e3192e8c3da24eb543c34e61ea113ee7e7a1736dddfe",
+  "rows": 6368,
+  "first_event_time": "2020-12-28T00:00:00+00:00",
+  "last_event_time": "2026-07-17T17:00:00+00:00",
+  "event_type_counts": {
+    "BOS_4H": 969,
+    "CHOCH_1H": 1503,
+    "CHOCH_4H": 435,
+    "FVG_1H": 2035,
+    "SWEEP_1H": 1426
+  },
+  "direction_counts": {
+    "BUY": 3370,
+    "SELL": 2998
+  },
+  "duplicate_event_ids": 0,
+  "future_source_event_times": 0,
+  "feature_count": 55,
+  "feature_schema_sha256": "346753a3c3effc9f53d42ddde0f9fba296d736ecf38c883515f96995c5d0c252",
+  "contains_outcomes": false,
+  "research_warning": "Outcome-free event extraction from contaminated development history; no result or runtime authorization is implied."
+}

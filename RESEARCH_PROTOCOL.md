@@ -332,7 +332,32 @@ gate-eligible models. Folds, actual-exit purge, prior calibration threshold,
 uniqueness weighting, weekly blocks, cost stress and separate directional
 eligibility are frozen. Secondary horizons and event-type diagnostics cannot
 select a replacement target, model or event family. At registration time the
-new event dataset and its outcomes do not exist.
+new event dataset and its outcomes did not exist.
+
+The outcome-free extractor subsequently emitted 6,368 stable events with all
+55 registered fields. The data-quality decision passed: 6,346 barrier-matured
+unambiguous events, at least 434 per event type, at least 2,988 per direction,
+zero duplicate IDs, zero source events after their decision time, zero invalid
+identities and zero infinite registered feature values. The feature dataset
+SHA-256 is
+`f6333fec4957e8f383a4e3192e8c3da24eb543c34e61ea113ee7e7a1736dddfe`.
+
+The frozen result is `REJECT_EVENT_CANDIDATE_UNIVERSE_MODELS` in
+`data/research/event_candidate_universe_benchmarks_v1.json` (SHA-256
+`e39f38e456f2ed24335231242fe529f3b57406bbc4d7d53dafeb0f4eb78f979c`).
+The primary 4h geometry XGBoost selected +0.0046% mean after-cost return, but
+the calendar-week 95% interval was -0.0255% to +0.0325%; rank IC was 0.0013
+with interval -0.0311 to +0.0373. Its paired improvement over the registered
+direction/event-type Ridge crossed zero, the 0.25-point-per-side stress median
+was negative and neither BUY nor SELL passed separate eligibility. Geometry
+Ridge selected a negative mean. Secondary horizons remain diagnostic and
+cannot be used to choose a target, model, event type or threshold.
+
+No event model artifact, historical filter, shadow approval, runtime decision,
+Claude rule, Telegram behavior or broker path is authorized. Further work on
+this event representation must be prospective or introduce genuinely new
+pre-registered information; the inspected 2020-2026 event outcomes cannot be
+mined into a replacement rule.
 
 `research/benchmark_candidate_models.py` runs prevalence, direction-only,
 SMC-score-only logistic, all-feature logistic and XGBoost through the same
