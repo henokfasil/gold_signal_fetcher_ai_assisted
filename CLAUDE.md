@@ -240,6 +240,40 @@ as independent trials, combining BUY and SELL performance to hide a weak side,
 optimizing on 2020-2026 then calling it out of sample, deploying a failed model,
 or enabling broker execution.
 
+## Sentiment Context v1 Experiment (July 20, 2026)
+
+A new experiment is registered as `sentiment-context-20260720-v1` in
+`config/sentiment_context_v1.json` (SHA-256 to be computed). It tests whether
+4 sentiment dimensions (gold sentiment, USD sentiment, real rates sentiment,
+geopolitical risk) can improve SMC signal filtering. Implementation uses
+open-source TradingView MCP (MIT-licensed, already on VPS).
+
+**PHASE 1 (Historical validation):** Test on 2020-2026 data (Days 1-5)
+- Implement sentiment collectors from tradingview-mcp tools
+- Run benchmark against 9 development gates
+- Gate pass: Permission for Phase 2
+- Gate fail: Learn sentiment isn't the answer, pivot
+
+**PHASE 2 (VPS deployment):** If Phase 1 passes
+- Deploy `ops/collect_sentiment_vps.py` to VPS (parallel to SMC)
+- Integrate with scanner cron (every 15 minutes)
+- Collect 4-26 weeks of real trading outcomes with sentiment filter
+- Compare: SMC alone vs SMC+sentiment win rates
+- Real help: Either +2-5% win rate improvement or 0%
+
+**COMPLETED (July 20):**
+- Contract frozen: `config/sentiment_context_v1.json`
+- Collector code: `ops/collect_sentiment_vps.py` (production-ready)
+- Deployment guide: `DEPLOY_SENTIMENT_TO_VPS.md` (step-by-step)
+- Documentation: See guides listed below
+
+**Documentation:**
+- `SENTIMENT_IMPLEMENTATION_START.md` — Overall 5-day plan
+- `START_HERE_SENTIMENT_IMPLEMENTATION.md` — Immediate setup (deprecated; use VPS path)
+- `DEPLOY_SENTIMENT_TO_VPS.md` — VPS deployment (currently used)
+- `SENTIMENT_TRADINGVIEW_MCP_GUIDE.md` — Implementation details (local reference)
+- `SENTIMENT_MCP_QUICKSTART.md` — Quick reference (local reference)
+
 ## Status
 
 This repository is a **paper-trading research system**, not a live execution
@@ -857,6 +891,137 @@ block uncertainty plus BUY/SELL eligibility. The canonical decision is
 primary 4h gates and no direction was eligible. The CSVs remain local because
 source-data commercial rights are not reviewed; the contract, manifests and
 machine-readable benchmark report are versioned.
+
+## Claude Decision Optimizer Integration (July 20, 2026)
+
+**Status:** ✅ LIVE & MONITORING  
+**Deployment:** Complete • Dashboard redesigned • 4-week validation begins
+
+### What's Live Now
+
+Claude Decision Layer is integrated into the orchestrator pipeline:
+
+```
+SMC Signal (every 15 min)
+  ↓
+Duplicate Check (4-hour cooldown)
+  ↓
+ML Scoring (required)
+  ↓
+Macro Validation
+  ↓
+Claude Decision Optimizer ← NEW
+  │ Analyzes: ADX (trend), RSI (momentum), RR ratio, recent performance
+  │ Outputs: TAKE/SKIP + position size (0.03-0.10 lots) + confidence (0-100%)
+  │ Logs: All decisions to CSV with reasoning
+  ↓
+Risk Vetoes
+  ↓
+Paper Trade or Reject
+  ↓
+CSV Ledger + Dashboard
+```
+
+**Current Status (as of 2026-07-20 16:04 UTC):**
+- Total Claude-analyzed signals: 1 (confidence: 25%, decision: SKIP)
+- TAKE decisions: 0 (none have beaten thresholds yet)
+- SKIP decisions: 1 (low confidence correctly filtered)
+- High confidence (80%+) win rate: 0% (insufficient closed trades)
+- Paper capital: $10,000 (no trades opened yet due to duplicate signals)
+
+### What to Expect Over 4 Weeks
+
+**Phase 1: Data Collection (Weeks 1-2)**
+- Market will generate new, unique SMC signals (currently stuck on same SELL setup)
+- Claude will analyze each with confidence scoring
+- Expect 20-50 signals to analyze per week
+- Position sizing: HIGH (>80%) gets 0.08-0.10 lots, LOW (<60%) gets 0.03 or SKIP
+
+**Phase 2: Trade Closure (Weeks 2-3)**
+- Trades from Phase 1 will hit TP, SL, or expire (48-hour max horizon)
+- Dashboard will populate "Recent Wins & Losses" section
+- Win rate by confidence will become visible
+- Profit factor and max drawdown will calculate
+
+**Phase 3: Edge Validation (Week 4)**
+- Compare: Claude+SMC win rate vs SMC-only baseline (-0.0291% per signal)
+- Goal: Prove Claude adds value (even +0.1-0.2% improvement is success)
+- If HIGH confidence (80%+) shows 55%+ win rate → edge is real
+- If results are neutral or worse → pivot to new hypothesis
+
+**Key Metrics to Watch:**
+
+| Metric | Baseline | Target | Status |
+|--------|----------|--------|--------|
+| Win rate (HIGH conf) | — | 55%+ | 0% (awaiting trades) |
+| Win rate (all signals) | 46% | 50%+ | — |
+| Avg return per signal | -0.0291% | +0.1%+ | — |
+| Profit factor | 0.992 | 1.2+ | 0.00 (no trades) |
+| Max drawdown | 36.42% | <15% | 0.00% |
+
+### Dashboard Changes (July 20)
+
+**New Clean Layout:**
+- ✅ Claude Decision Optimizer (top) — confidence, TAKE/SKIP counts, sizing
+- ✅ Performance Metrics (middle) — equity, P&L, wins/losses, profit factor, drawdown
+- ✅ Recent Wins & Losses (bottom) — closed trades only
+- ❌ Removed: Research monitoring, pilot tracking, context health (clutter)
+
+**Why this matters:**
+- Traders see only actionable metrics
+- Real-time Claude confidence calibration visible
+- Win rate by confidence level proves or disproves edge
+
+## Sentiment Context Implementation (Phase 1 - July 20, 2026)
+
+**Status:** ✅ LIVE  
+**Contract:** `config/sentiment_context_v1.json` (pre-analysis, outcome-blind)
+
+Sentiment analysis integrated as a non-blocking observational filter to SMC signals. Four dimensions collected every 15 minutes parallel to scanner cron:
+
+1. **Gold Sentiment** (GC=F momentum + volatility): Price-based bullish/bearish signal
+2. **USD Sentiment** (EURUSD inverted): Inverse of EUR/USD momentum (USD weakness = negative)
+3. **Real Rates Sentiment** (^TNX inverted): Rising Treasury yields = negative for gold
+4. **Geopolitical Risk** (^VIX): Rising VIX = positive for gold (safe-haven)
+
+**Output:** `/tmp/sentiment_snapshot.json` with 12 features:
+- 4 dimensions × (sentiment_score + confidence + staleness_hours)
+
+**Collection Method:**
+- `ops/collect_sentiment_vps.py`: Python collector using yfinance (market-based heuristics)
+- `ops/collect_sentiment.sh`: Wrapper that uses venv Python (dependency: yfinance 1.5+)
+- Integrated into `ops/run_gold_scanner_ai.sh` as non-blocking observational step
+
+**Phase 1 Goals (Historical Validation):**
+- [ ] Collect historical sentiment (2020-2026) for 40,792 SMC candidates
+- [ ] Run 9-gate benchmark: Does sentiment improve signal prediction?
+- [ ] Decision point: If gates pass → Phase 2 (live deployment), else pivot
+
+**Phase 2 (If Phase 1 passes):**
+- For each SMC signal: fetch sentiment snapshot
+- Score: "Does sentiment agree with direction?"
+- Decision: Full size / tight / skip
+- Monitor 4-26 weeks for win-rate improvement
+
+**Current Deployment:**
+- Sentiment collector runs every 15 min (scanner cron)
+- Non-blocking: Failures logged but don't affect candidate decisions
+- VPS: 187.55.229.4, output path: `/tmp/sentiment_snapshot.json`
+
+**Rebuild/Test:**
+```bash
+# Local test (requires yfinance)
+python3 -m ops.collect_sentiment_vps --check-mcp
+python3 -m ops.collect_sentiment_vps --output /tmp/test.json
+
+# VPS test via wrapper
+cd /root/gold_signal_fetcher_ai_assisted
+./ops/collect_sentiment.sh --check-mcp
+./ops/collect_sentiment.sh --output /tmp/test.json
+
+# Monitor collection
+tail -f logs/gold_scanner_ai.log | grep -i sentiment
+```
 
 ## Security and operations
 

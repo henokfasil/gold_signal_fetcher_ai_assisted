@@ -86,6 +86,38 @@ def calculate_metrics(csv_path):
     return result
 
 
+def get_closed_trades(csv_path, limit=15):
+    """Get only closed trades (WIN/LOSS/EXPIRED) for the dashboard."""
+    frame = load_trades(csv_path)
+    if frame.empty:
+        return []
+
+    # Filter to closed trades only
+    status = frame.get("status", pd.Series("", index=frame.index)).astype(str).str.upper()
+    closed = frame[status.isin(["WIN", "LOSS", "EXPIRED"])].copy()
+    if closed.empty:
+        return []
+
+    records = []
+    for _, row in closed.tail(limit).iloc[::-1].iterrows():
+        pnl_usd = float(row.get("pnl_usd", 0)) if pd.notna(row.get("pnl_usd")) else 0
+        status_val = str(row.get("status", "")).upper()
+        outcome_class = "WIN" if status_val == "WIN" else ("LOSS" if status_val == "LOSS" else "OPEN")
+
+        records.append({
+            "time": str(row.get("timestamp", ""))[:16].replace("T", " "),
+            "direction": str(row.get("direction", "—")).upper(),
+            "entry": f"{row.get('entry', '—'):.2f}" if pd.notna(row.get("entry")) else "—",
+            "exit": f"{row.get('exit_price', '—'):.2f}" if pd.notna(row.get("exit_price")) else "—",
+            "rr": f"{row.get('rr_ratio', '—'):.2f}" if pd.notna(row.get("rr_ratio")) else "—",
+            "pnl": f"${pnl_usd:+.2f}",
+            "outcome_class": outcome_class,
+            "status": status_val,
+            "reason": str(row.get("decision_reason", ""))[:60],
+        })
+    return records
+
+
 def get_recent_trades(csv_path, limit=20):
     frame = load_trades(csv_path)
     if frame.empty:
@@ -439,54 +471,153 @@ def get_evidence_integrity(
 
 
 TEMPLATE = """
-<!doctype html><html><head><title>Gold Signal Research</title>
+<!doctype html><html><head><title>Gold Signal Fetcher</title>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="refresh" content="60">
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#e5edf7;font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1380px;margin:auto;padding:24px}.header{display:flex;justify-content:space-between;align-items:end;margin-bottom:22px}.header h1{margin:0;color:#38d38a;font-size:27px}.muted{color:#7f8da3}.panel{background:#151f30;border:1px solid #2a3a51;border-radius:10px;padding:18px;margin-bottom:20px}.feed{border-color:#1597e5}.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.panel h2{font-size:16px;margin:0;color:#58bfff}.pill{padding:6px 12px;border-radius:999px;font-weight:800;font-size:11px}.good{background:#38c968;color:#061b0d}.warn{background:#f5a623;color:#2d1900}.bad{background:#ef5350;color:#2d0505}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:#0e1726;border-radius:6px;padding:13px;min-height:70px}.label{text-transform:uppercase;color:#718198;font-size:10px;font-weight:700}.value{font-size:17px;font-weight:750;margin-top:7px}.quality{width:100%;border-collapse:collapse;margin-top:14px}.quality th,.quality td{padding:8px;border-bottom:1px solid #26364c;text-align:left}.ok{color:#42d987}.no{color:#ff6b6b}.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}.metric{background:#151f30;border-left:3px solid #38d38a;border-radius:7px;padding:14px}.metric .value{font-size:19px}.capital{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.table-wrap{overflow:auto}table.trades{width:100%;border-collapse:collapse;min-width:1100px}table.trades th,table.trades td{padding:10px;border-bottom:1px solid #26364c;text-align:left;font-size:12px}table.trades th{color:#718198;text-transform:uppercase;font-size:10px}.BUY{color:#42d987;font-weight:800}.SELL{color:#ff7474;font-weight:800}.OPEN{color:#4db8ff}.WIN{color:#42d987}.LOSS{color:#ff6b6b}.REJECTED{color:#9aa8bb}.note{margin-top:12px;font-size:11px;color:#718198}@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:repeat(2,1fr)}.capital{grid-template-columns:1fr}.header{display:block}.header .muted{margin-top:8px}}
+*{box-sizing:border-box}body{margin:0;background:#0a0e27;color:#e5edf7;font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1280px;margin:auto;padding:24px}.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;border-bottom:2px solid #1e40af;padding-bottom:12px}.header h1{margin:0;color:#fbbf24;font-size:28px}.subtitle{color:#9ca3af;font-size:13px}.muted{color:#9ca3af}.alert{background:rgba(239,68,68,0.1);border-left:4px solid #ef4444;padding:14px;border-radius:6px;margin-bottom:20px;display:none}.alert.show{display:block}.alert-text{color:#fca5a5;font-weight:500}.panel{background:#111827;border:1px solid #1e40af;border-radius:8px;padding:20px;margin-bottom:20px}.panel h2{font-size:16px;margin:0 0 16px 0;color:#60a5fa;text-transform:uppercase;letter-spacing:1px}.pill{display:inline-block;padding:6px 14px;border-radius:999px;font-weight:800;font-size:11px;margin-left:12px}.good{background:#10b981;color:#ffffff}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:16px}.card{background:#1f2937;border:1px solid #374151;border-radius:6px;padding:14px;text-align:center}.label{text-transform:uppercase;color:#9ca3af;font-size:11px;font-weight:700;margin-bottom:8px}.value{font-size:18px;font-weight:900;color:#fbbf24}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}.metric{background:#1f2937;border-left:3px solid #10b981;padding:16px;border-radius:6px}.metric .label{font-size:10px}.metric .value{font-size:20px;color:#10b981}.capital-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}.capital-card{background:#1f2937;border:1px solid #374151;padding:16px;border-radius:6px}.capital-card .label{text-align:left;margin-bottom:8px}.capital-card .value{text-align:left;font-size:20px}.table-wrap{overflow:auto}.trades-table{width:100%;border-collapse:collapse;min-width:900px}.trades-table th,.trades-table td{padding:10px;border-bottom:1px solid #2d3748;text-align:left;font-size:12px}.trades-table th{background:#1e2d42;color:#9ca3af;text-transform:uppercase;font-size:10px;font-weight:700}.trades-table tr:hover{background:#1f2937}.BUY{color:#10b981;font-weight:800}.SELL{color:#f87171;font-weight:800}.WIN{color:#10b981;font-weight:800}.LOSS{color:#ef4444;font-weight:800}.OPEN{color:#60a5fa}.note{margin-top:12px;font-size:11px;color:#9ca3af}@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:repeat(2,1fr)}.capital-row{grid-template-columns:1fr}.header{display:block;border-bottom:none;padding-bottom:0}}
 </style></head><body><div class="wrap">
-<div class="header"><div><h1>Gold Signal Fetcher</h1><div class="muted">Unified SMC + ML validation gate + Claude review · research paper trading</div></div><div class="muted">Updated {{ now }} UTC</div></div>
-<section class="panel feed"><div class="panel-head"><h2>Market Data Quality</h2><span class="pill {{ feed.status_class }}">{{ feed.status }}</span></div>
-<div class="grid">
-{% for label,value in [('Provider',feed.provider),('Exact symbol',feed.symbol),('Snapshot age',feed.age),('Latest 15M close age',feed.bar_age),('Captured',feed.captured_at),('OHLC integrity',feed.integrity),('Latest-close dispersion',feed.price_consistency),('Last scan',feed.last_scan),('Market',feed.market),('Paper mode',feed.paper_mode),('Telegram',feed.telegram),('Schedule','Every 15 minutes'),('Execution','No broker orders')] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
-</div><table class="quality"><thead><tr><th>Timeframe</th><th>Bars</th><th>Ordered</th><th>Unique</th><th>OHLC valid</th><th>Bid/ask valid</th><th>Cadence</th><th>Median interval</th><th>Latest bar UTC</th></tr></thead><tbody>{% for name,q in feed.frames.items() %}<tr><td>{{ name }}</td><td>{{ q.count }}</td><td class="{{ 'ok' if q.ordered else 'no' }}">{{ 'PASS' if q.ordered else 'FAIL' }}</td><td class="{{ 'ok' if q.unique else 'no' }}">{{ 'PASS' if q.unique else 'FAIL' }}</td><td class="{{ 'ok' if q.ohlc else 'no' }}">{{ 'PASS' if q.ohlc else 'FAIL' }}</td><td class="{{ 'ok' if q.quotes else 'no' }}">{{ 'PASS' if q.quotes else 'N/A' }}</td><td class="{{ 'ok' if q.cadence else 'no' }}">{{ 'PASS' if q.cadence else 'FAIL' }}</td><td>{{ q.interval }}</td><td>{{ q.latest }}</td></tr>{% endfor %}</tbody></table>
-<div class="note">File-only validation: page views make no provider, Telegram, Claude, or scanner calls. Health includes exact source identity, independent cadence, OHLC, ordering, uniqueness and executable quote checks—not bar counts alone.</div></section>
 
-<section class="panel feed"><div class="panel-head"><h2>Prospective Gold Context</h2><span class="pill {{ context.status_class }}">{{ context.status }}</span></div>
-<div class="grid">
-{% for label,value in [('Experiment',context.experiment),('Provider',context.provider),('Snapshot captured',context.captured_at),('Snapshot age',context.snapshot_age),('Assignment cutoff',context.assignment_cutoff),('Evaluate once',context.evaluation_at),('Context candidates',context.captured_candidates),('Capture rate',context.capture_rate),('BUY hypothesis observations',context.buy_hypothesis_candidates),('SELL baseline observations',context.sell_observations),('Missing captures',context.missing_captures),('Decision / Telegram effect',context.effect)] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
-</div><table class="quality"><thead><tr><th>Context input</th><th>Exact symbol</th><th>Price sides</th><th>Analysis price</th><th>Bars</th><th>Cadence</th><th>Latest available UTC</th><th>Current staleness</th><th>Candidate missing rate</th></tr></thead><tbody>{% for name,q in context.instruments.items() %}<tr><td>{{ name }}</td><td>{{ q.symbol }}</td><td>{{ q.sides }}</td><td>{{ q.analysis }}</td><td>{{ q.count }}</td><td>{{ q.cadence }}</td><td>{{ q.latest }}</td><td>{{ q.staleness }}</td><td>{{ q.missing_rate }}</td></tr>{% endfor %}</tbody></table>
-<div class="note">Operational monitoring only: exact source, sides, completed-candle cadence, staleness, missingness and counts. Interim returns are intentionally absent. These fields cannot score or approve a candidate, influence Claude, send Telegram, or place an order.</div></section>
-
-<section class="panel"><div class="panel-head"><h2>Research Evidence Integrity</h2><span class="pill {{ integrity.status_class }}">{{ integrity.status }}</span></div>
-<div class="grid">
-{% for label,value in [('Monitor',integrity.monitor_version),('Canonical candidates',integrity.canonical_candidates_total),('Pilot-scope candidates',integrity.pilot_candidates),('Context-scope candidates',integrity.context_scope_candidates),('Technical drift',integrity.technical_drift.status),('Technical max PSI',integrity.technical_drift.max_psi_display),('Context drift',integrity.context_drift.status),('Context max PSI',integrity.context_drift.max_psi_display),('Scheduled audit',integrity.scheduled_check),('Performance columns read',integrity.performance_access),('Decision / Telegram effect',integrity.effect),('Current issues',integrity.issue_summary)] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
-</div><table class="quality"><thead><tr><th>Evidence ledger</th><th>Status</th><th>Expected</th><th>Rows</th><th>Missing</th><th>Orphans</th><th>Duplicates</th><th>Identity mismatch</th><th>Invalid rows</th><th>Schema</th></tr></thead><tbody>{% for q in integrity.ledgers %}<tr><td>{{ q.name }}</td><td class="{{ 'ok' if q.status in ['PASS','READY'] else 'no' }}">{{ q.status }}</td><td>{{ q.expected }}</td><td>{{ q.rows }}</td><td>{{ q.missing }}</td><td>{{ q.orphan }}</td><td>{{ q.duplicates }}</td><td>{{ q.identity_mismatches }}</td><td>{{ q.invalid_rows|default(0) }}</td><td>{{ q.schema }}</td></tr>{% endfor %}</tbody></table>
-<div class="note">File-only reconciliation of IDs, timestamps, directions, schemas, frozen hashes, memberships and missingness. PSI starts only after 200 prospective rows using the frozen first 100 versus latest 100. It is a distribution-shift heuristic, not a profitability or model-decay conclusion; outcome returns and P&amp;L are never read.</div></section>
-
-<section class="panel"><div class="panel-head"><h2>Prospective Shadow Variants</h2><span class="pill {{ variants.status_class }}">{{ variants.status }}</span></div>
-<div class="grid">
-{% for label,value in [('Experiment',variants.experiment),('Frozen at',variants.frozen_at),('Assignment cutoff',variants.assignment_cutoff),('Evaluate once after maturity',variants.evaluation_at),('Purpose',variants.purpose),('First assignment',variants.first_assignment),('Decision / Telegram effect',variants.effect),('Baseline assigned',variants.baseline_assigned),('Baseline R/R eligible',variants.baseline_eligible),('Baseline matured',variants.baseline_matured),('BUY + 1H sweep assigned',variants.liquidity_assigned),('BUY + 1H sweep R/R eligible',variants.liquidity_eligible),('BUY + 1H sweep matured',variants.liquidity_matured)] %}<div class="card"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
-</div><div class="note">This fixed 26-week run is an underpowered no-peek pilot for plumbing, event rate, feed stability and variance estimation. It cannot by itself validate profitability. Membership is assigned once at candidate time and has no decision or Telegram effect.</div></section>
-
-<div class="capital"><div class="panel"><div class="label">Paper starting capital</div><div class="value">{{ m.starting_capital }}</div></div><div class="panel"><div class="label">Paper marked capital</div><div class="value">{{ m.current_capital }}</div></div><div class="panel"><div class="label">Realized paper P&amp;L</div><div class="value">{{ m.total_profit }} · {{ m.return_pct }}</div></div></div>
-<div class="metrics">
-{% for label,value in [('Candidates',m.candidates),('Approved',m.approved),('Rejected',m.rejected),('Open',m.open),('Wins / losses',m.wins|string+' / '+m.losses|string),('Expired',m.expired),('Win rate',m.win_rate),('Profit factor',m.profit_factor),('Max drawdown',m.max_drawdown),('BUY candidates',m.buys),('SELL candidates',m.sells),('Status',m.status)] %}<div class="metric"><div class="label">{{ label }}</div><div class="value">{{ value }}</div></div>{% endfor %}
+<div class="header">
+  <div>
+    <h1>🥇 Gold Signal Fetcher</h1>
+    <div class="subtitle">Claude-optimized SMC paper trading | Real-time decision layer</div>
+  </div>
+  <div class="muted">{{ now }} UTC</div>
 </div>
-<section class="panel"><div class="panel-head"><h2>Recent Unified Candidates</h2><span class="muted">Newest first</span></div><div class="table-wrap"><table class="trades"><thead><tr><th>Time UTC</th><th>Side</th><th>Status</th><th>Entry</th><th>Stop</th><th>Target</th><th>R/R</th><th>SMC</th><th>Combined</th><th>P&amp;L $</th><th>Decision reason</th></tr></thead><tbody>{% if rows %}{% for r in rows %}<tr><td>{{ r.time }}</td><td class="{{ r.direction }}">{{ r.direction }}</td><td class="{{ r.status }}">{{ r.status }}</td><td>{{ r.entry }}</td><td>{{ r.stop }}</td><td>{{ r.target }}</td><td>{{ r.rr }}</td><td>{{ r.smc }}</td><td>{{ r.confidence }}</td><td>{{ r.pnl }}</td><td>{{ r.reason }}</td></tr>{% endfor %}{% else %}<tr><td colspan="11" class="muted">No candidates recorded yet. The market is currently closed.</td></tr>{% endif %}</tbody></table></div></section>
-<div class="note">Research system only. Engineering health and paper results do not establish profitability or suitability for live capital.</div>
+
+{% if feed.status != "HEALTHY" %}
+<div class="alert show">
+  <div class="alert-text">⚠️ Feed Status: {{ feed.status }} • {{ feed.age }} • {{ feed.last_scan }}</div>
+</div>
+{% endif %}
+
+<section class="panel">
+  <h2>Claude Decision Optimizer <span class="pill good">{{ claude.status }}</span></h2>
+  <div class="grid">
+    <div class="card"><div class="label">Total Analyzed</div><div class="value">{{ claude.total }}</div></div>
+    <div class="card"><div class="label">TAKE Decisions</div><div class="value">{{ claude.takes }}</div></div>
+    <div class="card"><div class="label">SKIP Decisions</div><div class="value">{{ claude.skips }}</div></div>
+    <div class="card"><div class="label">Avg Confidence</div><div class="value">{{ claude.avg_confidence }}</div></div>
+    <div class="card"><div class="label">High Conf Win Rate</div><div class="value">{{ claude.win_rate_high }}</div></div>
+    <div class="card"><div class="label">Position Size</div><div class="value">0.03-0.10 lots</div></div>
+  </div>
+  <div class="note">Claude analyzes each signal's ADX (trend), RSI (momentum), RR ratio, and recent performance to decide position size or SKIP. Dynamic sizing optimizes capital allocation by confidence.</div>
+</section>
+
+<section class="panel">
+  <h2>Performance Metrics</h2>
+  <div class="capital-row">
+    <div class="capital-card"><div class="label">Starting Capital</div><div class="value">{{ m.starting_capital }}</div></div>
+    <div class="capital-card"><div class="label">Current Equity</div><div class="value">{{ m.current_capital }}</div></div>
+    <div class="capital-card"><div class="label">P&L Return</div><div class="value">{{ m.total_profit }} ({{ m.return_pct }})</div></div>
+  </div>
+  <div class="metrics">
+    <div class="metric"><div class="label">Signals Analyzed</div><div class="value">{{ m.candidates }}</div></div>
+    <div class="metric"><div class="label">Wins</div><div class="value" style="color:#10b981">{{ m.wins }}</div></div>
+    <div class="metric"><div class="label">Losses</div><div class="value" style="color:#ef4444">{{ m.losses }}</div></div>
+    <div class="metric"><div class="label">Win Rate</div><div class="value">{{ m.win_rate }}</div></div>
+    <div class="metric"><div class="label">Profit Factor</div><div class="value">{{ m.profit_factor }}</div></div>
+    <div class="metric"><div class="label">Max Drawdown</div><div class="value">{{ m.max_drawdown }}</div></div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Recent Wins & Losses</h2>
+  <div class="table-wrap">
+    <table class="trades-table">
+      <thead>
+        <tr>
+          <th>Time UTC</th>
+          <th>Side</th>
+          <th>Entry</th>
+          <th>Exit</th>
+          <th>R/R</th>
+          <th>P&L</th>
+          <th>Status</th>
+          <th>Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if closed_trades %}
+          {% for r in closed_trades %}
+            <tr>
+              <td>{{ r.time }}</td>
+              <td class="{{ r.direction }}">{{ r.direction }}</td>
+              <td>{{ r.entry }}</td>
+              <td>{{ r.exit }}</td>
+              <td>{{ r.rr }}</td>
+              <td class="{{ r.outcome_class }}">{{ r.pnl }}</td>
+              <td class="{{ r.status }}">{{ r.status }}</td>
+              <td style="font-size:11px;color:#9ca3af">{{ r.reason }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="8" class="muted">No closed trades yet.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  <div class="note">Closed trades only (WIN/LOSS/EXPIRED). Shows recent realized outcomes used by Claude for confidence calibration.</div>
+</section>
+
+<div class="note" style="text-align:center;margin-top:30px">Research paper trading only. Results do not establish profitability or suitability for live capital.</div>
+
 </div></body></html>
 """
+
+
+def get_claude_stats():
+    """Get Claude decision stats from recent trades."""
+    trades = load_trades(settings.PAPER_TRADES_CSV)
+    if trades.empty:
+        return {"status": "Collecting", "total": 0, "takes": 0, "skips": 0, "avg_confidence": "—", "win_rate_high": "—"}
+
+    # Count Claude decisions (if claude_confidence column exists)
+    if "claude_confidence" not in trades.columns:
+        return {"status": "No Claude data yet", "total": 0, "takes": 0, "skips": 0, "avg_confidence": "—", "win_rate_high": "—"}
+
+    trades_with_confidence = trades[trades["claude_confidence"].notna()].copy()
+    if trades_with_confidence.empty:
+        return {"status": "Collecting", "total": 0, "takes": 0, "skips": 0, "avg_confidence": "—", "win_rate_high": "—"}
+
+    # Convert string confidence to numeric
+    trades_with_confidence["claude_confidence"] = pd.to_numeric(trades_with_confidence["claude_confidence"], errors="coerce")
+    trades_with_confidence = trades_with_confidence[trades_with_confidence["claude_confidence"].notna()]
+
+    if trades_with_confidence.empty:
+        return {"status": "Collecting", "total": 0, "takes": 0, "skips": 0, "avg_confidence": "—", "win_rate_high": "—"}
+
+    total = len(trades_with_confidence)
+    takes = len(trades_with_confidence[trades_with_confidence["decision"].astype(str).str.upper() == "APPROVE"])
+    skips = len(trades_with_confidence[trades_with_confidence["decision"].astype(str).str.upper() == "REJECT"])
+    avg_conf = trades_with_confidence["claude_confidence"].mean()
+
+    # Win rate for HIGH confidence (>80%)
+    high_conf = trades_with_confidence[trades_with_confidence["claude_confidence"] > 80]
+    if len(high_conf) > 0:
+        status_upper = high_conf["status"].astype(str).str.upper()
+        resolved = high_conf[status_upper.isin(["WIN", "LOSS"])]
+        win_rate_high = len(resolved[status_upper == "WIN"]) / len(resolved) * 100 if len(resolved) > 0 else 0
+    else:
+        win_rate_high = 0
+
+    return {
+        "status": "Live",
+        "total": total,
+        "takes": takes,
+        "skips": skips,
+        "avg_confidence": f"{avg_conf:.0f}%" if not pd.isna(avg_conf) else "—",
+        "win_rate_high": f"{win_rate_high:.0f}%"
+    }
 
 
 @app.route("/")
 def dashboard():
     return render_template_string(TEMPLATE, m=calculate_metrics(settings.PAPER_TRADES_CSV),
-                                  rows=get_recent_trades(settings.PAPER_TRADES_CSV),
+                                  closed_trades=get_closed_trades(settings.PAPER_TRADES_CSV),
                                   feed=get_feed_health(),
-                                  context=get_context_health(),
-                                  integrity=get_evidence_integrity(),
-                                  variants=get_shadow_variants(),
+                                  claude=get_claude_stats(),
                                   now=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
 
 

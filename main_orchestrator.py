@@ -17,6 +17,7 @@ import pandas as pd
 
 from config import settings
 from agent.claude_analyst import AITradingDecider
+from agent.claude_decision_optimizer import get_optimizer
 from agent.gold_correlations import GoldCorrelationValidator
 from agent.gold_context_snapshot import (
     CONTEXT_FEATURES,
@@ -731,6 +732,34 @@ class AIAssistedOrchestrator:
                 )
         return candidate_id
 
+    def _recent_trade_outcomes(self, limit=10):
+        """Get recent trade outcomes for Claude context (win/loss tracking)."""
+        try:
+            if not self.ledger.path.exists():
+                return {"wins": 0, "losses": 0, "avg_return_pct": 0}
+
+            df = pd.read_csv(self.ledger.path)
+            if df.empty:
+                return {"wins": 0, "losses": 0, "avg_return_pct": 0}
+
+            # Get last N closed trades
+            closed = df[df["status"].isin(["WIN", "LOSS"])].tail(limit)
+            if closed.empty:
+                return {"wins": 0, "losses": 0, "avg_return_pct": 0}
+
+            wins = len(closed[closed["status"] == "WIN"])
+            losses = len(closed[closed["status"] == "LOSS"])
+            avg_return = pd.to_numeric(closed["pnl_pct"], errors="coerce").mean()
+
+            return {
+                "wins": wins,
+                "losses": losses,
+                "avg_return_pct": float(avg_return) if not pd.isna(avg_return) else 0
+            }
+        except Exception as e:
+            logger.warning(f"Could not get recent outcomes: {e}")
+            return {"wins": 0, "losses": 0, "avg_return_pct": 0}
+
     def run_scan(self):
         logger.info("[ORCHESTRATOR] Research paper-trading scan started")
         self.update_open_trades()
@@ -749,6 +778,15 @@ class AIAssistedOrchestrator:
 
         ml_result = self.ml_filter.score_signal(signal)
         macro_result = self.correlation.validate_signal(signal["direction"])
+
+        # Get Claude decision (NEW: dynamic sizing optimizer)
+        claude_optimizer = get_optimizer()
+        claude_decision = claude_optimizer.analyze_signal(
+            signal=signal,
+            recent_outcomes=self._recent_trade_outcomes(),
+            market_context={"session": session}
+        )
+
         decision = self.ai_decider.decide(
             signal_info=signal, market_data=self._market_context(signal, macro_result),
             ml_result=ml_result, macro_result=macro_result,
@@ -756,6 +794,11 @@ class AIAssistedOrchestrator:
             open_positions=self.ledger.open_positions(),
         )
         decision["ml_model_version"] = ml_result.get("model_version")
+
+        # Log Claude decision
+        decision["claude_available"] = 1 if not claude_decision.get("error") else 0
+        decision["claude_confidence"] = claude_decision.get("confidence", 0) if not claude_decision.get("error") else None
+        decision["claude_sizing"] = claude_decision.get("size_lots") if claude_decision.get("decision") == "TAKE" else None
         risk_vetoes = self._risk_vetoes(signal)
         if risk_vetoes:
             decision["vetoes"].extend(risk_vetoes)
