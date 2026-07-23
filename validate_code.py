@@ -24,7 +24,10 @@ files_to_check = [
     'agent/ml_signal_generator.py',
     'agent/claude_analyst.py',
     'agent/evidence_integrity.py',
+    'agent/event_feature_concordance.py',
     'agent/forward_event_journal.py',
+    'ops/collect_event_concordance_reference.py',
+    'ops/check_event_feature_concordance.py',
     'ops/check_evidence_integrity.py',
     'dashboard.py',
     'send_daily_metrics.py',
@@ -81,10 +84,16 @@ checks = [
     ('agent/ml_feature_engineer_gold.py', 'GoldFeatureEngineer', True),
     ('agent/ml_signal_generator.py', 'MLSignalFilter', True),
     ('agent/claude_analyst.py', 'AITradingDecider', True),
+    ('agent/event_feature_concordance.py', 'DelayedNativeReferenceArchive', True),
+    ('agent/event_feature_concordance.py', 'RuntimeEventSnapshotArchive', True),
     ('agent/forward_event_journal.py', 'ForwardEventJournal', True),
     ('main_orchestrator.py', 'AIAssistedOrchestrator', True),
     ('dashboard.py', 'calculate_metrics', False),
     ('dashboard.py', 'get_evidence_integrity', False),
+    ('dashboard.py', 'get_event_concordance_health', False),
+    ('agent/event_feature_concordance.py', 'build_event_feature_concordance_report', False),
+    ('agent/event_feature_concordance.py', 'event_feature_shadow_registration_eligible', False),
+    ('agent/event_feature_concordance.py', 'event_feature_use_authorized', False),
     ('agent/evidence_integrity.py', 'build_evidence_integrity_report', False),
     ('send_daily_metrics.py', 'get_metrics', False),
 ]
@@ -160,7 +169,9 @@ config_files = [
     'CLAUDE.md',
     'VPS_DEPLOYMENT.md',
     'config/evidence_integrity_v1.json',
+    'config/event_feature_concordance_v1.json',
     'config/forward_event_observation_v1.json',
+    'data/research/event_feature_concordance_preflight_v1.json',
 ]
 
 all_configs = True

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "report_version": "event-feature-concordance-preflight-20260723-v1",
+  "performed_at_utc": "2026-07-23T22:00:00Z",
+  "paper_research_only": true,
+  "outcomes_read": false,
+  "performance_columns_read": [],
+  "purpose": "Preflight the proposed historical/runtime feature-concordance path before its prospective collection start",
+  "runtime_source": {
+    "provider": "dukascopy-public",
+    "symbol": "DUKASCOPY:XAUUSD",
+    "snapshot_content_sha256": "ed59d2f2d73a3d536a7070436c161a6b8fe860751dc7c5810070b9d13865fa6e",
+    "snapshot_file_sha256": "8580b7fd8e5af02182d11ba7a8f938767e516d688805242b0d7572a7eec28666",
+    "frames": "200 native bars for each of 1W, 1D, 4H, 1H and 15M",
+    "latest_decision_time": "2026-07-23T21:00:00+00:00"
+  },
+  "candidate_replay_source": {
+    "method": "Frozen 2020-2026 Dukascopy 15M base plus a separately fetched intraday 15M tail, resampled with research.build_historical_dataset.TF_RULES",
+    "base_sha256": "c61a27b37628972377aff01817a223631fb57253ddc5dcd217cf0a6f6d3ddeeb",
+    "intraday_tail_sha256": "064a810e9f3599a99d7ddbfc6c116b54a0743663fb68ffe3cd9b7fef8e695141",
+    "intraday_tail_manifest_sha256": "fd4ce4fa62ee4b0e02dca577fc45bf4c887d3e63efffdbe8e673a78e0b6f8220",
+    "intraday_tail_requested_end_exclusive": "2026-07-23T22:00:00+00:00"
+  },
+  "coverage": {
+    "hourly_decisions_requested": 100,
+    "first_requested_decision": "2026-07-17T14:00:00+00:00",
+    "last_requested_decision": "2026-07-23T21:00:00+00:00",
+    "successfully_compared_decisions": 38,
+    "decisions_without_sufficient_15m_replay_coverage": 62,
+    "runtime_events": 8,
+    "replay_events": 8,
+    "runtime_direction_counts": {
+      "BUY": 4,
+      "SELL": 4
+    },
+    "runtime_event_type_counts": {
+      "BOS_4H": 1,
+      "CHOCH_1H": 2,
+      "FVG_1H": 3,
+      "SWEEP_1H": 2
+    }
+  },
+  "comparison": {
+    "absolute_tolerance": 1e-09,
+    "relative_tolerance": 1e-09,
+    "event_membership_mismatches": 0,
+    "identity_mismatches": 0,
+    "numeric_feature_mismatches": 107,
+    "missingness_mismatches": 10,
+    "maximum_absolute_error": 1.0,
+    "maximum_relative_error": 1.0,
+    "representative_findings": [
+      "Native 1H ATR and 15M-resampled 1H ATR differed at matching event times.",
+      "ATR-normalized geometry inherited those source-bar differences.",
+      "At least one directional liquidity-sweep object was present in the resampled path and absent in the native path, changing registered missingness fields."
+    ]
+  },
+  "decision": "REJECT_15M_RESAMPLED_FEATURES_FOR_NATIVE_RUNTIME_PROMOTION",
+  "decision_reason": "Exact event membership in this small preflight does not rescue incompatible feature values and object missingness. Relaxing tolerances would conceal a representation mismatch.",
+  "corrected_native_reference_preflight": {
+    "reference_snapshot_content_sha256": "88b057243a6cf22a5a1f640270429aa57934b2f2f6f4e71c27099d0d0b309189",
+    "reference_snapshot_captured_at": "2026-07-23T22:19:45.045946+00:00",
+    "reference_bars_per_timeframe": 400,
+    "runtime_window_bars_per_timeframe": 200,
+    "decision_time": "2026-07-23T21:00:00+00:00",
+    "timestamp_window_match": {
+      "1W": true,
+      "1D": true,
+      "4H": true,
+      "1H": true,
+      "15M": true
+    },
+    "maximum_absolute_bid_ask_or_midpoint_ohlc_difference": {
+      "1W": 0.0,
+      "1D": 0.0,
+      "4H": 0.0,
+      "1H": 0.0,
+      "15M": 0.0
+    },
+    "runtime_events": 0,
+    "reference_events": 0,
+    "event_membership_mismatches": 0,
+    "limitation": "This decision contained no registered event, so it validates exact source-window alignment but cannot satisfy any prospective event-feature coverage gate."
+  },
+  "required_correction": "Use a delayed, separately fetched native-timeframe replay for the prospective runtime-concordance gate. Treat the rejected 15M-resampled 2020-2026 event models as non-promotable. Any later event model must have a new data and outcome contract aligned with the representation that passes prospective concordance.",
+  "decision_effect": "NONE_OBSERVATION_ONLY"
+}

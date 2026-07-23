@@ -50,9 +50,19 @@ The isolated prospective event journal is now registered and implemented using
 the same stable event IDs and 55-field schema. It records valid zero-event
 hours separately from event rows and validates runtime cadence, provenance and
 schema without affecting approvals, Claude, Telegram or execution.
-Historical/runtime feature concordance remains pending. Further outcome
-research must use a separate frozen contract and genuinely new prospective
-evidence rather than mine the inspected 2020-2026 events.
+Historical/runtime feature concordance is now an executable, fail-closed gate
+under `event-feature-concordance-20260723-v1`. From 2026-07-24 00:00 UTC, each
+new hourly observation retains its content-addressed native-timeframe snapshot.
+A delayed, separately fetched native-timeframe reference checks exact event
+membership, timestamps, missingness and all 55 geometry values. A preflight
+rejected the old 15M-resampled features for runtime promotion: membership
+matched for eight events, but 107 numeric and 10 missingness comparisons did
+not. Those differences were not hidden with loose tolerances. The new gate
+needs 120 matching decision times, 30 events, both directions and every
+registered event type with zero mismatches. It is initially collecting and
+authorizes nothing. Further outcome research must use a separate frozen
+contract and genuinely new prospective evidence rather than mine the inspected
+2020-2026 events.
 
 Each new SMC candidate receives at most one structured Claude review. Claude
 can identify conflicts, explain and veto; its self-reported confidence is not a

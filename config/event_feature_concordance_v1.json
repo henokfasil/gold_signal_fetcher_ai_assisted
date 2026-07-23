@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "monitor_version": "event-feature-concordance-20260723-v1",
+  "registered_at_utc": "2026-07-23T22:10:00Z",
+  "collection_starts_at_utc": "2026-07-24T00:00:00Z",
+  "paper_research_only": true,
+  "purpose": "Prove point-in-time membership, timestamp and geometry concordance between archived runtime observations and a delayed, separately fetched native-timeframe replay before a new event-feature shadow experiment may even be registered",
+  "runtime_observation_contract": {
+    "path": "config/forward_event_observation_v1.json",
+    "observation_version": "forward-event-observation-20260723-v1",
+    "contract_sha256": "bdc69d70bf4aa7e0b340d4d9825ffded7567fd2bf7743881f7fb548490fed7fd",
+    "event_ledger_path": "data/forward_event_observations_v1.csv",
+    "scan_ledger_path": "data/forward_event_scans_v1.csv",
+    "snapshot_archive_directory": "data/forward_event_snapshot_archive_v1",
+    "snapshot_filename": "lowercase snapshot content SHA-256 plus .json",
+    "snapshot_archive_append_only": true
+  },
+  "parent_event_contract": {
+    "path": "config/event_candidate_universe_v1.json",
+    "contract_version": "event-candidate-universe-20260719-v1",
+    "contract_sha256": "2b57fac00d70b60452a19e14b2daa8d264316016d89fc2425bebf3e05ad40c12",
+    "geometry_feature_count": 55,
+    "geometry_schema_sha256": "346753a3c3effc9f53d42ddde0f9fba296d736ecf38c883515f96995c5d0c252"
+  },
+  "preflight_finding": {
+    "performed_at_utc": "2026-07-23T22:00:00Z",
+    "report_path": "data/research/event_feature_concordance_preflight_v1.json",
+    "report_sha256": "6fee5d522eb553a31a046dfbb01f93e3b4afd098cd9f36beef154dc74927f724",
+    "native_runtime_vs_15m_resampled_replay_decisions_requested": 100,
+    "successfully_compared_decisions": 38,
+    "decisions_without_sufficient_15m_replay_coverage": 62,
+    "events_in_each_path": 8,
+    "event_membership_mismatches": 0,
+    "numeric_feature_mismatches": 107,
+    "missingness_mismatches": 10,
+    "decision": "REJECT_15M_RESAMPLED_FEATURES_FOR_NATIVE_RUNTIME_PROMOTION",
+    "interpretation": "The rejected 2020-2026 event models remain non-promotable. Numeric tolerances must not be loosened to hide object-presence and missingness differences. Prospective concordance uses delayed native-timeframe re-fetches; any later model needs a new data contract consistent with that runtime representation."
+  },
+  "independent_replay_source": {
+    "provider": "dukascopy-public",
+    "symbol": "DUKASCOPY:XAUUSD",
+    "snapshot_schema_version": 2,
+    "timestamp_semantics": "native candle-open UTC converted to completed-close UTC before replay",
+    "required_timeframes": [
+      "1W",
+      "1D",
+      "4H",
+      "1H",
+      "15M"
+    ],
+    "expected_cadence_seconds": {
+      "1W": 604800,
+      "1D": 86400,
+      "4H": 14400,
+      "1H": 3600,
+      "15M": 900
+    },
+    "runtime_window_bars_per_timeframe": 200,
+    "reference_bars_per_timeframe": 400,
+    "reference_surplus_purpose": "Retain the exact 200-bar runtime window when a decision is replayed after up to one completed trading day; the comparator still tails 200 bars at each decision",
+    "collector_path": "ops/collect_dukascopy_snapshot.py",
+    "reference_archive_directory": "data/event_concordance_reference_archive_v1",
+    "snapshot_suffix": ".snapshot.json",
+    "manifest_suffix": ".manifest.json",
+    "reference_cutoff": "current UTC midnight, fetched after the cutoff so every included candle is complete",
+    "minimum_delay_after_cutoff_minutes": 20,
+    "one_reference_per_cutoff": true,
+    "reference_snapshot_append_only": true,
+    "reference_manifest_append_only": true,
+    "independence_limit": "Runtime and replay both use Dukascopy and the same frozen detector implementation. The replay is a separate delayed network fetch of all five native timeframes and tests source revision, timestamp alignment, membership and feature values; it is not independent economic information or an independently implemented detector."
+  },
+  "comparison_contract": {
+    "decision_scope": "Every successful runtime scan at or after collection_starts_at_utc whose decision time is covered by a valid delayed native reference snapshot",
+    "runtime_replay": "Recompute each archived runtime snapshot and require exact scan membership and journal identity before comparing the delayed reference",
+    "historical_replay": "At the next completed UTC-day collection, separately re-fetch 400 complete native bars for all five timeframes, then slice the exact 200-bar runtime window causally at each covered runtime decision time",
+    "membership_match": "Exact stable event-ID set equality at each covered decision time",
+    "identity_fields_exact": [
+      "event_id",
+      "event_source_time",
+      "event_type",
+      "source_timeframe",
+      "pair",
+      "direction"
+    ],
+    "numeric_fields": [
+      "entry",
+      "stop_loss",
+      "take_profit",
+      "rr_ratio",
+      "atr_1h",
+      "ALL_55_REGISTERED_GEOMETRY_FEATURES"
+    ],
+    "missing_values_match_exactly": true,
+    "absolute_tolerance": 1e-09,
+    "relative_tolerance": 1e-09,
+    "future_source_event_times_allowed": 0,
+    "duplicate_scan_times_allowed": 0,
+    "duplicate_event_ids_allowed": 0,
+    "performance_or_outcome_columns_permitted": false
+  },
+  "authorization_gates": {
+    "minimum_compared_decision_times": 120,
+    "minimum_compared_events": 30,
+    "required_directions": [
+      "BUY",
+      "SELL"
+    ],
+    "required_event_types": [
+      "SWEEP_1H",
+      "CHOCH_1H",
+      "FVG_1H",
+      "BOS_4H",
+      "CHOCH_4H"
+    ],
+    "runtime_archive_or_self_replay_failures_allowed": 0,
+    "historical_membership_mismatches_allowed": 0,
+    "identity_mismatches_allowed": 0,
+    "numeric_or_missingness_mismatches_allowed": 0,
+    "source_or_contract_hash_drift_allowed": false,
+    "maximum_authorization_artifact_age_hours": 30,
+    "maximum_latest_runtime_to_replay_lag_hours": 36,
+    "pass_effect": "Only establishes technical eligibility to register a separate prospective shadow experiment; it does not authorize feature use, a model, Claude input, candidate approval, notification, paper trade or broker order"
+  },
+  "isolation": {
+    "may_read_or_create_outcomes": false,
+    "may_read_performance_columns": false,
+    "may_evaluate_profitability": false,
+    "may_score_or_approve_candidate": false,
+    "may_change_smc_ml_macro_or_claude_decision": false,
+    "may_send_telegram": false,
+    "may_place_broker_order": false,
+    "may_train_select_or_promote_model": false,
+    "failure_may_block_existing_candidate_pipeline": false
+  },
+  "status_artifact": {
+    "path": "data/event_feature_concordance_status.json",
+    "atomic_replace": true,
+    "contains_performance": false
+  },
+  "change_rule": "Any source, archive, timestamp, replay cadence, membership, feature, tolerance, sample-size, isolation or authorization change requires a new hash-locked concordance contract"
+}

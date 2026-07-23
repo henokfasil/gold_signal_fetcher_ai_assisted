@@ -17,6 +17,10 @@ from agent.gold_context_snapshot import (
     load_validated_context_snapshot,
 )
 from agent.evidence_integrity import build_evidence_integrity_report
+from agent.event_feature_concordance import (
+    event_feature_shadow_registration_eligible,
+    load_event_feature_concordance_contract,
+)
 from agent.forward_event_journal import (
     EVENT_COLUMNS,
     SCAN_COLUMNS,
@@ -475,6 +479,118 @@ def get_evidence_integrity(
     return report
 
 
+def get_event_concordance_health(status_path=None, contract_path=None):
+    """Read the scheduled concordance artifact without recomputing or networking."""
+    result = {
+        "status": "AWAITING RUNTIME ARCHIVES",
+        "status_class": "warn",
+        "runtime_scans": 0,
+        "self_replay": 0,
+        "compared_decisions": 0,
+        "minimum_decisions": 120,
+        "compared_events": 0,
+        "minimum_events": 30,
+        "replay_lag": "—",
+        "authorized": "NO",
+        "coverage": "No directions or event types covered yet",
+        "age": "Awaiting first scheduled audit",
+        "issue_summary": "None",
+    }
+    contract_loaded = False
+    try:
+        contract, digest, _, _ = load_event_feature_concordance_contract(
+            Path(contract_path or settings.EVENT_FEATURE_CONCORDANCE_CONFIG)
+        )
+        contract_loaded = True
+        gates = contract["authorization_gates"]
+        result["minimum_decisions"] = int(gates["minimum_compared_decision_times"])
+        result["minimum_events"] = int(gates["minimum_compared_events"])
+        artifact = json.loads(
+            Path(
+                status_path or settings.EVENT_FEATURE_CONCORDANCE_STATUS_PATH
+            ).read_text()
+        )
+        if (
+            artifact.get("monitor_version") != contract["monitor_version"]
+            or artifact.get("contract_sha256") != digest
+            or artifact.get("performance_columns_read") != []
+        ):
+            raise ValueError("event concordance artifact provenance mismatch")
+        now = datetime.now(timezone.utc)
+        generated = datetime.fromisoformat(
+            artifact["generated_at"].replace("Z", "+00:00")
+        ).astimezone(timezone.utc)
+        age_seconds = max(
+            0, int((now - generated).total_seconds())
+        )
+        eligible, eligibility_reason = (
+            event_feature_shadow_registration_eligible(
+                Path(
+                    status_path
+                    or settings.EVENT_FEATURE_CONCORDANCE_STATUS_PATH
+                ),
+                Path(
+                    contract_path
+                    or settings.EVENT_FEATURE_CONCORDANCE_CONFIG
+                ),
+                observed_at=now,
+            )
+        )
+        if artifact.get("status") == "PASS" and not eligible:
+            raise ValueError(
+                f"event concordance PASS artifact rejected: {eligibility_reason}"
+            )
+        directions = artifact.get("covered_directions", [])
+        event_types = artifact.get("covered_event_types", [])
+        lag = artifact.get("latest_runtime_to_replay_lag_hours")
+        result.update({
+            "status": str(artifact["status"]),
+            "status_class": str(artifact.get("status_class", "warn")),
+            "runtime_scans": int(artifact.get("runtime_scans", 0)),
+            "self_replay": int(
+                artifact.get("archived_self_replay_decisions", 0)
+            ),
+            "compared_decisions": int(
+                artifact.get("compared_decision_times", 0)
+            ),
+            "compared_events": int(artifact.get("compared_events", 0)),
+            "replay_lag": "—" if lag is None else f"{float(lag):.1f}h",
+            "authorized": (
+                "SHADOW REGISTRATION ELIGIBLE"
+                if eligible
+                else "NO"
+            ),
+            "coverage": (
+                f"{len(directions)}/2 directions · {len(event_types)}/5 event types"
+            ),
+            "age": f"{age_seconds // 60}m {age_seconds % 60}s ago",
+            "issue_summary": (
+                "; ".join(artifact.get("issues", [])[:3]) or "None"
+            ),
+        })
+    except FileNotFoundError as exc:
+        if not contract_loaded:
+            result.update({
+                "status": "CONFIG ERROR",
+                "status_class": "bad",
+                "issue_summary": str(exc)[:240],
+            })
+    except (
+        OSError,
+        RuntimeError,
+        ValueError,
+        KeyError,
+        TypeError,
+        json.JSONDecodeError,
+    ) as exc:
+        result.update({
+            "status": "CONFIG ERROR",
+            "status_class": "bad",
+            "issue_summary": str(exc)[:240],
+        })
+    return result
+
+
 TEMPLATE = """
 <!doctype html><html><head><title>Gold Signal Fetcher</title>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -491,9 +607,9 @@ TEMPLATE = """
   <div class="muted">{{ now }} UTC</div>
 </div>
 
-{% if feed.status != "HEALTHY" or integrity.status_class == "bad" %}
+{% if feed.status != "HEALTHY" or integrity.status_class == "bad" or concordance.status_class == "bad" %}
 <div class="alert show">
-  <div class="alert-text">⚠️ Feed: {{ feed.status }} • Evidence: {{ integrity.status }} • {{ integrity.issue_summary }}</div>
+  <div class="alert-text">⚠️ Feed: {{ feed.status }} • Evidence: {{ integrity.status }} • Feature parity: {{ concordance.status }} • {{ integrity.issue_summary }} {{ concordance.issue_summary }}</div>
 </div>
 {% endif %}
 
@@ -506,8 +622,22 @@ TEMPLATE = """
     <div class="card"><div class="label">Evidence Candidates</div><div class="value">{{ integrity.pilot_candidates }}</div></div>
     <div class="card"><div class="label">Event Observer</div><div class="value">{{ event.status }}</div></div>
     <div class="card"><div class="label">Prospective Events</div><div class="value">{{ event.events }}</div></div>
+    <div class="card"><div class="label">Feature Parity</div><div class="value">{{ concordance.status }}</div></div>
   </div>
   <div class="note">File-only monitoring. Event observations are outcome-blind and isolated from signals. Current evidence issue: {{ integrity.issue_summary }}</div>
+</section>
+
+<section class="panel">
+  <h2>Event Feature Concordance <span class="pill {{ concordance.status_class }}">{{ concordance.status }}</span></h2>
+  <div class="grid">
+    <div class="card"><div class="label">Runtime Archives</div><div class="value">{{ concordance.self_replay }}/{{ concordance.runtime_scans }}</div></div>
+    <div class="card"><div class="label">Compared Decisions</div><div class="value">{{ concordance.compared_decisions }}/{{ concordance.minimum_decisions }}</div></div>
+    <div class="card"><div class="label">Compared Events</div><div class="value">{{ concordance.compared_events }}/{{ concordance.minimum_events }}</div></div>
+    <div class="card"><div class="label">Coverage</div><div class="value">{{ concordance.coverage }}</div></div>
+    <div class="card"><div class="label">Replay Lag</div><div class="value">{{ concordance.replay_lag }}</div></div>
+    <div class="card"><div class="label">Next Authority</div><div class="value">{{ concordance.authorized }}</div></div>
+  </div>
+  <div class="note">Native runtime snapshots are content-addressed and compared with a delayed, separately fetched five-timeframe reference. This reads no outcomes and can authorize only registration of a later shadow experiment. Audit: {{ concordance.age }}. Issue: {{ concordance.issue_summary }}</div>
 </section>
 
 <section class="panel">
@@ -672,6 +802,7 @@ def dashboard():
                                   feed=get_feed_health(),
                                   integrity=get_evidence_integrity(),
                                   event=get_event_observation_health(),
+                                  concordance=get_event_concordance_health(),
                                   ai=get_ai_review_stats(),
                                   now=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
 

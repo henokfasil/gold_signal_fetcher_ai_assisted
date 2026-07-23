@@ -20,6 +20,7 @@ import pandas as pd
 
 from config import settings
 from agent.claude_analyst import AITradingDecider
+from agent.event_feature_concordance import RuntimeEventSnapshotArchive
 from agent.forward_event_journal import (
     ForwardEventJournal,
     canonical_snapshot_sha256,
@@ -686,6 +687,14 @@ class AIAssistedOrchestrator:
             logger.error(
                 "Prospective event journal disabled without decision effect: %s", exc,
             )
+        try:
+            self.event_snapshot_archive = RuntimeEventSnapshotArchive()
+        except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as exc:
+            self.event_snapshot_archive = None
+            logger.error(
+                "Event-concordance snapshot archive disabled without decision effect: %s",
+                exc,
+            )
         self.ml_filter = MLSignalFilter()
         self.correlation = GoldCorrelationValidator()
         self.ai_decider = AITradingDecider()
@@ -730,7 +739,23 @@ class AIAssistedOrchestrator:
         if self.forward_events is None:
             return {"status": "DISABLED"}
         try:
-            result = self.forward_events.observe(load_validated_price_snapshot())
+            payload = load_validated_price_snapshot()
+            result = self.forward_events.observe(payload)
+            if result["status"] == "PASS":
+                if self.event_snapshot_archive is None:
+                    logger.error(
+                        "New event scan has no concordance snapshot archive; "
+                        "the feature-use gate will fail closed"
+                    )
+                else:
+                    archived = self.event_snapshot_archive.archive(
+                        payload, result["decision_time"],
+                    )
+                    logger.info(
+                        "[EVENT_CONCORDANCE_ARCHIVE] %s path=%s",
+                        archived["status"],
+                        archived.get("path", ""),
+                    )
             logger.info(
                 "[EVENT_JOURNAL] %s decision=%s detected=%s new=%s",
                 result["status"],

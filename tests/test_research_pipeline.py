@@ -18,7 +18,8 @@ from agent.smc_gold_scanner import (
     detect_bos_down,
 )
 from dashboard import (
-    get_context_health, get_evidence_integrity, get_feed_health,
+    get_context_health, get_event_concordance_health,
+    get_evidence_integrity, get_feed_health,
     get_shadow_variants,
 )
 from main_orchestrator import (
@@ -32,10 +33,19 @@ from agent.gold_context_snapshot import (
 from agent.evidence_integrity import (
     build_evidence_integrity_report, drift_report, load_integrity_contract,
 )
+from agent.event_feature_concordance import (
+    DelayedNativeReferenceArchive,
+    RuntimeEventSnapshotArchive,
+    build_event_feature_concordance_report,
+    event_feature_shadow_registration_eligible,
+    event_feature_use_authorized,
+    load_event_feature_concordance_contract,
+)
 from agent.forward_event_journal import (
     ForwardEventJournal,
     canonical_snapshot_sha256 as canonical_event_snapshot_sha256,
     load_forward_event_contract,
+    snapshot_frames as event_snapshot_frames,
 )
 from ops.collect_gold_context_snapshot import collect as collect_gold_context
 from research.build_historical_dataset import label_candidate, load_ohlcv
@@ -509,6 +519,25 @@ class ResearchPipelineTests(unittest.TestCase):
         payload["content_sha256"] = canonical_event_snapshot_sha256(payload)
         return payload, as_of
 
+    @staticmethod
+    def _expand_reference_snapshot(payload):
+        expanded = json.loads(json.dumps(payload))
+        cadences = {
+            "1W": 604800, "1D": 86400, "4H": 14400,
+            "1H": 3600, "15M": 900,
+        }
+        for name, timeframe in expanded["timeframes"].items():
+            first = timeframe["bars"][0]
+            older = []
+            for offset in range(200, 0, -1):
+                bar = dict(first)
+                bar["time"] = int(first["time"]) - offset * cadences[name]
+                older.append(bar)
+            timeframe["bars"] = [*older, *timeframe["bars"]]
+            timeframe["bar_count"] = 400
+        expanded["content_sha256"] = canonical_event_snapshot_sha256(expanded)
+        return expanded
+
     def test_forward_event_contract_and_journal_are_isolated_and_idempotent(self):
         contract, digest, parent = load_forward_event_contract()
         self.assertEqual(
@@ -555,6 +584,203 @@ class ResearchPipelineTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "content hash"):
                 journal.observe(payload)
+
+    def test_event_feature_concordance_archives_and_self_replays_fail_closed(self):
+        contract, digest, _, _ = load_event_feature_concordance_contract()
+        self.assertEqual(
+            digest,
+            "eb93d931d3e93650633c7010b59618670f8c9815a49033cb1e3698ccc7daab95",
+        )
+        self.assertFalse(contract["isolation"]["may_read_or_create_outcomes"])
+        self.assertFalse(contract["isolation"]["may_score_or_approve_candidate"])
+        payload, as_of = self._prospective_event_snapshot()
+        shift = timedelta(hours=4)
+        for timeframe in payload["timeframes"].values():
+            for bar in timeframe["bars"]:
+                bar["time"] += int(shift.total_seconds())
+        payload["captured_at"] = (
+            datetime.fromisoformat(payload["captured_at"]) + shift
+        ).isoformat()
+        payload["content_sha256"] = canonical_event_snapshot_sha256(payload)
+        shifted_as_of = as_of.to_pydatetime() + shift
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            events_path, scans_path = root / "events.csv", root / "scans.csv"
+            journal = ForwardEventJournal(events_path, scans_path)
+            observed = journal.observe(
+                payload, observed_at=shifted_as_of + timedelta(minutes=5),
+            )
+            archive = RuntimeEventSnapshotArchive(root / "archive")
+            archived = archive.archive(payload, observed["decision_time"])
+            self.assertEqual(archived["status"], "ARCHIVED")
+            with patch(
+                "agent.event_feature_concordance._load_delayed_native_references",
+                side_effect=FileNotFoundError("test replay not collected"),
+            ):
+                report = build_event_feature_concordance_report(
+                    events_path,
+                    scans_path,
+                    root / "archive",
+                    observed_at=shifted_as_of + timedelta(hours=1),
+                )
+            self.assertEqual(report["status"], "AWAITING INDEPENDENT REPLAY")
+            self.assertEqual(report["archived_self_replay_decisions"], 1)
+            self.assertEqual(report["archive_or_self_replay_failures"], 0)
+            self.assertEqual(report["performance_columns_read"], [])
+            self.assertFalse(report["feature_use_authorized"])
+            self.assertFalse(report["shadow_registration_eligible"])
+            forward_contract, _, _ = load_forward_event_contract()
+            replay_frames = event_snapshot_frames(payload, forward_contract)
+            with patch(
+                "agent.event_feature_concordance._load_delayed_native_references",
+                return_value=(
+                    [{
+                        "snapshot_content_sha256": payload["content_sha256"],
+                        "reference_cutoff": pd.Timestamp(
+                            "2026-07-25T00:00:00Z"
+                        ).to_pydatetime(),
+                        "collected_at": pd.Timestamp(
+                            "2026-07-25T00:30:00Z"
+                        ).to_pydatetime(),
+                        "latest_decision": pd.Timestamp(shifted_as_of),
+                        "frames": replay_frames,
+                    }],
+                    {"test_source": "identical point-in-time fixture"},
+                ),
+            ):
+                compared = build_event_feature_concordance_report(
+                    events_path,
+                    scans_path,
+                    root / "archive",
+                    observed_at=shifted_as_of + timedelta(hours=1),
+                )
+            self.assertEqual(compared["status"], "COLLECTING")
+            self.assertEqual(compared["compared_decision_times"], 1)
+            self.assertGreaterEqual(compared["compared_events"], 1)
+            self.assertEqual(
+                compared["historical_replay"]["membership_mismatches"], 0,
+            )
+            self.assertEqual(compared["historical_replay"]["value_mismatches"], 0)
+
+    def test_event_feature_concordance_rejects_tampered_archive_and_stale_pass(self):
+        payload, as_of = self._prospective_event_snapshot()
+        shift = timedelta(hours=4)
+        for timeframe in payload["timeframes"].values():
+            for bar in timeframe["bars"]:
+                bar["time"] += int(shift.total_seconds())
+        payload["captured_at"] = (
+            datetime.fromisoformat(payload["captured_at"]) + shift
+        ).isoformat()
+        payload["content_sha256"] = canonical_event_snapshot_sha256(payload)
+        shifted_as_of = as_of.to_pydatetime() + shift
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            events_path, scans_path = root / "events.csv", root / "scans.csv"
+            journal = ForwardEventJournal(events_path, scans_path)
+            observed = journal.observe(
+                payload, observed_at=shifted_as_of + timedelta(minutes=5),
+            )
+            archive = RuntimeEventSnapshotArchive(root / "archive")
+            archived = Path(archive.archive(
+                payload, observed["decision_time"],
+            )["path"])
+            corrupted = json.loads(archived.read_text())
+            corrupted["timeframes"]["15M"]["bars"][-1]["close"] += 1
+            archived.write_text(json.dumps(corrupted))
+            with patch(
+                "agent.event_feature_concordance._load_delayed_native_references",
+                side_effect=FileNotFoundError("test replay not collected"),
+            ):
+                report = build_event_feature_concordance_report(
+                    events_path,
+                    scans_path,
+                    root / "archive",
+                    observed_at=shifted_as_of + timedelta(hours=1),
+                )
+            self.assertEqual(report["status"], "FAIL")
+            self.assertEqual(report["archive_or_self_replay_failures"], 1)
+
+            _, digest, _, _ = load_event_feature_concordance_contract()
+            stale_status = root / "status.json"
+            stale_status.write_text(json.dumps({
+                "monitor_version": "event-feature-concordance-20260723-v1",
+                "contract_sha256": digest,
+                "generated_at": (
+                    shifted_as_of - timedelta(hours=31)
+                ).isoformat(),
+                "status": "PASS",
+                "technical_concordance_passed": True,
+                "shadow_registration_eligible": True,
+                "feature_use_authorized": False,
+                "performance_columns_read": [],
+            }))
+            authorized, reason = event_feature_shadow_registration_eligible(
+                stale_status,
+                observed_at=shifted_as_of,
+            )
+            self.assertFalse(authorized)
+            self.assertIn("stale", reason)
+            forged_status = root / "forged-status.json"
+            forged_status.write_text(json.dumps({
+                "monitor_version": "event-feature-concordance-20260723-v1",
+                "contract_sha256": digest,
+                "generated_at": shifted_as_of.isoformat(),
+                "status": "PASS",
+                "status_class": "good",
+                "paper_research_only": True,
+                "technical_concordance_passed": True,
+                "shadow_registration_eligible": True,
+                "feature_use_authorized": False,
+                "authorization_scope":
+                    "REGISTER_SEPARATE_PROSPECTIVE_SHADOW_EXPERIMENT_ONLY",
+                "performance_columns_read": [],
+                "decision_effect": "NONE_OBSERVATION_ONLY",
+            }))
+            forged_authorized, forged_reason = (
+                event_feature_shadow_registration_eligible(
+                    forged_status,
+                    observed_at=shifted_as_of,
+                )
+            )
+            self.assertFalse(forged_authorized)
+            self.assertIn("frozen gates", forged_reason)
+            feature_use, feature_reason = event_feature_use_authorized()
+            self.assertFalse(feature_use)
+            self.assertIn("not authorized", feature_reason)
+
+    def test_delayed_native_reference_is_append_only_per_cutoff(self):
+        payload, as_of = self._prospective_event_snapshot()
+        payload = self._expand_reference_snapshot(payload)
+        shift = timedelta(hours=3)
+        for timeframe in payload["timeframes"].values():
+            for bar in timeframe["bars"]:
+                bar["time"] += int(shift.total_seconds())
+        cutoff = as_of.to_pydatetime() + shift
+        payload["captured_at"] = cutoff.isoformat()
+        payload["content_sha256"] = canonical_event_snapshot_sha256(payload)
+        with tempfile.TemporaryDirectory() as directory:
+            archive = DelayedNativeReferenceArchive(Path(directory))
+            first = archive.store(
+                payload,
+                collected_at=cutoff + timedelta(minutes=25),
+            )
+            self.assertEqual(first["status"], "CAPTURED")
+            repeated = json.loads(json.dumps(payload))
+            repeated["collection_elapsed_seconds"] = 2.0
+            repeated["content_sha256"] = canonical_event_snapshot_sha256(repeated)
+            second = archive.store(
+                repeated,
+                collected_at=cutoff + timedelta(minutes=30),
+            )
+            self.assertEqual(second["status"], "ALREADY_CAPTURED")
+            revised = json.loads(json.dumps(payload))
+            revised["timeframes"]["15M"]["bars"][-1]["close"] += 0.01
+            revised["content_sha256"] = canonical_event_snapshot_sha256(revised)
+            with self.assertRaisesRegex(RuntimeError, "changed"):
+                archive.store(
+                    revised,
+                    collected_at=cutoff + timedelta(minutes=35),
+                )
 
     def test_portfolio_simulator_enforces_setup_cooldown(self):
         rows = pd.DataFrame([

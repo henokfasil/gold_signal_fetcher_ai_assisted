@@ -10,6 +10,9 @@ The only active deployment is `187.55.229.4` in
   legacy research only. Re-enable only for a deliberate maintenance session.
 - CDP and maintenance VNC, if enabled, remain localhost-only.
 - Paper scan: `ops/run_gold_scanner_ai.sh` at minutes 5/20/35/50.
+- Outcome-blind event-feature replay: `ops/run_event_concordance_daily.sh`
+  at 00:30 UTC Tuesday through Saturday, after each trading UTC day is
+  complete. Weekend-only fetch windows are deliberately skipped.
 - Price source: Dukascopy public feed, exact XAUUSD bid/ask.
 - Snapshot: `/tmp/dukascopy_snapshot.json`, 200 complete bars each for
   1W/1D/4H/1H/15M.
@@ -17,6 +20,13 @@ The only active deployment is `187.55.229.4` in
 The locked wrapper collects and validates a fresh atomic snapshot before every
 scan. Collection failure aborts the scan. `PAPER_TRADING=true` is forced by the
 wrapper and no broker execution method exists.
+
+The two canonical root-crontab entries are:
+
+```cron
+5,20,35,50 * * * * /root/gold_signal_fetcher_ai_assisted/ops/run_gold_scanner_ai.sh
+30 0 * * 2-6 /root/gold_signal_fetcher_ai_assisted/ops/run_event_concordance_daily.sh
+```
 
 ## Dashboard address and bind
 
@@ -42,6 +52,8 @@ venv/bin/python -m unittest discover -s tests -v
 venv/bin/python validate_code.py
 install -m 0755 ops/collect_dukascopy_snapshot.py \
   /usr/local/lib/gold-signal-fetcher/collect_dukascopy_snapshot.py
+# The daily concordance job writes delayed native-timeframe references to its
+# append-only, content-addressed data archive.
 # Preserve secrets and edit only these source selectors in .env:
 # PRICE_DATA_PROVIDER=dukascopy
 # DUKASCOPY_SNAPSHOT_PATH=/tmp/dukascopy_snapshot.json
@@ -64,6 +76,8 @@ tail -50 logs/gold_scanner_ai.log
 Expected: dashboard HTTP 200, scanner cron present, and the dashboard feed
 panel HEALTHY with five cadence and bid/ask checks passing. During the weekend,
 the latest bar may be old while the panel correctly reports market CLOSED.
+The feature-concordance panel must begin as AWAITING/COLLECTING, never PASS
+before its 120-decision, 30-event, direction and event-type coverage gates.
 
 ## Telegram
 

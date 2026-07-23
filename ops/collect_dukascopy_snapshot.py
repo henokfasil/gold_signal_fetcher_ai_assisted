@@ -9,6 +9,7 @@ fails closed when cadence, ordering, bar count or OHLC integrity is invalid.
 
 import hashlib
 import json
+import math
 import os
 import time
 from datetime import datetime, timedelta, timezone
@@ -19,7 +20,8 @@ import pandas as pd
 
 
 OUTPUT = Path(os.getenv("DUKASCOPY_SNAPSHOT_PATH", "/tmp/dukascopy_snapshot.json"))
-BAR_COUNT = int(os.getenv("DUKASCOPY_BAR_COUNT", "200"))
+RUNTIME_BAR_COUNT = 200
+BAR_COUNT = int(os.getenv("DUKASCOPY_BAR_COUNT", str(RUNTIME_BAR_COUNT)))
 
 # Lookbacks include weekends and a safety margin above 200 traded candles.
 FRAME_SPECS = {
@@ -80,9 +82,16 @@ def _bar_payload(frame: pd.DataFrame) -> list[dict]:
     return rows
 
 
-def _validate_frame(name: str, bars: list[dict], expected_cadence: int) -> float:
-    if len(bars) != BAR_COUNT:
-        raise RuntimeError(f"{name}: expected {BAR_COUNT} complete bars, got {len(bars)}")
+def _validate_frame(
+    name: str,
+    bars: list[dict],
+    expected_cadence: int,
+    expected_count: int = BAR_COUNT,
+) -> float:
+    if len(bars) != expected_count:
+        raise RuntimeError(
+            f"{name}: expected {expected_count} complete bars, got {len(bars)}"
+        )
     times = [int(bar["time"]) for bar in bars]
     if times != sorted(times) or len(times) != len(set(times)):
         raise RuntimeError(f"{name}: timestamps are unordered or duplicated")
@@ -103,15 +112,25 @@ def _validate_frame(name: str, bars: list[dict], expected_cadence: int) -> float
     return actual_cadence
 
 
-def collect(output: Path = OUTPUT, captured_at: datetime | None = None) -> dict:
+def collect(
+    output: Path = OUTPUT,
+    captured_at: datetime | None = None,
+    bar_count: int = BAR_COUNT,
+) -> dict:
     captured_at = captured_at or datetime.now(timezone.utc)
     if captured_at.tzinfo is None:
         raise ValueError("captured_at must be timezone-aware")
+    if int(bar_count) < 200:
+        raise ValueError("bar_count must retain at least the 200-bar runtime window")
+    bar_count = int(bar_count)
     started = time.monotonic()
     frames = {}
     fingerprints = set()
     for name, (interval_name, cadence_seconds, lookback_days) in FRAME_SPECS.items():
-        start = captured_at - timedelta(days=lookback_days)
+        scaled_lookback_days = math.ceil(
+            lookback_days * max(1.0, bar_count / RUNTIME_BAR_COUNT)
+        )
+        start = captured_at - timedelta(days=scaled_lookback_days)
         bid = _fetch(start, captured_at, interval_name, "bid")
         ask = _fetch(start, captured_at, interval_name, "ask")
         joined = _join_executable_sides(bid, ask)
@@ -119,8 +138,10 @@ def collect(output: Path = OUTPUT, captured_at: datetime | None = None) -> dict:
         # Candle timestamps denote opens.  Never expose a candle whose nominal
         # close is after collection time, even if the upstream endpoint emits it.
         complete = joined[joined.index + pd.to_timedelta(cadence_seconds, unit="s") <= captured_at]
-        bars = _bar_payload(complete.tail(BAR_COUNT))
-        actual_cadence = _validate_frame(name, bars, cadence_seconds)
+        bars = _bar_payload(complete.tail(bar_count))
+        actual_cadence = _validate_frame(
+            name, bars, cadence_seconds, expected_count=bar_count,
+        )
         midpoint_fingerprint = json.dumps(
             [{field: row[field] for field in ("time", "open", "high", "low", "close")}
              for row in bars],

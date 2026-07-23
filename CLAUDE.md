@@ -198,8 +198,12 @@ Completion checkpoint:
 - The event-first extraction milestone is complete and rejected at its model
   gates. Its append-only, outcome-blind prospective journal is registered and
   implemented under `forward-event-observation-20260723-v1`. Monitor event
-  rate, cadence, missingness and provenance; independently validate Dukascopy
-  historical/runtime feature concordance before any outcome experiment. Any
+  rate, cadence, missingness and provenance. The separately frozen
+  `event-feature-concordance-20260723-v1` gate now retains content-addressed
+  runtime snapshots and compares them with a delayed, separately fetched
+  native-timeframe reference; it is collecting and authorizes nothing until
+  every registered gate passes. A preflight rejected the old 15M-resampled
+  features as runtime-incompatible rather than weakening tolerances. Any
   TradingView/Pine/Claude
   annotation must be a separate prospective ledger with exact symbol,
   timeframe, completed-bar timestamp, prompt/model and source provenance; it
@@ -224,8 +228,9 @@ Resume in this order:
    XGBoost point estimate, its three positive folds, a direction, event type,
    target horizon or threshold from the inspected diagnostics.
 8. Keep the prospective event journal isolated from approval, Claude, Telegram
-   and broker logic. Validate cadence, exact-close availability, duplicates,
-   missingness and historical/runtime feature concordance without outcomes.
+   and broker logic. Monitor `event-feature-concordance-20260723-v1` without
+   outcomes: archived self-replay, independent replay coverage, exact
+   membership, timestamp/missingness parity and all 55 registered values.
 9. Add genuinely new causal regime/session or independently sourced
    information only under a new pre-analysis contract. Fit inside chronological
    folds. Register every proposed filter before examining its next-fold result.
@@ -640,9 +645,10 @@ registered there before evaluation.
    registered direction/event-type control with dependence-aware certainty.
    Do not mine secondary horizons or event families from this history.
 9. Monitor the isolated prospective event journal's counts, source/cadence
-   integrity and feature missingness. Complete historical/runtime concordance
-   without interim return analysis or decision effect. Register any new
-   information source before it can enter an outcome comparison.
+   integrity and feature missingness. Keep the frozen concordance gate
+   fail-closed until 120 decisions, 30 events, both directions and all five
+   event types match with zero failures. Register any new information source
+   before it can enter an outcome comparison.
 10. Continue model/prompt/dataset lineage, drift and calibration monitoring.
 11. Secure the public dashboard with a reverse proxy, HTTPS and authentication
    before treating it as a customer-facing service. This is an operations gate,
@@ -880,7 +886,44 @@ It records the same stable event IDs and 55 causal geometry fields as the
 rejected historical event-first experiment, plus one valid zero-event scan row
 per completed 1H decision time. It is outcome-blind and has no decision,
 Claude, Telegram, broker, training or promotion effect. Historical/runtime
-feature concordance remains pending.
+feature concordance is now being collected under the separately frozen gate
+below, but has not passed.
+
+## Event-feature concordance gate — 2026-07-23
+
+`config/event_feature_concordance_v1.json`, SHA-256
+`eb93d931d3e93650633c7010b59618670f8c9815a49033cb1e3698ccc7daab95`,
+starts at 2026-07-24 00:00:00 UTC. Each new hourly event scan retains the exact
+validated snapshot under its content hash. After each trading UTC-day cutoff,
+all five native Dukascopy timeframes are fetched again into a separate
+content-addressed reference archive. The monitor compares archived self-replay,
+stable-ID membership, identity and missingness, and every numeric event field
+at matching decision times.
+
+Delayed references retain 400 native bars per timeframe, then tail the exact
+200 bars visible at each replayed decision. Do not reduce the reference to 200
+bars: a next-day collection would otherwise discard up to 96 prior 15M bars
+and create false object/missingness differences.
+
+The outcome-blind preflight in
+`data/research/event_feature_concordance_preflight_v1.json` rejected the old
+15M-resampled feature representation for runtime promotion. Of 100 requested
+recent decisions, 38 had sufficient replay coverage. Membership matched for
+eight events, but there were 107 numeric and 10 missingness mismatches. Do not
+loosen tolerances or reuse the rejected historical event models as if they were
+native-runtime compatible.
+
+The corrected 400-bar native reference exactly matched all five 200-bar runtime
+timestamp windows and bid/ask/midpoint OHLC values at the 2026-07-23 21:00 UTC
+decision. That decision had zero events; it validates the corrected source
+window but does not pre-pass any event or feature gate.
+
+The gate requires 120 decisions, 30 events, BUY and SELL, all five event types,
+zero archive/self-replay failures and zero membership, identity, missingness or
+numeric mismatches at `1e-9` absolute/relative tolerance. A result older than
+30 hours or more than 36 hours behind runtime is not authorizing. It never reads
+outcomes. Even a pass permits only registration of a new prospective shadow
+experiment; it does not activate event features in the current system.
 
 The runtime now makes at most one structured Claude request per new SMC
 candidate. Claude is an evidence-conflict reviewer and veto, not a numeric

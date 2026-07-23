@@ -383,12 +383,61 @@ columns and has no SMC, ML, Claude, paper approval, Telegram, broker, training
 or model-promotion effect. Failure is logged but cannot alter the existing
 candidate pipeline.
 
-Historical/runtime feature concordance is explicitly `PENDING`, including the
+Historical/runtime feature concordance is not yet passed, including the
 weekly-frame timestamp convention. Until an independently replayed set of
 matching completed decision times agrees, prospective event fields may be
 monitored only for cadence, counts, missingness, non-finite values and
 provenance. A later outcome comparison requires a separately frozen contract;
 this observation contract cannot establish or test profitability.
+
+## Frozen event-feature concordance v1
+
+The operational contract `event-feature-concordance-20260723-v1` is frozen in
+`config/event_feature_concordance_v1.json`, SHA-256
+`eb93d931d3e93650633c7010b59618670f8c9815a49033cb1e3698ccc7daab95`.
+Its collection scope begins at 2026-07-24 00:00:00 UTC.
+
+For every new in-scope 1H scan, the runtime retains the full validated
+native-timeframe snapshot under its content SHA-256. The monitor first
+recomputes that archived snapshot and requires exact agreement with the scan
+and event ledgers. It then compares the same decision time with all five native
+timeframes fetched again after the UTC-day cutoff. The same provider and
+detector are disclosed limitations: this is a delayed source-revision,
+timestamp, membership and feature-value test, not independent economic
+information or an independently implemented detector.
+
+Each delayed reference retains 400 bars per timeframe. At each historical
+decision the comparator causally tails the same 200 bars used by runtime. The
+200-bar surplus prevents a next-day fetch from discarding the earlier
+decision's runtime window, especially the 96 possible intervening 15M bars.
+
+The required preflight is stored in
+`data/research/event_feature_concordance_preflight_v1.json`. Across 100
+requested recent decisions, 38 had sufficient replay coverage. Event membership
+matched for eight events, but the native runtime versus 15M-resampled
+historical path produced 107 numeric and 10 missingness mismatches, including
+different liquidity-sweep object presence. The canonical decision is
+`REJECT_15M_RESAMPLED_FEATURES_FOR_NATIVE_RUNTIME_PROMOTION`. The old rejected
+event models cannot be repackaged as runtime-compatible, and tolerances were
+not loosened after observing the discrepancy.
+
+A corrected 400-bar native reference was then sliced to the exact 200-bar
+runtime window at 2026-07-23 21:00 UTC. All five timestamp windows and every
+bid/ask/midpoint OHLC value matched exactly. That decision contained zero
+registered events, so this is source-window validation only; the prospective
+event coverage gates remain entirely unpassed.
+
+Prospective native-path concordance requires at least 120 compared decision times, 30
+compared events, BUY and SELL, all five registered event types, no archive or
+self-replay failures, exact stable-ID membership, exact identity/missingness
+and all numeric values within absolute and relative tolerance `1e-9`. The
+scheduled artifact becomes stale after 30 hours or when replay lag exceeds 36
+hours. It reads no outcomes or performance columns.
+
+Even `PASS` can only set `shadow_registration_eligible`; it cannot authorize
+event input to an existing model or Claude request, paper approval, Telegram,
+model promotion or broker execution. `feature_use_authorized` remains false
+even after technical concordance passes.
 
 ## Runtime AI and sentiment safety correction — 2026-07-23
 

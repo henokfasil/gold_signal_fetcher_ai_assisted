@@ -104,6 +104,18 @@ FORWARD_EVENT_CONFIG = Path(
     os.getenv('FORWARD_EVENT_CONFIG',
               PROJECT_ROOT / 'config' / 'forward_event_observation_v1.json')
 )
+EVENT_FEATURE_CONCORDANCE_CONFIG = Path(
+    os.getenv(
+        'EVENT_FEATURE_CONCORDANCE_CONFIG',
+        PROJECT_ROOT / 'config' / 'event_feature_concordance_v1.json',
+    )
+)
+EVENT_FEATURE_CONCORDANCE_STATUS_PATH = Path(
+    os.getenv(
+        'EVENT_FEATURE_CONCORDANCE_STATUS_PATH',
+        PROJECT_ROOT / 'data' / 'event_feature_concordance_status.json',
+    )
+)
 EVIDENCE_INTEGRITY_CONFIG = Path(
     os.getenv('EVIDENCE_INTEGRITY_CONFIG',
               PROJECT_ROOT / 'config' / 'evidence_integrity_v1.json')
