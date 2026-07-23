@@ -17,6 +17,11 @@ from agent.gold_context_snapshot import (
     load_validated_context_snapshot,
 )
 from agent.evidence_integrity import build_evidence_integrity_report
+from agent.forward_event_journal import (
+    EVENT_COLUMNS,
+    SCAN_COLUMNS,
+    load_forward_event_contract,
+)
 from agent.liquidity_manager import is_market_closed
 from config import settings
 
@@ -475,34 +480,47 @@ TEMPLATE = """
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="refresh" content="60">
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0a0e27;color:#e5edf7;font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1280px;margin:auto;padding:24px}.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;border-bottom:2px solid #1e40af;padding-bottom:12px}.header h1{margin:0;color:#fbbf24;font-size:28px}.subtitle{color:#9ca3af;font-size:13px}.muted{color:#9ca3af}.alert{background:rgba(239,68,68,0.1);border-left:4px solid #ef4444;padding:14px;border-radius:6px;margin-bottom:20px;display:none}.alert.show{display:block}.alert-text{color:#fca5a5;font-weight:500}.panel{background:#111827;border:1px solid #1e40af;border-radius:8px;padding:20px;margin-bottom:20px}.panel h2{font-size:16px;margin:0 0 16px 0;color:#60a5fa;text-transform:uppercase;letter-spacing:1px}.pill{display:inline-block;padding:6px 14px;border-radius:999px;font-weight:800;font-size:11px;margin-left:12px}.good{background:#10b981;color:#ffffff}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:16px}.card{background:#1f2937;border:1px solid #374151;border-radius:6px;padding:14px;text-align:center}.label{text-transform:uppercase;color:#9ca3af;font-size:11px;font-weight:700;margin-bottom:8px}.value{font-size:18px;font-weight:900;color:#fbbf24}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}.metric{background:#1f2937;border-left:3px solid #10b981;padding:16px;border-radius:6px}.metric .label{font-size:10px}.metric .value{font-size:20px;color:#10b981}.capital-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}.capital-card{background:#1f2937;border:1px solid #374151;padding:16px;border-radius:6px}.capital-card .label{text-align:left;margin-bottom:8px}.capital-card .value{text-align:left;font-size:20px}.table-wrap{overflow:auto}.trades-table{width:100%;border-collapse:collapse;min-width:900px}.trades-table th,.trades-table td{padding:10px;border-bottom:1px solid #2d3748;text-align:left;font-size:12px}.trades-table th{background:#1e2d42;color:#9ca3af;text-transform:uppercase;font-size:10px;font-weight:700}.trades-table tr:hover{background:#1f2937}.BUY{color:#10b981;font-weight:800}.SELL{color:#f87171;font-weight:800}.WIN{color:#10b981;font-weight:800}.LOSS{color:#ef4444;font-weight:800}.OPEN{color:#60a5fa}.note{margin-top:12px;font-size:11px;color:#9ca3af}@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:repeat(2,1fr)}.capital-row{grid-template-columns:1fr}.header{display:block;border-bottom:none;padding-bottom:0}}
+*{box-sizing:border-box}body{margin:0;background:#0a0e27;color:#e5edf7;font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1280px;margin:auto;padding:24px}.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;border-bottom:2px solid #1e40af;padding-bottom:12px}.header h1{margin:0;color:#fbbf24;font-size:28px}.subtitle{color:#9ca3af;font-size:13px}.muted{color:#9ca3af}.alert{background:rgba(239,68,68,0.1);border-left:4px solid #ef4444;padding:14px;border-radius:6px;margin-bottom:20px;display:none}.alert.show{display:block}.alert-text{color:#fca5a5;font-weight:500}.panel{background:#111827;border:1px solid #1e40af;border-radius:8px;padding:20px;margin-bottom:20px}.panel h2{font-size:16px;margin:0 0 16px 0;color:#60a5fa;text-transform:uppercase;letter-spacing:1px}.pill{display:inline-block;padding:6px 14px;border-radius:999px;font-weight:800;font-size:11px;margin-left:12px}.good{background:#10b981;color:#ffffff}.warn{background:#d97706;color:#ffffff}.bad{background:#dc2626;color:#ffffff}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:16px}.card{background:#1f2937;border:1px solid #374151;border-radius:6px;padding:14px;text-align:center}.label{text-transform:uppercase;color:#9ca3af;font-size:11px;font-weight:700;margin-bottom:8px}.value{font-size:18px;font-weight:900;color:#fbbf24}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}.metric{background:#1f2937;border-left:3px solid #10b981;padding:16px;border-radius:6px}.metric .label{font-size:10px}.metric .value{font-size:20px;color:#10b981}.capital-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}.capital-card{background:#1f2937;border:1px solid #374151;padding:16px;border-radius:6px}.capital-card .label{text-align:left;margin-bottom:8px}.capital-card .value{text-align:left;font-size:20px}.table-wrap{overflow:auto}.trades-table{width:100%;border-collapse:collapse;min-width:900px}.trades-table th,.trades-table td{padding:10px;border-bottom:1px solid #2d3748;text-align:left;font-size:12px}.trades-table th{background:#1e2d42;color:#9ca3af;text-transform:uppercase;font-size:10px;font-weight:700}.trades-table tr:hover{background:#1f2937}.BUY{color:#10b981;font-weight:800}.SELL{color:#f87171;font-weight:800}.WIN{color:#10b981;font-weight:800}.LOSS{color:#ef4444;font-weight:800}.OPEN{color:#60a5fa}.note{margin-top:12px;font-size:11px;color:#9ca3af}@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:repeat(2,1fr)}.capital-row{grid-template-columns:1fr}.header{display:block;border-bottom:none;padding-bottom:0}}
 </style></head><body><div class="wrap">
 
 <div class="header">
   <div>
     <h1>🥇 Gold Signal Fetcher</h1>
-    <div class="subtitle">Claude-optimized SMC paper trading | Real-time decision layer</div>
+    <div class="subtitle">AI-assisted, evidence-governed XAUUSD paper research</div>
   </div>
   <div class="muted">{{ now }} UTC</div>
 </div>
 
-{% if feed.status != "HEALTHY" %}
+{% if feed.status != "HEALTHY" or integrity.status_class == "bad" %}
 <div class="alert show">
-  <div class="alert-text">⚠️ Feed Status: {{ feed.status }} • {{ feed.age }} • {{ feed.last_scan }}</div>
+  <div class="alert-text">⚠️ Feed: {{ feed.status }} • Evidence: {{ integrity.status }} • {{ integrity.issue_summary }}</div>
 </div>
 {% endif %}
 
 <section class="panel">
-  <h2>Claude Decision Optimizer <span class="pill good">{{ claude.status }}</span></h2>
+  <h2>Operational Integrity <span class="pill {{ integrity.status_class }}">{{ integrity.status }}</span></h2>
   <div class="grid">
-    <div class="card"><div class="label">Total Analyzed</div><div class="value">{{ claude.total }}</div></div>
-    <div class="card"><div class="label">TAKE Decisions</div><div class="value">{{ claude.takes }}</div></div>
-    <div class="card"><div class="label">SKIP Decisions</div><div class="value">{{ claude.skips }}</div></div>
-    <div class="card"><div class="label">Avg Confidence</div><div class="value">{{ claude.avg_confidence }}</div></div>
-    <div class="card"><div class="label">High Conf Win Rate</div><div class="value">{{ claude.win_rate_high }}</div></div>
-    <div class="card"><div class="label">Position Size</div><div class="value">0.03-0.10 lots</div></div>
+    <div class="card"><div class="label">Price Feed</div><div class="value">{{ feed.status }}</div></div>
+    <div class="card"><div class="label">Snapshot Age</div><div class="value">{{ feed.age }}</div></div>
+    <div class="card"><div class="label">Last Candidate Scan</div><div class="value">{{ feed.last_scan }}</div></div>
+    <div class="card"><div class="label">Evidence Candidates</div><div class="value">{{ integrity.pilot_candidates }}</div></div>
+    <div class="card"><div class="label">Event Observer</div><div class="value">{{ event.status }}</div></div>
+    <div class="card"><div class="label">Prospective Events</div><div class="value">{{ event.events }}</div></div>
   </div>
-  <div class="note">Claude analyzes each signal's ADX (trend), RSI (momentum), RR ratio, and recent performance to decide position size or SKIP. Dynamic sizing optimizes capital allocation by confidence.</div>
+  <div class="note">File-only monitoring. Event observations are outcome-blind and isolated from signals. Current evidence issue: {{ integrity.issue_summary }}</div>
+</section>
+
+<section class="panel">
+  <h2>Structured AI Review <span class="pill {{ ai.status_class }}">{{ ai.status }}</span></h2>
+  <div class="grid">
+    <div class="card"><div class="label">Journalled Reviews</div><div class="value">{{ ai.total }}</div></div>
+    <div class="card"><div class="label">Available</div><div class="value">{{ ai.available }}</div></div>
+    <div class="card"><div class="label">Context Passes</div><div class="value">{{ ai.passes }}</div></div>
+    <div class="card"><div class="label">Vetoes</div><div class="value">{{ ai.vetoes }}</div></div>
+    <div class="card"><div class="label">Avg Self-confidence</div><div class="value">{{ ai.avg_confidence }}</div></div>
+    <div class="card"><div class="label">Latest Model</div><div class="value">{{ ai.model }}</div></div>
+  </div>
+  <div class="note">Exactly one structured Claude review per new candidate. Its confidence is recorded for research but has no numeric vote; Claude can veto and explain only. Request/response payloads, hashes, model and prompt version are journalled.</div>
 </section>
 
 <section class="panel">
@@ -558,7 +576,7 @@ TEMPLATE = """
       </tbody>
     </table>
   </div>
-  <div class="note">Closed trades only (WIN/LOSS/EXPIRED). Shows recent realized outcomes used by Claude for confidence calibration.</div>
+  <div class="note">Closed paper-ledger trades only. These outcomes are not supplied to Claude and do not calibrate its confidence.</div>
 </section>
 
 <div class="note" style="text-align:center;margin-top:30px">Research paper trading only. Results do not establish profitability or suitability for live capital.</div>
@@ -567,49 +585,84 @@ TEMPLATE = """
 """
 
 
-def get_claude_stats():
-    """Get Claude decision stats from recent trades."""
-    trades = load_trades(settings.PAPER_TRADES_CSV)
-    if trades.empty:
-        return {"status": "Collecting", "total": 0, "takes": 0, "skips": 0, "avg_confidence": "—", "win_rate_high": "—"}
-
-    # Count Claude decisions (if claude_confidence column exists)
-    if "claude_confidence" not in trades.columns:
-        return {"status": "No Claude data yet", "total": 0, "takes": 0, "skips": 0, "avg_confidence": "—", "win_rate_high": "—"}
-
-    trades_with_confidence = trades[trades["claude_confidence"].notna()].copy()
-    if trades_with_confidence.empty:
-        return {"status": "Collecting", "total": 0, "takes": 0, "skips": 0, "avg_confidence": "—", "win_rate_high": "—"}
-
-    # Convert string confidence to numeric
-    trades_with_confidence["claude_confidence"] = pd.to_numeric(trades_with_confidence["claude_confidence"], errors="coerce")
-    trades_with_confidence = trades_with_confidence[trades_with_confidence["claude_confidence"].notna()]
-
-    if trades_with_confidence.empty:
-        return {"status": "Collecting", "total": 0, "takes": 0, "skips": 0, "avg_confidence": "—", "win_rate_high": "—"}
-
-    total = len(trades_with_confidence)
-    takes = len(trades_with_confidence[trades_with_confidence["decision"].astype(str).str.upper() == "APPROVE"])
-    skips = len(trades_with_confidence[trades_with_confidence["decision"].astype(str).str.upper() == "REJECT"])
-    avg_conf = trades_with_confidence["claude_confidence"].mean()
-
-    # Win rate for HIGH confidence (>80%)
-    high_conf = trades_with_confidence[trades_with_confidence["claude_confidence"] > 80]
-    if len(high_conf) > 0:
-        status_upper = high_conf["status"].astype(str).str.upper()
-        resolved = high_conf[status_upper.isin(["WIN", "LOSS"])]
-        win_rate_high = len(resolved[status_upper == "WIN"]) / len(resolved) * 100 if len(resolved) > 0 else 0
-    else:
-        win_rate_high = 0
-
-    return {
-        "status": "Live",
-        "total": total,
-        "takes": takes,
-        "skips": skips,
-        "avg_confidence": f"{avg_conf:.0f}%" if not pd.isna(avg_conf) else "—",
-        "win_rate_high": f"{win_rate_high:.0f}%"
+def get_ai_review_stats(path=None):
+    """Report AI-review provenance only; never infer profitability."""
+    frame = load_trades(path or settings.FORWARD_AI_REVIEWS_CSV)
+    empty = {
+        "status": "AWAITING REVIEWS", "status_class": "warn", "total": 0,
+        "available": 0, "passes": 0, "vetoes": 0,
+        "avg_confidence": "—", "model": "—",
     }
+    if frame.empty:
+        return empty
+    required = {"available", "should_trade", "confidence", "model"}
+    if not required.issubset(frame.columns):
+        return {**empty, "status": "SCHEMA ERROR", "status_class": "bad"}
+    available = frame["available"].astype(str).str.lower().isin(
+        {"1", "true", "yes"}
+    )
+    should_trade = frame["should_trade"].astype(str).str.lower().isin(
+        {"1", "true", "yes"}
+    )
+    confidence = pd.to_numeric(frame["confidence"], errors="coerce")
+    models = frame.loc[frame["model"].astype(str).str.len().gt(0), "model"]
+    return {
+        "status": "OBSERVING", "status_class": "good", "total": len(frame),
+        "available": int(available.sum()),
+        "passes": int((available & should_trade).sum()),
+        "vetoes": int((available & ~should_trade).sum()),
+        "avg_confidence": (
+            f"{confidence[available].mean():.0f}%"
+            if confidence[available].notna().any() else "—"
+        ),
+        "model": str(models.iloc[-1]) if len(models) else "—",
+    }
+
+
+def get_event_observation_health(event_path=None, scan_path=None):
+    """Validate prospective event files using counts and provenance only."""
+    result = {
+        "status": "AWAITING FIRST 1H CLOSE", "status_class": "warn",
+        "events": 0, "scans": 0, "latest_decision": "—",
+    }
+    try:
+        _, contract_sha, _ = load_forward_event_contract()
+        events = load_trades(
+            event_path or settings.FORWARD_EVENT_OBSERVATIONS_CSV,
+        )
+        scans = load_trades(scan_path or settings.FORWARD_EVENT_SCANS_CSV)
+        if not events.empty and list(events.columns) != EVENT_COLUMNS:
+            raise ValueError("event row schema drift")
+        if not scans.empty and list(scans.columns) != SCAN_COLUMNS:
+            raise ValueError("event scan schema drift")
+        if not events.empty:
+            if events["event_id"].astype(str).duplicated().any():
+                raise ValueError("duplicate prospective event IDs")
+            if not events["observation_contract_sha256"].eq(contract_sha).all():
+                raise ValueError("event contract provenance drift")
+        if scans.empty:
+            return result
+        if scans["decision_time"].astype(str).duplicated().any():
+            raise ValueError("duplicate event decision times")
+        if not scans["observation_contract_sha256"].eq(contract_sha).all():
+            raise ValueError("event scan contract provenance drift")
+        latest = pd.to_datetime(
+            scans["decision_time"], utc=True, errors="raise",
+        ).max()
+        age_seconds = (
+            datetime.now(timezone.utc) - latest.to_pydatetime()
+        ).total_seconds()
+        stale = not is_market_closed() and age_seconds > 5400
+        return {
+            "status": "STALE" if stale else "HEALTHY",
+            "status_class": "bad" if stale else "good",
+            "events": len(events), "scans": len(scans),
+            "latest_decision": latest.isoformat(),
+        }
+    except (OSError, RuntimeError, ValueError, KeyError, TypeError,
+            json.JSONDecodeError, pd.errors.ParserError) as exc:
+        logger.warning("Event observation health unavailable: %s", exc)
+        return {**result, "status": "DEGRADED", "status_class": "bad"}
 
 
 @app.route("/")
@@ -617,7 +670,9 @@ def dashboard():
     return render_template_string(TEMPLATE, m=calculate_metrics(settings.PAPER_TRADES_CSV),
                                   closed_trades=get_closed_trades(settings.PAPER_TRADES_CSV),
                                   feed=get_feed_health(),
-                                  claude=get_claude_stats(),
+                                  integrity=get_evidence_integrity(),
+                                  event=get_event_observation_health(),
+                                  ai=get_ai_review_stats(),
                                   now=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
 
 

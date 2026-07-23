@@ -359,6 +359,58 @@ this event representation must be prospective or introduce genuinely new
 pre-registered information; the inspected 2020-2026 event outcomes cannot be
 mined into a replacement rule.
 
+## Frozen prospective event observation v1
+
+The outcome-blind operational contract
+`forward-event-observation-20260723-v1` is frozen in
+`config/forward_event_observation_v1.json`, SHA-256
+`bdc69d70bf4aa7e0b340d4d9825ffded7567fd2bf7743881f7fb548490fed7fd`.
+Collection begins no earlier than 2026-07-23 21:00:00 UTC.
+
+The observer uses the exact stable IDs and ordered 55-feature geometry schema
+from `event-candidate-universe-20260719-v1`. It converts the five validated
+Dukascopy snapshot frames from candle-open timestamps to completed-close
+timestamps, evaluates each newly completed 1H decision time once and writes:
+
+- unique event rows to `data/forward_event_observations_v1.csv`; and
+- one scan row, including valid zero-event hours, to
+  `data/forward_event_scans_v1.csv`.
+
+Both files are append-only. Snapshot content hash, provider, symbol, bid/ask
+availability, exact 15M decision close, event source time, duplicate IDs and
+the frozen geometry schema fail closed. The observer contains no outcome
+columns and has no SMC, ML, Claude, paper approval, Telegram, broker, training
+or model-promotion effect. Failure is logged but cannot alter the existing
+candidate pipeline.
+
+Historical/runtime feature concordance is explicitly `PENDING`, including the
+weekly-frame timestamp convention. Until an independently replayed set of
+matching completed decision times agrees, prospective event fields may be
+monitored only for cadence, counts, missingness, non-finite values and
+provenance. A later outcome comparison requires a separately frozen contract;
+this observation contract cannot establish or test profitability.
+
+## Runtime AI and sentiment safety correction — 2026-07-23
+
+The duplicate Claude decision optimizer is removed from the canonical path.
+Each new SMC candidate receives at most one structured Claude review. The
+exact supplied payload, normalized response, hashes, model and prompt version
+are written to `data/forward_ai_reviews_v2.csv`. Claude is a contextual
+review/veto only: its self-reported confidence is excluded from the numeric
+approval score and cannot override ML, macro or hard risk gates.
+
+A model is loadable for paper approval only when its metadata explicitly
+records `PASS_DEVELOPMENT_GATES`, authorizes paper signals, freezes a selection
+threshold and lists separately eligible directions. The simple chronological
+trainer remains research-only and emits non-authorizing metadata.
+
+The July 20 Yahoo-based observer is disabled in the canonical scheduler. Its
+daily GC futures, EURUSD, nominal-yield and VIX momentum heuristics did not
+implement the registered TradingView/news sentiment contract, did not record
+real source staleness and did not produce an eligible point-in-time historical
+comparison. Its synthetic fast benchmark reused SMC indicators and is not
+evidence of independent sentiment. No sentiment value affects decisions.
+
 `research/benchmark_candidate_models.py` runs prevalence, direction-only,
 SMC-score-only logistic, all-feature logistic and XGBoost through the same
 folds, purge, calibration and selection rule. No model has an AUC interval

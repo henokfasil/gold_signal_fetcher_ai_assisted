@@ -1,6 +1,6 @@
 # Gold Signal Fetcher — Unified AI-Assisted Research System
 
-Last reviewed: 2026-07-19
+Last reviewed: 2026-07-23
 
 ## Claude restart handoff
 
@@ -196,11 +196,11 @@ Completion checkpoint:
   information from being repackaged under another model name. They do not mean
   that the whole AI-assisted research program failed.
 - The event-first extraction milestone is complete and rejected at its model
-  gates. The next high-information task is genuinely prospective collection of
-  this stable event universe, not another model or post-hoc event-type filter
-  on 2020-2026. First add an append-only, outcome-blind runtime event journal
-  using the same IDs/schema and validate event rate, cadence, feature drift and
-  Dukascopy historical/runtime concordance. Any TradingView/Pine/Claude
+  gates. Its append-only, outcome-blind prospective journal is registered and
+  implemented under `forward-event-observation-20260723-v1`. Monitor event
+  rate, cadence, missingness and provenance; independently validate Dukascopy
+  historical/runtime feature concordance before any outcome experiment. Any
+  TradingView/Pine/Claude
   annotation must be a separate prospective ledger with exact symbol,
   timeframe, completed-bar timestamp, prompt/model and source provenance; it
   has no decision effect unless a later frozen experiment passes.
@@ -223,10 +223,9 @@ Resume in this order:
 7. Preserve event-candidate-universe v1 as rejected. Do not select its positive
    XGBoost point estimate, its three positive folds, a direction, event type,
    target horizon or threshold from the inspected diagnostics.
-8. Implement the same stable event IDs and 55-field schema as an append-only
-   prospective journal, initially isolated from approval, Claude, Telegram and
-   broker logic. Validate cadence, exact-close availability, duplicates,
-   missingness, drift and historical/runtime feature concordance.
+8. Keep the prospective event journal isolated from approval, Claude, Telegram
+   and broker logic. Validate cadence, exact-close availability, duplicates,
+   missingness and historical/runtime feature concordance without outcomes.
 9. Add genuinely new causal regime/session or independently sourced
    information only under a new pre-analysis contract. Fit inside chronological
    folds. Register every proposed filter before examining its next-fold result.
@@ -240,39 +239,20 @@ as independent trials, combining BUY and SELL performance to hide a weak side,
 optimizing on 2020-2026 then calling it out of sample, deploying a failed model,
 or enabling broker execution.
 
-## Sentiment Context v1 Experiment (July 20, 2026)
+## Sentiment experiment correction — 2026-07-23
 
-A new experiment is registered as `sentiment-context-20260720-v1` in
-`config/sentiment_context_v1.json` (SHA-256 to be computed). It tests whether
-4 sentiment dimensions (gold sentiment, USD sentiment, real rates sentiment,
-geopolitical risk) can improve SMC signal filtering. Implementation uses
-open-source TradingView MCP (MIT-licensed, already on VPS).
+The July 20 sentiment implementation is not an eligible experiment and is
+disabled in the canonical scanner wrapper. Its runtime code used Yahoo daily
+price momentum for GC futures, EURUSD, nominal Treasury yields and VIX; it did
+not implement the registered TradingView/news contract, point-in-time
+historical join or true staleness semantics. The “fast” benchmark synthesized
+sentiment from existing SMC indicators and cannot establish independent
+information.
 
-**PHASE 1 (Historical validation):** Test on 2020-2026 data (Days 1-5)
-- Implement sentiment collectors from tradingview-mcp tools
-- Run benchmark against 9 development gates
-- Gate pass: Permission for Phase 2
-- Gate fail: Learn sentiment isn't the answer, pivot
-
-**PHASE 2 (VPS deployment):** If Phase 1 passes
-- Deploy `ops/collect_sentiment_vps.py` to VPS (parallel to SMC)
-- Integrate with scanner cron (every 15 minutes)
-- Collect 4-26 weeks of real trading outcomes with sentiment filter
-- Compare: SMC alone vs SMC+sentiment win rates
-- Real help: Either +2-5% win rate improvement or 0%
-
-**COMPLETED (July 20):**
-- Contract frozen: `config/sentiment_context_v1.json`
-- Collector code: `ops/collect_sentiment_vps.py` (production-ready)
-- Deployment guide: `DEPLOY_SENTIMENT_TO_VPS.md` (step-by-step)
-- Documentation: See guides listed below
-
-**Documentation:**
-- `SENTIMENT_IMPLEMENTATION_START.md` — Overall 5-day plan
-- `START_HERE_SENTIMENT_IMPLEMENTATION.md` — Immediate setup (deprecated; use VPS path)
-- `DEPLOY_SENTIMENT_TO_VPS.md` — VPS deployment (currently used)
-- `SENTIMENT_TRADINGVIEW_MCP_GUIDE.md` — Implementation details (local reference)
-- `SENTIMENT_MCP_QUICKSTART.md` — Quick reference (local reference)
+Do not deploy, score, approve, notify or make claims from those sentiment
+files. A replacement needs a new hash-locked contract with exact source
+identities, publication/availability timestamps, licensing, historical
+coverage and a leakage-safe comparison before any outcome is inspected.
 
 ## Status
 
@@ -659,11 +639,10 @@ registered there before evaluation.
    universe and continuous geometry passed integrity gates but did not beat the
    registered direction/event-type control with dependence-aware certainty.
    Do not mine secondary horizons or event families from this history.
-9. Build an isolated prospective event journal with the same stable IDs and
-   causal schema. Monitor event counts, source/cadence integrity, feature
-   missingness/drift and historical/runtime concordance without interim return
-   analysis or decision effect. Register any new information source before it
-   can enter an outcome comparison.
+9. Monitor the isolated prospective event journal's counts, source/cadence
+   integrity and feature missingness. Complete historical/runtime concordance
+   without interim return analysis or decision effect. Register any new
+   information source before it can enter an outcome comparison.
 10. Continue model/prompt/dataset lineage, drift and calibration monitoring.
 11. Secure the public dashboard with a reverse proxy, HTTPS and authentication
    before treating it as a customer-facing service. This is an operations gate,
@@ -892,136 +871,33 @@ primary 4h gates and no direction was eligible. The CSVs remain local because
 source-data commercial rights are not reviewed; the contract, manifests and
 machine-readable benchmark report are versioned.
 
-## Claude Decision Optimizer Integration (July 20, 2026)
+## Prospective event journal and AI safety correction — 2026-07-23
 
-**Status:** ✅ LIVE & MONITORING  
-**Deployment:** Complete • Dashboard redesigned • 4-week validation begins
+The next registered milestone is now implemented under
+`config/forward_event_observation_v1.json`, SHA-256
+`bdc69d70bf4aa7e0b340d4d9825ffded7567fd2bf7743881f7fb548490fed7fd`.
+It records the same stable event IDs and 55 causal geometry fields as the
+rejected historical event-first experiment, plus one valid zero-event scan row
+per completed 1H decision time. It is outcome-blind and has no decision,
+Claude, Telegram, broker, training or promotion effect. Historical/runtime
+feature concordance remains pending.
 
-### What's Live Now
+The runtime now makes at most one structured Claude request per new SMC
+candidate. Claude is an evidence-conflict reviewer and veto, not a numeric
+alpha vote. Its self-reported confidence is excluded from approval arithmetic.
+Exact request/response payloads, hashes, model and prompt version are appended
+to `data/forward_ai_reviews_v2.csv`.
 
-Claude Decision Layer is integrated into the orchestrator pipeline:
+ML remains unavailable and mandatory. A future artifact is loadable for paper
+approval only if its metadata explicitly records passed development gates,
+paper authorization, a frozen selection threshold and separately eligible
+directions. The existing simple-holdout trainer cannot create an authorized
+runtime model.
 
-```
-SMC Signal (every 15 min)
-  ↓
-Duplicate Check (4-hour cooldown)
-  ↓
-ML Scoring (required)
-  ↓
-Macro Validation
-  ↓
-Claude Decision Optimizer ← NEW
-  │ Analyzes: ADX (trend), RSI (momentum), RR ratio, recent performance
-  │ Outputs: TAKE/SKIP + position size (0.03-0.10 lots) + confidence (0-100%)
-  │ Logs: All decisions to CSV with reasoning
-  ↓
-Risk Vetoes
-  ↓
-Paper Trade or Reject
-  ↓
-CSV Ledger + Dashboard
-```
-
-**Current Status (as of 2026-07-20 16:04 UTC):**
-- Total Claude-analyzed signals: 1 (confidence: 25%, decision: SKIP)
-- TAKE decisions: 0 (none have beaten thresholds yet)
-- SKIP decisions: 1 (low confidence correctly filtered)
-- High confidence (80%+) win rate: 0% (insufficient closed trades)
-- Paper capital: $10,000 (no trades opened yet due to duplicate signals)
-
-### What to Expect Over 4 Weeks
-
-**Phase 1: Data Collection (Weeks 1-2)**
-- Market will generate new, unique SMC signals (currently stuck on same SELL setup)
-- Claude will analyze each with confidence scoring
-- Expect 20-50 signals to analyze per week
-- Position sizing: HIGH (>80%) gets 0.08-0.10 lots, LOW (<60%) gets 0.03 or SKIP
-
-**Phase 2: Trade Closure (Weeks 2-3)**
-- Trades from Phase 1 will hit TP, SL, or expire (48-hour max horizon)
-- Dashboard will populate "Recent Wins & Losses" section
-- Win rate by confidence will become visible
-- Profit factor and max drawdown will calculate
-
-**Phase 3: Edge Validation (Week 4)**
-- Compare: Claude+SMC win rate vs SMC-only baseline (-0.0291% per signal)
-- Goal: Prove Claude adds value (even +0.1-0.2% improvement is success)
-- If HIGH confidence (80%+) shows 55%+ win rate → edge is real
-- If results are neutral or worse → pivot to new hypothesis
-
-**Key Metrics to Watch:**
-
-| Metric | Baseline | Target | Status |
-|--------|----------|--------|--------|
-| Win rate (HIGH conf) | — | 55%+ | 0% (awaiting trades) |
-| Win rate (all signals) | 46% | 50%+ | — |
-| Avg return per signal | -0.0291% | +0.1%+ | — |
-| Profit factor | 0.992 | 1.2+ | 0.00 (no trades) |
-| Max drawdown | 36.42% | <15% | 0.00% |
-
-### Dashboard Changes (July 20)
-
-**New Clean Layout:**
-- ✅ Claude Decision Optimizer (top) — confidence, TAKE/SKIP counts, sizing
-- ✅ Performance Metrics (middle) — equity, P&L, wins/losses, profit factor, drawdown
-- ✅ Recent Wins & Losses (bottom) — closed trades only
-- ❌ Removed: Research monitoring, pilot tracking, context health (clutter)
-
-**Why this matters:**
-- Traders see only actionable metrics
-- Real-time Claude confidence calibration visible
-- Win rate by confidence level proves or disproves edge
-
-## Sentiment Context Implementation (Phase 1 - July 20, 2026)
-
-**Status:** ✅ LIVE  
-**Contract:** `config/sentiment_context_v1.json` (pre-analysis, outcome-blind)
-
-Sentiment analysis integrated as a non-blocking observational filter to SMC signals. Four dimensions collected every 15 minutes parallel to scanner cron:
-
-1. **Gold Sentiment** (GC=F momentum + volatility): Price-based bullish/bearish signal
-2. **USD Sentiment** (EURUSD inverted): Inverse of EUR/USD momentum (USD weakness = negative)
-3. **Real Rates Sentiment** (^TNX inverted): Rising Treasury yields = negative for gold
-4. **Geopolitical Risk** (^VIX): Rising VIX = positive for gold (safe-haven)
-
-**Output:** `/tmp/sentiment_snapshot.json` with 12 features:
-- 4 dimensions × (sentiment_score + confidence + staleness_hours)
-
-**Collection Method:**
-- `ops/collect_sentiment_vps.py`: Python collector using yfinance (market-based heuristics)
-- `ops/collect_sentiment.sh`: Wrapper that uses venv Python (dependency: yfinance 1.5+)
-- Integrated into `ops/run_gold_scanner_ai.sh` as non-blocking observational step
-
-**Phase 1 Goals (Historical Validation):**
-- [ ] Collect historical sentiment (2020-2026) for 40,792 SMC candidates
-- [ ] Run 9-gate benchmark: Does sentiment improve signal prediction?
-- [ ] Decision point: If gates pass → Phase 2 (live deployment), else pivot
-
-**Phase 2 (If Phase 1 passes):**
-- For each SMC signal: fetch sentiment snapshot
-- Score: "Does sentiment agree with direction?"
-- Decision: Full size / tight / skip
-- Monitor 4-26 weeks for win-rate improvement
-
-**Current Deployment:**
-- Sentiment collector runs every 15 min (scanner cron)
-- Non-blocking: Failures logged but don't affect candidate decisions
-- VPS: 187.55.229.4, output path: `/tmp/sentiment_snapshot.json`
-
-**Rebuild/Test:**
-```bash
-# Local test (requires yfinance)
-python3 -m ops.collect_sentiment_vps --check-mcp
-python3 -m ops.collect_sentiment_vps --output /tmp/test.json
-
-# VPS test via wrapper
-cd /root/gold_signal_fetcher_ai_assisted
-./ops/collect_sentiment.sh --check-mcp
-./ops/collect_sentiment.sh --output /tmp/test.json
-
-# Monitor collection
-tail -f logs/gold_scanner_ai.log | grep -i sentiment
-```
+The Yahoo daily-price observer previously called “sentiment” is disabled. It
+did not implement its stated TradingView/news contract, and its synthetic
+benchmark reused existing SMC indicators. Do not use its snapshot or report as
+sentiment evidence.
 
 ## Security and operations
 

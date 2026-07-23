@@ -46,11 +46,20 @@ failed the primary 4-hour uncertainty, paired-control, cost-stress and
 directional gates. Its canonical status is
 `REJECT_EVENT_CANDIDATE_UNIVERSE_MODELS`; no runtime behavior was created.
 
-The next research step is an isolated prospective journal using the same stable
-event IDs and schema. It will validate runtime event rate, source/cadence,
-feature drift and historical/runtime concordance without affecting approvals,
-Claude, Telegram or execution. Further outcome research must add genuinely new
-pre-registered information rather than mine the inspected 2020-2026 events.
+The isolated prospective event journal is now registered and implemented using
+the same stable event IDs and 55-field schema. It records valid zero-event
+hours separately from event rows and validates runtime cadence, provenance and
+schema without affecting approvals, Claude, Telegram or execution.
+Historical/runtime feature concordance remains pending. Further outcome
+research must use a separate frozen contract and genuinely new prospective
+evidence rather than mine the inspected 2020-2026 events.
+
+Each new SMC candidate receives at most one structured Claude review. Claude
+can identify conflicts, explain and veto; its self-reported confidence is not a
+numeric approval vote. Exact request/response payloads and provenance are
+append-only. The former Yahoo price-momentum observer labelled as “sentiment”
+is disabled because it did not implement its registered news/sentiment
+contract.
 
 See [CLAUDE.md](CLAUDE.md) for architecture, data contracts, operational status
 and the research roadmap. The skeptical-review response and implemented

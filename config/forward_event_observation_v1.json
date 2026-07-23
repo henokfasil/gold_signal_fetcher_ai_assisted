@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "observation_version": "forward-event-observation-20260723-v1",
+  "registered_at_utc": "2026-07-23T20:52:41Z",
+  "collection_starts_at_utc": "2026-07-23T21:00:00Z",
+  "paper_research_only": true,
+  "purpose": "Append-only, outcome-blind prospective observation of the frozen event-first XAUUSD universe, with one operational scan record per newly completed 1H decision time",
+  "parent_event_contract": {
+    "path": "config/event_candidate_universe_v1.json",
+    "contract_version": "event-candidate-universe-20260719-v1",
+    "contract_sha256": "2b57fac00d70b60452a19e14b2daa8d264316016d89fc2425bebf3e05ad40c12",
+    "stable_event_id_definition": "first 24 hexadecimal characters of SHA-256(parent_contract_version|symbol|direction|event_type|source_event_bar_close_utc)",
+    "geometry_feature_count": 55,
+    "geometry_schema_sha256": "346753a3c3effc9f53d42ddde0f9fba296d736ecf38c883515f96995c5d0c252"
+  },
+  "source_contract": {
+    "provider": "dukascopy-public",
+    "symbol": "DUKASCOPY:XAUUSD",
+    "snapshot_schema_version": 2,
+    "timestamp_semantics": "candle_open_utc; runtime converts each bar to its completed close time before event detection",
+    "forming_bars_permitted": false,
+    "required_price_components": [
+      "bid",
+      "ask",
+      "midpoint"
+    ],
+    "required_timeframes": [
+      "1W",
+      "1D",
+      "4H",
+      "1H",
+      "15M"
+    ],
+    "expected_cadence_seconds": {
+      "1W": 604800,
+      "1D": 86400,
+      "4H": 14400,
+      "1H": 3600,
+      "15M": 900
+    },
+    "maximum_visible_bars_per_timeframe": 200,
+    "minimum_visible_bars_per_timeframe": 52,
+    "decision_schedule": "once for each newly completed 1H bar while the market feed is available",
+    "entry_price": "midpoint close of the exact completed 15M bar at the 1H decision time",
+    "execution_fields_retained": "decision-time bid_close and ask_close are supplied to the frozen geometry implementation for spread features"
+  },
+  "event_row_contract": {
+    "path": "data/forward_event_observations_v1.csv",
+    "base_columns": [
+      "observation_version",
+      "observation_contract_sha256",
+      "parent_event_contract_version",
+      "parent_event_contract_sha256",
+      "geometry_schema_sha256",
+      "snapshot_sha256",
+      "snapshot_captured_at",
+      "timestamp",
+      "event_id",
+      "event_source_time",
+      "event_type",
+      "source_timeframe",
+      "pair",
+      "direction",
+      "entry",
+      "stop_loss",
+      "take_profit",
+      "rr_ratio",
+      "atr_1h",
+      "paper_research_only"
+    ],
+    "geometry_columns": "exact ordered 55-feature schema from the parent event contract",
+    "duplicate_event_ids_permitted": false,
+    "future_source_event_times_permitted": false,
+    "outcome_columns_permitted": false,
+    "append_only": true
+  },
+  "scan_row_contract": {
+    "path": "data/forward_event_scans_v1.csv",
+    "purpose": "Distinguish a valid zero-event hour from a missing or failed observation",
+    "one_successful_row_per_decision_time": true,
+    "columns": [
+      "observation_version",
+      "observation_contract_sha256",
+      "snapshot_sha256",
+      "snapshot_captured_at",
+      "decision_time",
+      "observed_at",
+      "provider",
+      "symbol",
+      "detected_event_count",
+      "new_event_count",
+      "event_ids",
+      "status",
+      "paper_research_only",
+      "decision_effect"
+    ]
+  },
+  "operational_gates": {
+    "snapshot_content_hash_must_validate": true,
+    "source_identity_and_all_five_cadences_must_validate": true,
+    "all_frames_must_contain_only_completed_ordered_unique_valid_ohlc": true,
+    "decision_time_must_exist_as_an_exact_completed_15m_close": true,
+    "event_geometry_must_match_the_parent_schema": true,
+    "duplicate_event_ids_allowed": 0,
+    "future_source_event_times_allowed": 0,
+    "historical_runtime_feature_concordance_status": "PENDING",
+    "concordance_requirement": "No prospective event feature may influence a model, Claude, approval or notification until timestamp alignment and feature values are compared against an independent historical replay at matching completed decision times"
+  },
+  "isolation": {
+    "may_read_or_create_outcomes": false,
+    "may_inspect_interim_profitability": false,
+    "may_score_or_approve_paper_candidate": false,
+    "may_change_smc_ml_macro_or_claude_decision": false,
+    "may_send_telegram": false,
+    "may_place_broker_order": false,
+    "may_train_select_or_promote_model": false,
+    "failure_may_block_existing_candidate_pipeline": false
+  },
+  "evaluation_policy": {
+    "permitted_before_a_separate_frozen_outcome_experiment": [
+      "event counts",
+      "scan cadence",
+      "duplicate and future-time checks",
+      "missingness and non-finite feature checks",
+      "input distribution drift after a separately registered reference window",
+      "historical-runtime feature concordance"
+    ],
+    "performance_evaluation_permitted": false,
+    "promotion_authorized": false
+  },
+  "commercial_rights_status": "NOT_REVIEWED_DO_NOT_RESELL_OR_REDISTRIBUTE_SOURCE_DATA",
+  "change_rule": "Any source, timing, event identity, event type, geometry, schema, isolation or evaluation change requires a new observation contract before affected prospective rows are collected"
+}

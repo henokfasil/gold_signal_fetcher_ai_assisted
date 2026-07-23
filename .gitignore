@@ -17,3 +17,11 @@ build/
 .DS_Store
 .claude/
 data/evidence_integrity_status.json
+data/paper_trades_ai.csv
+data/forward_*.csv
+data/*.lock
+data/raw/**/*.csv
+data/raw/**/.*/
+data/research/*.csv
+logs/
+*.pre-duplicate-rr-ratio-schema

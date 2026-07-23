@@ -81,12 +81,28 @@ FORWARD_VARIANT_ASSIGNMENTS_CSV = Path(
 FORWARD_CONTEXT_CSV = Path(
     os.getenv('FORWARD_CONTEXT_CSV', PROJECT_ROOT / 'data' / 'forward_candidate_context_v1.csv')
 )
+FORWARD_EVENT_OBSERVATIONS_CSV = Path(
+    os.getenv('FORWARD_EVENT_OBSERVATIONS_CSV',
+              PROJECT_ROOT / 'data' / 'forward_event_observations_v1.csv')
+)
+FORWARD_EVENT_SCANS_CSV = Path(
+    os.getenv('FORWARD_EVENT_SCANS_CSV',
+              PROJECT_ROOT / 'data' / 'forward_event_scans_v1.csv')
+)
+FORWARD_AI_REVIEWS_CSV = Path(
+    os.getenv('FORWARD_AI_REVIEWS_CSV',
+              PROJECT_ROOT / 'data' / 'forward_ai_reviews_v2.csv')
+)
 RESEARCH_VARIANT_CONFIG = Path(
     os.getenv('RESEARCH_VARIANT_CONFIG', PROJECT_ROOT / 'config' / 'research_variants.json')
 )
 FORWARD_CONTEXT_CONFIG = Path(
     os.getenv('FORWARD_CONTEXT_CONFIG',
               PROJECT_ROOT / 'config' / 'forward_context_observation_v1.json')
+)
+FORWARD_EVENT_CONFIG = Path(
+    os.getenv('FORWARD_EVENT_CONFIG',
+              PROJECT_ROOT / 'config' / 'forward_event_observation_v1.json')
 )
 EVIDENCE_INTEGRITY_CONFIG = Path(
     os.getenv('EVIDENCE_INTEGRITY_CONFIG',

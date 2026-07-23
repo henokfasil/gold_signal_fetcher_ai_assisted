@@ -24,6 +24,7 @@ files_to_check = [
     'agent/ml_signal_generator.py',
     'agent/claude_analyst.py',
     'agent/evidence_integrity.py',
+    'agent/forward_event_journal.py',
     'ops/check_evidence_integrity.py',
     'dashboard.py',
     'send_daily_metrics.py',
@@ -80,6 +81,7 @@ checks = [
     ('agent/ml_feature_engineer_gold.py', 'GoldFeatureEngineer', True),
     ('agent/ml_signal_generator.py', 'MLSignalFilter', True),
     ('agent/claude_analyst.py', 'AITradingDecider', True),
+    ('agent/forward_event_journal.py', 'ForwardEventJournal', True),
     ('main_orchestrator.py', 'AIAssistedOrchestrator', True),
     ('dashboard.py', 'calculate_metrics', False),
     ('dashboard.py', 'get_evidence_integrity', False),
@@ -158,6 +160,7 @@ config_files = [
     'CLAUDE.md',
     'VPS_DEPLOYMENT.md',
     'config/evidence_integrity_v1.json',
+    'config/forward_event_observation_v1.json',
 ]
 
 all_configs = True

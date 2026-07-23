@@ -71,6 +71,8 @@ def train(dataset_path: Path, label_column: str = "label_profitable") -> dict:
         "test_end": test_frame["timestamp"].max().isoformat(),
         "metrics": metrics,
         "test_metrics_by_direction": {},
+        "validation_decision": "RESEARCH_ONLY_SIMPLE_HOLDOUT_NOT_PROMOTABLE",
+        "paper_signal_approval_authorized": False,
         "warning": "Research model. Chronological holdout is not a final untouched test or CPCV.",
     }
     if "direction" in test_frame.columns:

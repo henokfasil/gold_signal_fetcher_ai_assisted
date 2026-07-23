@@ -67,18 +67,10 @@ elif [[ "${PRICE_DATA_PROVIDER:-dukascopy}" == "dukascopy" ]]; then
     echo "Gold-context collection failed; candidate context will be recorded missing" >> "${LOG_FILE}"
   fi
 
-  # Sentiment context (Phase 1): collect 4 sentiment dimensions in parallel.
-  # Non-blocking: if collection fails, candidate decisions proceed unchanged.
-  # Failure is logged but does not affect core scanning pipeline.
-  SENTIMENT_SNAPSHOT="${SENTIMENT_SNAPSHOT_PATH:-/tmp/sentiment_snapshot.json}"
-  if [[ ! -x "${PROJECT_DIR}/ops/collect_sentiment.sh" ]]; then
-    echo "Sentiment collector missing; sentiment context will be recorded missing" >> "${LOG_FILE}"
-  else
-    if ! SENTIMENT_SNAPSHOT_PATH="${SENTIMENT_SNAPSHOT}" \
-        "${PROJECT_DIR}/ops/collect_sentiment.sh" >> "${LOG_FILE}" 2>&1; then
-      echo "Sentiment collection failed; candidate context will be recorded missing" >> "${LOG_FILE}"
-    fi
-  fi
+  # The former Yahoo-price "sentiment" observer is deliberately not run here.
+  # It did not implement its registered news/sentiment source contract and had
+  # no valid historical comparison. A replacement requires a new hash-locked,
+  # point-in-time contract before prospective collection begins.
 fi
 
 if ! "${PYTHON_BIN}" "${PROJECT_DIR}/main_orchestrator.py" >> "${LOG_FILE}" 2>&1; then

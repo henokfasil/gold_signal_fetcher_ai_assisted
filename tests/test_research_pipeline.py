@@ -32,6 +32,11 @@ from agent.gold_context_snapshot import (
 from agent.evidence_integrity import (
     build_evidence_integrity_report, drift_report, load_integrity_contract,
 )
+from agent.forward_event_journal import (
+    ForwardEventJournal,
+    canonical_snapshot_sha256 as canonical_event_snapshot_sha256,
+    load_forward_event_contract,
+)
 from ops.collect_gold_context_snapshot import collect as collect_gold_context
 from research.build_historical_dataset import label_candidate, load_ohlcv
 from research.export_forward_dataset import export
@@ -412,9 +417,9 @@ class ResearchPipelineTests(unittest.TestCase):
 
     @staticmethod
     def _event_universe_frames():
-        as_of = pd.Timestamp("2026-01-05T12:00:00Z")
+        as_of = pd.Timestamp("2026-07-23T21:00:00Z")
 
-        def make_frame(freq, end, periods=70):
+        def make_frame(freq, end, periods=200):
             index = pd.date_range(end=end, periods=periods, freq=freq, tz="UTC")
             close = 100 + pd.RangeIndex(periods).to_numpy(dtype=float) * 0.01
             frame = pd.DataFrame({
@@ -463,6 +468,93 @@ class ResearchPipelineTests(unittest.TestCase):
         self.assertEqual(geometry["event_direction_encoded"], 1.0)
         self.assertEqual(geometry["fvg_present"], 1.0)
         self.assertGreater(geometry["fvg_width_atr_1h"], 0)
+
+    @classmethod
+    def _prospective_event_snapshot(cls):
+        frames, as_of = cls._event_universe_frames()
+        cadences = {
+            "1W": 604800, "1D": 86400, "4H": 14400,
+            "1H": 3600, "15M": 900,
+        }
+        payload_frames = {}
+        for name, frame in frames.items():
+            bars = []
+            for timestamp, row in frame.iterrows():
+                bars.append({
+                    "time": int(timestamp.timestamp()) - cadences[name],
+                    "open": float(row["open"]), "high": float(row["high"]),
+                    "low": float(row["low"]), "close": float(row["close"]),
+                    "volume": float(row["volume"]),
+                    "bid_open": float(row["open"]) - 0.05,
+                    "bid_high": float(row["high"]) - 0.05,
+                    "bid_low": float(row["low"]) - 0.05,
+                    "bid_close": float(row["close"]) - 0.05,
+                    "ask_open": float(row["open"]) + 0.05,
+                    "ask_high": float(row["high"]) + 0.05,
+                    "ask_low": float(row["low"]) + 0.05,
+                    "ask_close": float(row["close"]) + 0.05,
+                })
+            payload_frames[name] = {
+                "resolution": name, "bar_count": len(bars), "bars": bars,
+            }
+        payload = {
+            "schema_version": 2, "provider": "dukascopy-public",
+            "symbol": "DUKASCOPY:XAUUSD",
+            "captured_at": (as_of + pd.Timedelta(minutes=5)).isoformat(),
+            "timestamp_semantics": "candle_open_utc; forming candles excluded",
+            "price_components": ["bid", "ask", "midpoint"],
+            "paper_research_only": True, "collection_elapsed_seconds": 1.0,
+            "timeframes": payload_frames,
+        }
+        payload["content_sha256"] = canonical_event_snapshot_sha256(payload)
+        return payload, as_of
+
+    def test_forward_event_contract_and_journal_are_isolated_and_idempotent(self):
+        contract, digest, parent = load_forward_event_contract()
+        self.assertEqual(
+            digest,
+            "bdc69d70bf4aa7e0b340d4d9825ffded7567fd2bf7743881f7fb548490fed7fd",
+        )
+        self.assertFalse(contract["isolation"]["may_read_or_create_outcomes"])
+        self.assertFalse(contract["isolation"]["may_send_telegram"])
+        self.assertEqual(
+            parent["contract_version"], "event-candidate-universe-20260719-v1",
+        )
+        payload, as_of = self._prospective_event_snapshot()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            journal = ForwardEventJournal(
+                root / "events.csv", root / "scans.csv",
+            )
+            first = journal.observe(
+                payload, observed_at=as_of.to_pydatetime() + timedelta(minutes=5),
+            )
+            second = journal.observe(
+                payload, observed_at=as_of.to_pydatetime() + timedelta(minutes=20),
+            )
+            self.assertEqual(first["status"], "PASS")
+            self.assertEqual(second["status"], "ALREADY_OBSERVED")
+            events = pd.read_csv(root / "events.csv")
+            scans = pd.read_csv(root / "scans.csv")
+            self.assertTrue(
+                ((events["event_type"] == "FVG_1H") &
+                 (events["direction"] == "BUY")).any()
+            )
+            self.assertFalse(events["event_id"].duplicated().any())
+            self.assertEqual(len(scans), 1)
+            self.assertEqual(scans.iloc[0]["decision_effect"],
+                             "NONE_OBSERVATION_ONLY")
+
+    def test_forward_event_journal_rejects_snapshot_hash_drift(self):
+        payload, _ = self._prospective_event_snapshot()
+        payload["timeframes"]["15M"]["bars"][-1]["close"] += 1
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            journal = ForwardEventJournal(
+                root / "events.csv", root / "scans.csv",
+            )
+            with self.assertRaisesRegex(ValueError, "content hash"):
+                journal.observe(payload)
 
     def test_portfolio_simulator_enforces_setup_cooldown(self):
         rows = pd.DataFrame([
@@ -796,6 +888,21 @@ class ResearchPipelineTests(unittest.TestCase):
             row = pd.read_csv(path).iloc[0]
             self.assertEqual(row["candidate_id"], "ABC")
             self.assertEqual(row["direction_encoded"], names.index("direction_encoded"))
+
+    def test_forward_feature_journal_repairs_duplicate_rr_header_with_backup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "forward.csv"
+            header = ForwardFeatureJournal.LEGACY_COLUMNS
+            values = [str(index) for index in range(len(header))]
+            path.write_text(",".join(header) + "\n" + ",".join(values) + "\n")
+            ForwardFeatureJournal(path)
+            repaired_header = path.read_text().splitlines()[0].split(",")
+            self.assertEqual(repaired_header, ForwardFeatureJournal.COLUMNS)
+            self.assertEqual(repaired_header.count("rr_ratio"), 1)
+            self.assertTrue(path.with_suffix(
+                path.suffix + ".pre-duplicate-rr-ratio-schema"
+            ).exists())
+            self.assertEqual(len(pd.read_csv(path)), 1)
 
     def test_rejected_candidate_can_receive_shadow_outcome(self):
         with tempfile.TemporaryDirectory() as directory, \
@@ -1148,6 +1255,33 @@ class ResearchPipelineTests(unittest.TestCase):
         )
         self.assertFalse(result["should_trade"])
         self.assertIn("AI_REJECTED", result["vetoes"])
+
+    def test_claude_confidence_is_not_a_numeric_approval_vote(self):
+        decider = AITradingDecider()
+        decider.claude = FakeClaude(should_trade=True, confidence=5)
+        low_confidence = decider.decide(
+            signal_info={}, market_data={},
+            ml_result={
+                "available": True, "confidence": 70, "reason": "test",
+                "selection_threshold_pct": 65,
+            },
+            macro_result={"available": True, "is_blocked": False, "score": 75},
+            smc_score=90, liquidity_tier="peak", open_positions=[],
+        )
+        decider.claude = FakeClaude(should_trade=True, confidence=99)
+        high_confidence = decider.decide(
+            signal_info={}, market_data={},
+            ml_result={
+                "available": True, "confidence": 70, "reason": "test",
+                "selection_threshold_pct": 65,
+            },
+            macro_result={"available": True, "is_blocked": False, "score": 75},
+            smc_score=90, liquidity_tier="peak", open_positions=[],
+        )
+        self.assertTrue(low_confidence["should_trade"])
+        self.assertTrue(high_confidence["should_trade"])
+        self.assertEqual(low_confidence["combined_confidence"], 70)
+        self.assertEqual(high_confidence["combined_confidence"], 70)
 
     def test_missing_validated_ml_is_a_veto(self):
         decider = AITradingDecider()

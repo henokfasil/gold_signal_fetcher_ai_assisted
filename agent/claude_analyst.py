@@ -5,6 +5,7 @@ not a substitute for a calibrated statistical model.
 """
 
 import json
+import hashlib
 import logging
 import os
 
@@ -45,20 +46,33 @@ class ClaudeAnalyst:
             "macro": macro_result,
             "open_position_count": len(open_positions or []),
         }
+        request_json = json.dumps(
+            payload, default=str, sort_keys=True, separators=(",", ":"),
+        )
+        request_sha256 = hashlib.sha256(request_json.encode()).hexdigest()
         try:
             response = self.client.messages.create(
                 model=self.model,
-                max_tokens=400,
+                max_tokens=800,
+                temperature=0,
                 system=(
                     "You review XAUUSD PAPER-TRADING candidates. Use only supplied facts; "
                     "never invent news or market conditions. Reject invalid SL/TP geometry, "
                     "poor reward/risk, stale data, and explicit macro conflicts. Missing data "
-                    "must reduce confidence. Return only JSON with keys should_trade (boolean), "
+                    "must reduce confidence. Your result is an auditable veto/explanation, not "
+                    "a statistically calibrated forecast and never overrides hard risk gates. "
+                    "Return only JSON with keys should_trade (boolean), "
                     "confidence (0-100), reasoning (string), and risks (array of strings)."
                 ),
-                messages=[{"role": "user", "content": json.dumps(payload, default=str)}],
+                messages=[{"role": "user", "content": request_json}],
             )
-            raw = response.content[0].text.strip()
+            if getattr(response, "stop_reason", None) == "max_tokens":
+                raise ValueError("Claude response was truncated at max_tokens")
+            raw = "".join(
+                str(getattr(block, "text", ""))
+                for block in response.content
+                if getattr(block, "text", None) is not None
+            ).strip()
             if raw.startswith("```"):
                 raw = raw.strip("`").removeprefix("json").strip()
             parsed = json.loads(raw)
@@ -66,18 +80,28 @@ class ClaudeAnalyst:
             confidence = float(parsed["confidence"])
             if not isinstance(should_trade, bool) or not 0 <= confidence <= 100:
                 raise ValueError("response fields outside schema")
+            risks = parsed.get("risks", [])
+            if not isinstance(risks, list):
+                raise ValueError("response risks must be an array")
             return {
                 "available": True,
                 "should_trade": should_trade,
                 "confidence": confidence,
                 "reasoning": str(parsed.get("reasoning", ""))[:1000],
-                "risks": [str(item)[:250] for item in parsed.get("risks", [])[:8]],
+                "risks": [str(item)[:250] for item in risks[:8]],
                 "model": self.model,
                 "prompt_version": self.PROMPT_VERSION,
+                "request_sha256": request_sha256,
+                "response_sha256": hashlib.sha256(raw.encode()).hexdigest(),
+                "request_payload_json": request_json,
+                "response_payload_json": raw,
             }
         except Exception as exc:
             logger.error("Claude analysis failed: %s", exc)
-            return self._unavailable(f"Claude analysis failed: {exc}")
+            result = self._unavailable(f"Claude analysis failed: {exc}")
+            result["request_sha256"] = request_sha256
+            result["request_payload_json"] = request_json
+            return result
 
     @staticmethod
     def _unavailable(reason: str) -> dict:
@@ -85,7 +109,9 @@ class ClaudeAnalyst:
         # but it must not be represented as an AI-approved paper trade.
         return {"available": False, "should_trade": False, "confidence": None,
                 "reasoning": reason, "risks": ["AI_REVIEW_UNAVAILABLE"], "model": None,
-                "prompt_version": ClaudeAnalyst.PROMPT_VERSION}
+                "prompt_version": ClaudeAnalyst.PROMPT_VERSION,
+                "request_sha256": None, "response_sha256": None,
+                "request_payload_json": None, "response_payload_json": None}
 
 
 class AITradingDecider:
@@ -100,16 +126,18 @@ class AITradingDecider:
         claude = self.claude.analyze_signal(
             signal_info, market_data, ml_result, macro_result, open_positions
         )
-        thresholds = {"peak": 55, "high": 58, "secondary": 65, "closed": 101}
-        threshold = thresholds.get(liquidity_tier, 65)
-
-        components = [("smc", float(smc_score), 0.30)]
-        if ml_result.get("available"):
-            components.append(("ml", float(ml_result["confidence"]), 0.35))
-        if claude.get("available"):
-            components.append(("claude", float(claude["confidence"]), 0.35))
-        total_weight = sum(weight for _, _, weight in components)
-        combined = sum(value * weight for _, value, weight in components) / total_weight
+        # The LLM is deliberately excluded from the numeric approval score.
+        # Its confidence is not statistically calibrated; Claude may veto and
+        # explain only. A future validated ML artifact must carry its own frozen
+        # selection threshold in metadata.
+        ml_threshold = ml_result.get("selection_threshold_pct")
+        ml_ready = ml_result.get("available") and ml_threshold is not None
+        if ml_ready:
+            decision_score = float(ml_result["confidence"])
+            threshold = float(ml_threshold)
+        else:
+            decision_score = float(smc_score)
+            threshold = 101.0
 
         vetoes = []
         if macro_result.get("is_blocked"):
@@ -118,15 +146,17 @@ class AITradingDecider:
             vetoes.append("AI_REVIEW_UNAVAILABLE")
         elif not claude.get("should_trade"):
             vetoes.append("AI_REJECTED")
-        if not ml_result.get("available"):
+        if not ml_ready:
             vetoes.append("VALIDATED_ML_UNAVAILABLE")
         if liquidity_tier == "closed":
             vetoes.append("MARKET_CLOSED")
 
-        should_trade = combined >= threshold and not vetoes
+        should_trade = decision_score >= threshold and not vetoes
         return {
             "should_trade": should_trade,
-            "combined_confidence": combined,
+            # Retain the legacy field name for ledger compatibility. It is now
+            # the validated ML decision score, or SMC score when ML is absent.
+            "combined_confidence": decision_score,
             "threshold": threshold,
             "smc_score": float(smc_score),
             "ml_confidence": ml_result.get("confidence"),
@@ -137,9 +167,19 @@ class AITradingDecider:
             "claude_reasoning": claude.get("reasoning"),
             "claude_model": claude.get("model"),
             "claude_prompt_version": claude.get("prompt_version"),
+            "claude_request_sha256": claude.get("request_sha256"),
+            "claude_response_sha256": claude.get("response_sha256"),
+            "claude_should_trade": claude.get("should_trade"),
+            "claude_risks": claude.get("risks", []),
+            "claude_request_payload_json": claude.get("request_payload_json"),
+            "claude_response_payload_json": claude.get("response_payload_json"),
             "macro_available": bool(macro_result.get("available")),
             "macro_score": macro_result.get("score"),
             "vetoes": vetoes,
             "liquidity_tier": liquidity_tier,
-            "final_reason": "approved" if should_trade else ", ".join(vetoes) or "below threshold",
+            "final_reason": (
+                "approved"
+                if should_trade
+                else ", ".join(vetoes) or "below registered ML threshold"
+            ),
         }

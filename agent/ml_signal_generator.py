@@ -44,6 +44,19 @@ class MLSignalGenerator:
             if metadata.get("feature_names") != GoldFeatureEngineer.FEATURE_COLS:
                 self.unavailable_reason = "model feature schema does not match runtime schema"
                 return
+            if (metadata.get("validation_decision") != "PASS_DEVELOPMENT_GATES" or
+                    metadata.get("paper_signal_approval_authorized") is not True):
+                self.unavailable_reason = "model metadata does not authorize paper-signal approval"
+                return
+            threshold = float(metadata.get("selection_threshold_pct"))
+            directions = metadata.get("eligible_directions")
+            if (not 0 <= threshold <= 100 or not isinstance(directions, list) or
+                    not directions or
+                    not set(map(str.upper, directions)).issubset({"BUY", "SELL"})):
+                self.unavailable_reason = "model metadata has no valid frozen threshold/directions"
+                return
+            metadata["selection_threshold_pct"] = threshold
+            metadata["eligible_directions"] = list(map(str.upper, directions))
             import joblib
             self.model = joblib.load(model_path)
             self.metadata = metadata
@@ -62,6 +75,7 @@ class MLSignalGenerator:
                 "confidence": None,
                 "reason": self.unavailable_reason,
                 "model_version": None,
+                "selection_threshold_pct": None,
             }
         try:
             vector = np.asarray(feature_vector, dtype=float).reshape(1, -1)
@@ -73,6 +87,7 @@ class MLSignalGenerator:
                 "confidence": confidence,
                 "reason": "validated model inference",
                 "model_version": self.metadata.get("model_version"),
+                "selection_threshold_pct": self.metadata["selection_threshold_pct"],
             }
         except Exception as exc:
             return {
@@ -80,6 +95,7 @@ class MLSignalGenerator:
                 "confidence": None,
                 "reason": f"inference failed: {exc}",
                 "model_version": self.metadata.get("model_version"),
+                "selection_threshold_pct": None,
             }
 
 
@@ -90,6 +106,16 @@ class MLSignalFilter:
         self.ml_generator = MLSignalGenerator()
 
     def score_signal(self, signal: dict) -> dict:
+        direction = str(signal.get("direction", "")).upper()
+        if (self.ml_generator.available and
+                direction not in self.ml_generator.metadata["eligible_directions"]):
+            return {
+                "available": False,
+                "confidence": None,
+                "reason": f"validated model does not authorize {direction}",
+                "model_version": self.ml_generator.metadata.get("model_version"),
+                "selection_threshold_pct": None,
+            }
         vector = signal.get("ml_feature_vector")
         if vector is None:
             return {
@@ -97,5 +123,6 @@ class MLSignalFilter:
                 "confidence": None,
                 "reason": "signal does not contain a point-in-time feature vector",
                 "model_version": None,
+                "selection_threshold_pct": None,
             }
         return self.ml_generator.predict_feature_vector(vector)

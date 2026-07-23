@@ -9,15 +9,21 @@ import hashlib
 import json
 import logging
 import math
+import os
+import shutil
 from statistics import median
 import uuid
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pandas as pd
 
 from config import settings
 from agent.claude_analyst import AITradingDecider
-from agent.claude_decision_optimizer import get_optimizer
+from agent.forward_event_journal import (
+    ForwardEventJournal,
+    canonical_snapshot_sha256,
+)
 from agent.gold_correlations import GoldCorrelationValidator
 from agent.gold_context_snapshot import (
     CONTEXT_FEATURES,
@@ -68,6 +74,10 @@ def load_validated_price_snapshot() -> dict:
     if (payload.get("provider") != contract["provider"] or
             payload.get("symbol") != contract["symbol"]):
         raise ValueError("price snapshot source identity mismatch")
+    claimed_content_sha = str(payload.get("content_sha256", ""))
+    if (not claimed_content_sha or
+            claimed_content_sha != canonical_snapshot_sha256(payload)):
+        raise ValueError("price snapshot content hash mismatch")
     captured_at = parse_utc(payload["captured_at"])
     age = (utc_now() - captured_at).total_seconds()
     if age < 0 or age > settings.SNAPSHOT_MAX_AGE_SECONDS:
@@ -188,13 +198,57 @@ class PaperLedger:
 class ForwardFeatureJournal:
     """Append-only point-in-time features, joined to outcomes by candidate ID."""
 
-    COLUMNS = ["candidate_id", "timestamp", "pair", "direction", "entry",
-               "stop_loss", "take_profit", "rr_ratio", "smc_score",
-               *GoldFeatureEngineer.FEATURE_COLS]
+    BASE_COLUMNS = [
+        "candidate_id", "timestamp", "pair", "direction", "entry",
+        "stop_loss", "take_profit", "smc_score",
+    ]
+    COLUMNS = [*BASE_COLUMNS, *GoldFeatureEngineer.FEATURE_COLS]
+    LEGACY_COLUMNS = [
+        "candidate_id", "timestamp", "pair", "direction", "entry",
+        "stop_loss", "take_profit", "rr_ratio", "smc_score",
+        *GoldFeatureEngineer.FEATURE_COLS,
+    ]
 
     def __init__(self, path=settings.FORWARD_FEATURES_CSV):
         self.path = path
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._repair_legacy_duplicate_header()
+
+    def _repair_legacy_duplicate_header(self) -> None:
+        """Remove the duplicated rr_ratio column without changing row values."""
+        if not self.path.exists() or self.path.stat().st_size == 0:
+            return
+        with self.path.open(newline="") as handle:
+            rows = list(csv.reader(handle))
+        if not rows or rows[0] == self.COLUMNS:
+            return
+        if rows[0] != self.LEGACY_COLUMNS:
+            raise RuntimeError("forward feature journal schema drift")
+        drop_index = rows[0].index("rr_ratio")
+        repaired = [
+            [value for index, value in enumerate(row) if index != drop_index]
+            for row in rows
+        ]
+        if not repaired or repaired[0] != self.COLUMNS:
+            raise RuntimeError("legacy forward feature schema repair failed")
+        if any(len(row) != len(self.COLUMNS) for row in repaired):
+            raise RuntimeError("legacy forward feature row width is invalid")
+        backup = self.path.with_suffix(
+            self.path.suffix + ".pre-duplicate-rr-ratio-schema"
+        )
+        if not backup.exists():
+            shutil.copy2(self.path, backup)
+        temporary = self.path.with_suffix(self.path.suffix + ".schema-repair.tmp")
+        with temporary.open("w", newline="") as handle:
+            writer = csv.writer(handle)
+            writer.writerows(repaired)
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.replace(self.path)
+        logger.warning(
+            "Repaired duplicate rr_ratio feature-journal header; backup=%s",
+            backup,
+        )
 
     def append(self, candidate_id: str, timestamp: str, signal: dict) -> None:
         vector = signal.get("ml_feature_vector")
@@ -518,7 +572,18 @@ class ForwardContextJournal:
             extracted = extract_candidate_context(
                 payload, xau_payload, candidate_time, self.contract,
             )
-            row.update(extracted["features"])
+            features = extracted["features"]
+            instrument_missing = any(
+                float(features[f"ctx_{name}_missing"]) != 0
+                for name in CONTEXT_NAMES
+            )
+            if not instrument_missing:
+                numeric = [float(features[name]) for name in CONTEXT_FEATURES]
+                if not all(math.isfinite(value) for value in numeric):
+                    raise ValueError(
+                        "complete context capture contains a non-finite registered feature"
+                    )
+            row.update(features)
             row.update(extracted["raw_levels"])
             row.update({
                 "context_snapshot_sha256": payload["content_sha256"],
@@ -541,6 +606,61 @@ class ForwardContextJournal:
             writer.writerow({column: row.get(column, "") for column in self.COLUMNS})
 
 
+class ForwardAIReviewJournal:
+    """Append-only provenance for the single structured Claude review."""
+
+    COLUMNS = [
+        "candidate_id", "timestamp", "pair", "direction", "available",
+        "should_trade", "confidence", "model", "prompt_version",
+        "request_sha256", "response_sha256", "request_payload_json",
+        "response_payload_json", "reasoning", "risks_json", "role",
+        "decision_effect", "paper_research_only",
+    ]
+
+    def __init__(self, path=settings.FORWARD_AI_REVIEWS_CSV):
+        self.path = Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        if self.path.exists() and self.path.stat().st_size > 0:
+            with self.path.open(newline="") as handle:
+                if next(csv.reader(handle), []) != self.COLUMNS:
+                    raise RuntimeError("forward AI-review journal schema drift")
+
+    def append(self, candidate_id: str, timestamp: str,
+               signal: dict, decision: dict) -> None:
+        row = {
+            "candidate_id": candidate_id,
+            "timestamp": timestamp,
+            "pair": signal["pair"],
+            "direction": signal["direction"],
+            "available": decision.get("claude_available"),
+            "should_trade": decision.get("claude_should_trade"),
+            "confidence": decision.get("claude_confidence"),
+            "model": decision.get("claude_model"),
+            "prompt_version": decision.get("claude_prompt_version"),
+            "request_sha256": decision.get("claude_request_sha256"),
+            "response_sha256": decision.get("claude_response_sha256"),
+            "request_payload_json": decision.get("claude_request_payload_json"),
+            "response_payload_json": decision.get("claude_response_payload_json"),
+            "reasoning": decision.get("claude_reasoning"),
+            "risks_json": json.dumps(
+                decision.get("claude_risks", []), separators=(",", ":"),
+            ),
+            "role": "STRUCTURED_CONTEXT_REVIEW_AND_VETO",
+            "decision_effect": "VETO_ONLY_NO_NUMERIC_CONFIDENCE_WEIGHT",
+            "paper_research_only": True,
+        }
+        exists = self.path.exists() and self.path.stat().st_size > 0
+        with self.path.open("a", newline="") as handle:
+            writer = csv.DictWriter(
+                handle, fieldnames=self.COLUMNS, extrasaction="raise",
+            )
+            if not exists:
+                writer.writeheader()
+            writer.writerow({column: row.get(column, "") for column in self.COLUMNS})
+            handle.flush()
+            os.fsync(handle.fileno())
+
+
 class AIAssistedOrchestrator:
     def __init__(self):
         if not settings.PAPER_TRADING:
@@ -550,10 +670,22 @@ class AIAssistedOrchestrator:
         self.forward_outcomes = ForwardOutcomeJournal()
         self.forward_variants = ForwardVariantJournal()
         try:
+            self.forward_ai_reviews = ForwardAIReviewJournal()
+        except (OSError, RuntimeError, ValueError) as exc:
+            self.forward_ai_reviews = None
+            logger.error("AI-review provenance journal disabled: %s", exc)
+        try:
             self.forward_context = ForwardContextJournal()
         except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as exc:
             self.forward_context = None
             logger.error("Prospective context journal disabled without decision effect: %s", exc)
+        try:
+            self.forward_events = ForwardEventJournal()
+        except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as exc:
+            self.forward_events = None
+            logger.error(
+                "Prospective event journal disabled without decision effect: %s", exc,
+            )
         self.ml_filter = MLSignalFilter()
         self.correlation = GoldCorrelationValidator()
         self.ai_decider = AITradingDecider()
@@ -592,6 +724,27 @@ class AIAssistedOrchestrator:
         except (OSError, KeyError, ValueError, TypeError, json.JSONDecodeError) as exc:
             logger.warning("Forward shadow outcomes not updated: %s", exc)
             return 0
+
+    def observe_forward_events(self) -> dict:
+        """Record the frozen event universe without affecting candidate decisions."""
+        if self.forward_events is None:
+            return {"status": "DISABLED"}
+        try:
+            result = self.forward_events.observe(load_validated_price_snapshot())
+            logger.info(
+                "[EVENT_JOURNAL] %s decision=%s detected=%s new=%s",
+                result["status"],
+                result.get("decision_time"),
+                result.get("detected_event_count", 0),
+                result.get("new_event_count", 0),
+            )
+            return result
+        except (OSError, RuntimeError, ValueError, KeyError, TypeError,
+                json.JSONDecodeError) as exc:
+            logger.error(
+                "Prospective event observation failed without decision effect: %s", exc,
+            )
+            return {"status": "ERROR", "reason": str(exc)}
 
     def update_open_trades(self) -> int:
         """Apply observation-time exits while recording their limited precision."""
@@ -713,6 +866,16 @@ class AIAssistedOrchestrator:
         self.forward_features.append(candidate_id, timestamp, signal)
         self.forward_outcomes.append(candidate_id, timestamp, signal)
         self.forward_variants.append(candidate_id, timestamp, signal, decision)
+        if self.forward_ai_reviews is not None:
+            try:
+                self.forward_ai_reviews.append(
+                    candidate_id, timestamp, signal, decision,
+                )
+            except (OSError, RuntimeError, ValueError, TypeError) as exc:
+                logger.error(
+                    "AI-review provenance write failed without decision effect for %s: %s",
+                    candidate_id, exc,
+                )
         if self.forward_context is not None:
             try:
                 try:
@@ -764,6 +927,7 @@ class AIAssistedOrchestrator:
         logger.info("[ORCHESTRATOR] Research paper-trading scan started")
         self.update_open_trades()
         self.update_forward_outcomes()
+        self.observe_forward_events()
         session = get_session_description()
         if is_market_closed():
             logger.info("[ORCHESTRATOR] Market closed")
@@ -779,14 +943,6 @@ class AIAssistedOrchestrator:
         ml_result = self.ml_filter.score_signal(signal)
         macro_result = self.correlation.validate_signal(signal["direction"])
 
-        # Get Claude decision (NEW: dynamic sizing optimizer)
-        claude_optimizer = get_optimizer()
-        claude_decision = claude_optimizer.analyze_signal(
-            signal=signal,
-            recent_outcomes=self._recent_trade_outcomes(),
-            market_context={"session": session}
-        )
-
         decision = self.ai_decider.decide(
             signal_info=signal, market_data=self._market_context(signal, macro_result),
             ml_result=ml_result, macro_result=macro_result,
@@ -794,11 +950,6 @@ class AIAssistedOrchestrator:
             open_positions=self.ledger.open_positions(),
         )
         decision["ml_model_version"] = ml_result.get("model_version")
-
-        # Log Claude decision
-        decision["claude_available"] = 1 if not claude_decision.get("error") else 0
-        decision["claude_confidence"] = claude_decision.get("confidence", 0) if not claude_decision.get("error") else None
-        decision["claude_sizing"] = claude_decision.get("size_lots") if claude_decision.get("decision") == "TAKE" else None
         risk_vetoes = self._risk_vetoes(signal)
         if risk_vetoes:
             decision["vetoes"].extend(risk_vetoes)
