@@ -8,9 +8,10 @@ This repository does not execute broker orders and does not currently claim a
 profitable edge. Missing ML or Claude evidence causes a candidate to be logged
 as rejected rather than approved with fabricated fallback confidence.
 
-The canonical dashboard URL is `http://187.55.229.4:8502/`. Seeing the process
-listen on `0.0.0.0:8502` does not change that URL: `0.0.0.0` is a server bind
-setting that allows traffic addressed to the VPS public IP to reach the app.
+The canonical dashboard URL is `https://187.55.229.4/` and requires the
+operator's HTTP Basic credential. nginx terminates TLS and proxies to the Flask
+backend on loopback-only `127.0.0.1:8502`; port `8502` is not a public browser
+endpoint.
 
 A separate hash-locked observation layer captures 26 cross-market context
 fields prospectively for every unique BUY and SELL paper candidate. It is

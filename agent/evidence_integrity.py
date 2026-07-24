@@ -18,9 +18,18 @@ from config import settings
 from research.build_gold_context_dataset import CONTEXT_FEATURES, CONTEXT_NAMES
 
 
-EXPECTED_CONTRACT_SHA256 = "7aa62452c2cfd8e0c454163d35b82eb0e45612daa04ad2b88cd27d2c93550934"
+EXPECTED_CONTRACT_SHA256 = "a11aaa5b16e13c0f2474b769be457d9a567ab1e3bb2f4bf28065304fe57bd834"
+EXPECTED_PARENT_CONTRACT_SHA256 = (
+    "7aa62452c2cfd8e0c454163d35b82eb0e45612daa04ad2b88cd27d2c93550934"
+)
+EXPECTED_CONTEXT_ERRATA_SHA256 = (
+    "790fd4b40feabc9b8d1b468412d27d3d92993417821bd22ab383b3dda2cf1bab"
+)
 TECHNICAL_SCHEMA_SHA256 = "8e567c3aa764cc894bf1892e6ceae8011aa4933b69a23f4e80bfaa996063e965"
 CONTEXT_SCHEMA_SHA256 = "4100208e9e086f5399dedf3f23a7165ed1444bd8994228b5492adc1525c320c6"
+CONTEXT_LEDGER_SCHEMA_SHA256 = (
+    "e3467e53050a69f33a5ecee12947ceaeb71a5c4845af9ef1f44abba2c141a47a"
+)
 
 CANONICAL_COLUMNS = ["candidate_id", "timestamp", "direction", "paper_trading"]
 FEATURE_COLUMNS = [
@@ -31,11 +40,18 @@ VARIANT_COLUMNS = [
     "candidate_id", "timestamp", "experiment_version", "contract_sha256",
     "direction", "baseline_v1", "paper_trading",
 ]
+CONTEXT_RAW_COLUMNS = [
+    column
+    for name in (*CONTEXT_NAMES, "xau")
+    for column in (f"ctx_{name}_analysis_close", f"ctx_{name}_available_at")
+]
 CONTEXT_COLUMNS = [
     "candidate_id", "timestamp", "experiment_version", "contract_sha256",
-    "feature_schema_sha256", "direction", "context_available",
+    "feature_schema_sha256", "provider", "context_snapshot_sha256",
+    "context_snapshot_captured_at", "context_available", "context_reason",
+    "direction",
     "baseline_context_capture_v1", "buy_context_hypothesis_v1", "paper_trading",
-    *CONTEXT_FEATURES,
+    "assignment_note", *CONTEXT_FEATURES, *CONTEXT_RAW_COLUMNS,
 ]
 
 
@@ -67,9 +83,16 @@ def load_integrity_contract(path: Path = settings.EVIDENCE_INTEGRITY_CONFIG) -> 
     if (_schema_sha256(GoldFeatureEngineer.FEATURE_COLS) != TECHNICAL_SCHEMA_SHA256 or
             _schema_sha256(CONTEXT_FEATURES) != CONTEXT_SCHEMA_SHA256):
         raise RuntimeError("runtime feature schema changed")
-    if (contract.get("schema_version") != 1 or
-            contract.get("monitor_version") != "evidence-integrity-20260719-v1" or
+    supersedes = contract.get("supersedes", {})
+    errata = contract.get("registered_errata", {})
+    if (contract.get("schema_version") != 2 or
+            contract.get("monitor_version") != "evidence-integrity-20260724-v2" or
             contract.get("paper_research_only") is not True or
+            supersedes.get("contract_sha256") != EXPECTED_PARENT_CONTRACT_SHA256 or
+            errata.get("contract_sha256") != EXPECTED_CONTEXT_ERRATA_SHA256 or
+            errata.get("exact_row_hash_match_required") is not True or
+            errata.get("exclude_only_from_context_drift_windows") is not True or
+            errata.get("registered_errata_alone_is_warning_not_healthy") is not True or
             reconciliation.get("technical_feature_schema_sha256") != TECHNICAL_SCHEMA_SHA256 or
             reconciliation.get("context_feature_schema_sha256") != CONTEXT_SCHEMA_SHA256 or
             int(drift.get("minimum_total_rows", -1)) != 200 or
@@ -83,6 +106,55 @@ def load_integrity_contract(path: Path = settings.EVIDENCE_INTEGRITY_CONFIG) -> 
             isolation.get("may_train_select_or_promote_model") is not False):
         raise RuntimeError("evidence-integrity contract violates frozen schema or isolation")
     return contract, digest
+
+
+def _project_path(value: str) -> Path:
+    path = Path(value)
+    return path if path.is_absolute() else settings.PROJECT_ROOT / path
+
+
+def load_context_errata(contract: dict) -> tuple[dict, str]:
+    """Load exact, outcome-blind context exceptions without mutating the ledger."""
+    spec = contract["registered_errata"]
+    path = _project_path(spec["path"])
+    raw = path.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    errata = json.loads(raw)
+    isolation = errata.get("isolation", {})
+    disposition = errata.get("disposition", {})
+    rows = errata.get("affected_rows", [])
+    if (
+        digest != EXPECTED_CONTEXT_ERRATA_SHA256
+        or digest != spec["contract_sha256"]
+        or errata.get("schema_version") != 1
+        or errata.get("erratum_version")
+        != "context-observation-errata-20260724-v1"
+        or errata.get("paper_research_only") is not True
+        or errata.get("discovery", {}).get("outcomes_read") is not False
+        or errata.get("discovery", {}).get("performance_columns_read") != []
+        or errata.get("source_ledger", {}).get("header_sha256")
+        != CONTEXT_LEDGER_SCHEMA_SHA256
+        or errata.get("source_ledger", {}).get("mutation_permitted") is not False
+        or len(rows) != 2
+        or len({row.get("candidate_id") for row in rows}) != len(rows)
+        or any(
+            set(row.get("invalid_fields", [])) - set(CONTEXT_FEATURES)
+            for row in rows
+        )
+        or disposition.get("original_rows_retained") is not True
+        or disposition.get("replacement_values_imputed") is not False
+        or disposition.get("treat_as_valid_context") is not False
+        or disposition.get("exclude_from_context_drift_windows") is not True
+        or disposition.get("decision_effect") != "NONE_OBSERVATION_ONLY"
+        or isolation.get("may_read_outcomes") is not False
+        or isolation.get("may_read_performance_columns") is not False
+        or isolation.get("may_change_candidate_or_ai_decision") is not False
+        or isolation.get("may_send_telegram") is not False
+        or isolation.get("may_place_broker_order") is not False
+        or isolation.get("may_train_select_or_promote_model") is not False
+    ):
+        raise RuntimeError("context errata violates its frozen provenance or isolation")
+    return errata, digest
 
 
 def _read_selected(path: Path, desired: list[str], forbidden: set[str]) -> dict:
@@ -188,6 +260,72 @@ def _numeric_invalid_rows(frame: pd.DataFrame, columns: list[str]) -> int:
     return int((~valid).sum())
 
 
+def _canonical_context_row_sha256(row: pd.Series) -> str:
+    payload = {
+        column: str(row.get(column, ""))
+        for column in CONTEXT_COLUMNS
+    }
+    raw = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+    ).encode()
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _registered_context_errata(
+    context_rows: pd.DataFrame,
+    context_expected: pd.DataFrame,
+    context_invalid: pd.Series,
+    errata: dict,
+) -> tuple[pd.Series, list[dict], list[str]]:
+    """Match only frozen row hashes and exact non-finite field sets."""
+    recognized = pd.Series(False, index=context_rows.index)
+    applied = []
+    issues = []
+    expected_ids = set(context_expected["candidate_id"].astype(str))
+    numeric = context_rows[CONTEXT_FEATURES].apply(pd.to_numeric, errors="coerce")
+    for entry in errata["affected_rows"]:
+        candidate_id = str(entry["candidate_id"])
+        if candidate_id not in expected_ids:
+            continue
+        matches = context_rows[
+            context_rows["candidate_id"].astype(str).eq(candidate_id)
+        ]
+        if len(matches) != 1:
+            issues.append(
+                f"registered context erratum row count changed: {candidate_id}"
+            )
+            continue
+        index = matches.index[0]
+        row = matches.iloc[0]
+        actual_invalid_fields = {
+            column
+            for column in CONTEXT_FEATURES
+            if not np.isfinite(float(numeric.loc[index, column]))
+        }
+        if (
+            not bool(context_invalid.loc[index])
+            or str(row["timestamp"]) != entry["timestamp"]
+            or str(row["direction"]).upper() != entry["direction"]
+            or _canonical_context_row_sha256(row)
+            != entry["canonical_row_sha256"]
+            or actual_invalid_fields != set(entry["invalid_fields"])
+        ):
+            issues.append(
+                f"registered context erratum row content changed: {candidate_id}"
+            )
+            continue
+        recognized.loc[index] = True
+        applied.append({
+            "candidate_id": candidate_id,
+            "timestamp": entry["timestamp"],
+            "direction": entry["direction"],
+            "invalid_fields": list(entry["invalid_fields"]),
+            "canonical_row_sha256": entry["canonical_row_sha256"],
+            "disposition": "QUARANTINED_NOT_VALID_CONTEXT",
+        })
+    return recognized, applied, issues
+
+
 def _psi(reference: pd.Series, current: pd.Series, bins: int,
          pseudocount: float, minimum_valid: int) -> dict:
     ref = pd.to_numeric(reference, errors="coerce").replace([np.inf, -np.inf], np.nan)
@@ -285,12 +423,14 @@ def build_evidence_integrity_report(
     observed_at: datetime | None = None,
 ) -> dict:
     contract, contract_sha = load_integrity_contract(config_path)
+    errata, errata_sha = load_context_errata(contract)
     now = (observed_at or datetime.now(timezone.utc)).astimezone(timezone.utc)
     reconciliation = contract["reconciliation"]
     pilot_spec = reconciliation["pilot_scope"]
     context_spec = reconciliation["context_scope"]
     forbidden = set(reconciliation["performance_columns_forbidden"])
     issues = []
+    warnings = []
 
     try:
         variant_hash = _sha256(variant_contract_path)
@@ -410,12 +550,30 @@ def build_evidence_integrity_report(
             ) |
             (complete & ~numeric_valid)
         )
+    recognized_errata, applied_errata, errata_issues = (
+        _registered_context_errata(
+            context_rows,
+            context_expected,
+            context_invalid,
+            errata,
+        )
+    )
+    issues.extend(errata_issues)
+    unregistered_context_invalid = context_invalid & ~recognized_errata
     context_report["missing_capture_rows"] = int(context_missing.sum())
-    context_report["invalid_rows"] = int(context_invalid.sum())
+    context_report["invalid_rows"] = int(unregistered_context_invalid.sum())
+    context_report["registered_errata_rows"] = int(recognized_errata.sum())
     if context_missing.any():
         issues.append(f"context capture or instrument rows missing: {int(context_missing.sum())}")
-    if context_invalid.any():
-        issues.append(f"context contract or feature rows invalid: {int(context_invalid.sum())}")
+    if unregistered_context_invalid.any():
+        issues.append(
+            "unregistered context contract or feature rows invalid: "
+            f"{int(unregistered_context_invalid.sum())}"
+        )
+    if applied_errata:
+        warnings.append(
+            f"registered context errata quarantined: {len(applied_errata)}"
+        )
 
     for ledger in reports:
         if (ledger["status"] == "FAIL" or ledger["schema"] == "FAIL" or
@@ -431,6 +589,7 @@ def build_evidence_integrity_report(
     ].drop_duplicates("candidate_id", keep="first")
     context_drift_rows = context_rows[
         context_rows["candidate_id"].isin(set(context_expected["candidate_id"]))
+        & ~recognized_errata
     ].drop_duplicates("candidate_id", keep="first")
     technical_drift = drift_report(
         feature_drift_rows, GoldFeatureEngineer.FEATURE_COLS, contract,
@@ -443,6 +602,8 @@ def build_evidence_integrity_report(
 
     if issues:
         status, status_class = "DEGRADED", "bad"
+    elif warnings:
+        status, status_class = "WARNING · REGISTERED ERRATA", "warn"
     elif drift_warning:
         status, status_class = "WARNING", "warn"
     elif len(pilot_expected) == 0 and len(context_expected) == 0:
@@ -453,7 +614,7 @@ def build_evidence_integrity_report(
         status, status_class = "HEALTHY", "good"
 
     return {
-        "schema_version": 1,
+        "schema_version": contract["schema_version"],
         "monitor_version": contract["monitor_version"],
         "contract_sha256": contract_sha,
         "generated_at": now.isoformat(),
@@ -464,9 +625,21 @@ def build_evidence_integrity_report(
         "canonical_candidates_total": len(canonical),
         "pilot_candidates": len(pilot_expected),
         "context_scope_candidates": len(context_expected),
+        "context_errata": {
+            "erratum_version": errata["erratum_version"],
+            "contract_sha256": errata_sha,
+            "registered_rows": len(errata["affected_rows"]),
+            "applied_rows": len(applied_errata),
+            "rows": applied_errata,
+            "ledger_mutated": False,
+            "excluded_from_context_drift_rows": len(applied_errata),
+            "future_context_evaluation":
+            errata["disposition"]["future_context_evaluation"],
+        },
         "ledgers": reports,
         "technical_drift": technical_drift,
         "context_drift": context_drift,
         "issues": list(dict.fromkeys(issues)),
+        "warnings": list(dict.fromkeys(warnings)),
         "effect": "None — operational monitoring only",
     }

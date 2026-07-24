@@ -607,9 +607,9 @@ TEMPLATE = """
   <div class="muted">{{ now }} UTC</div>
 </div>
 
-{% if feed.status != "HEALTHY" or integrity.status_class == "bad" or concordance.status_class == "bad" %}
+{% if feed.status != "HEALTHY" or integrity.status_class == "bad" or concordance.status_class == "bad" or ai.status_class == "bad" %}
 <div class="alert show">
-  <div class="alert-text">⚠️ Feed: {{ feed.status }} • Evidence: {{ integrity.status }} • Feature parity: {{ concordance.status }} • {{ integrity.issue_summary }} {{ concordance.issue_summary }}</div>
+  <div class="alert-text">⚠️ Feed: {{ feed.status }} • Evidence: {{ integrity.status }} • Feature parity: {{ concordance.status }} • AI review: {{ ai.status }} • {{ integrity.issue_summary }} {{ concordance.issue_summary }} {{ ai.issue_summary }}</div>
 </div>
 {% endif %}
 
@@ -645,12 +645,13 @@ TEMPLATE = """
   <div class="grid">
     <div class="card"><div class="label">Journalled Reviews</div><div class="value">{{ ai.total }}</div></div>
     <div class="card"><div class="label">Available</div><div class="value">{{ ai.available }}</div></div>
+    <div class="card"><div class="label">Unavailable</div><div class="value">{{ ai.unavailable }}</div></div>
     <div class="card"><div class="label">Context Passes</div><div class="value">{{ ai.passes }}</div></div>
     <div class="card"><div class="label">Vetoes</div><div class="value">{{ ai.vetoes }}</div></div>
     <div class="card"><div class="label">Avg Self-confidence</div><div class="value">{{ ai.avg_confidence }}</div></div>
     <div class="card"><div class="label">Latest Model</div><div class="value">{{ ai.model }}</div></div>
   </div>
-  <div class="note">Exactly one structured Claude review per new candidate. Its confidence is recorded for research but has no numeric vote; Claude can veto and explain only. Request/response payloads, hashes, model and prompt version are journalled.</div>
+  <div class="note">Exactly one structured Claude review per new candidate. Its confidence is recorded for research but has no numeric vote; Claude can veto and explain only. Request/response payloads, hashes, model and prompt version are journalled. Recent availability: {{ ai.recent_availability }}. Issue: {{ ai.issue_summary }}</div>
 </section>
 
 <section class="panel">
@@ -720,14 +721,23 @@ def get_ai_review_stats(path=None):
     frame = load_trades(path or settings.FORWARD_AI_REVIEWS_CSV)
     empty = {
         "status": "AWAITING REVIEWS", "status_class": "warn", "total": 0,
-        "available": 0, "passes": 0, "vetoes": 0,
-        "avg_confidence": "—", "model": "—",
+        "available": 0, "unavailable": 0, "passes": 0, "vetoes": 0,
+        "avg_confidence": "—", "model": "—", "recent_availability": "—",
+        "issue_summary": "None",
     }
     if frame.empty:
         return empty
-    required = {"available", "should_trade", "confidence", "model"}
+    required = {
+        "available", "should_trade", "confidence", "model", "reasoning",
+        "prompt_version",
+    }
     if not required.issubset(frame.columns):
-        return {**empty, "status": "SCHEMA ERROR", "status_class": "bad"}
+        missing = ", ".join(sorted(required - set(frame.columns)))
+        return {
+            **empty, "status": "SCHEMA ERROR", "status_class": "bad",
+            "total": len(frame), "unavailable": len(frame),
+            "issue_summary": f"AI-review journal missing columns: {missing}"[:240],
+        }
     available = frame["available"].astype(str).str.lower().isin(
         {"1", "true", "yes"}
     )
@@ -735,10 +745,30 @@ def get_ai_review_stats(path=None):
         {"1", "true", "yes"}
     )
     confidence = pd.to_numeric(frame["confidence"], errors="coerce")
-    models = frame.loc[frame["model"].astype(str).str.len().gt(0), "model"]
+    recent = available.tail(5)
+    latest_available = bool(available.iloc[-1])
+    if not latest_available:
+        status, status_class = "UNAVAILABLE · FAIL CLOSED", "bad"
+        issue_summary = str(frame["reasoning"].iloc[-1]).strip() or (
+            "Latest structured Claude review is unavailable"
+        )
+    elif recent.all():
+        status, status_class = "OBSERVING", "good"
+        issue_summary = "None"
+    else:
+        status, status_class = "RECOVERING", "warn"
+        issue_summary = (
+            f"{int((~recent).sum())} unavailable review(s) remain in the "
+            f"latest {len(recent)}"
+        )
+    models = frame.loc[
+        available & frame["model"].astype(str).str.strip().str.len().gt(0),
+        "model",
+    ]
     return {
-        "status": "OBSERVING", "status_class": "good", "total": len(frame),
+        "status": status, "status_class": status_class, "total": len(frame),
         "available": int(available.sum()),
+        "unavailable": int((~available).sum()),
         "passes": int((available & should_trade).sum()),
         "vetoes": int((available & ~should_trade).sum()),
         "avg_confidence": (
@@ -746,6 +776,8 @@ def get_ai_review_stats(path=None):
             if confidence[available].notna().any() else "—"
         ),
         "model": str(models.iloc[-1]) if len(models) else "—",
+        "recent_availability": f"{int(recent.sum())}/{len(recent)}",
+        "issue_summary": issue_summary[:240],
     }
 
 
@@ -808,4 +840,8 @@ def dashboard():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8502, debug=False)
+    app.run(
+        host=settings.DASHBOARD_HOST,
+        port=settings.DASHBOARD_PORT,
+        debug=False,
+    )

@@ -3,11 +3,14 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pandas as pd
 
-from agent.claude_analyst import AITradingDecider
+from agent.claude_analyst import (
+    AITradingDecider, ClaudeAnalyst, ClaudeReviewOutput,
+)
 from agent.gold_correlations import GoldCorrelationValidator
 from agent.ml_signal_generator import MLSignalGenerator
 from agent.ml_feature_engineer_gold import GoldFeatureEngineer
@@ -19,7 +22,7 @@ from agent.smc_gold_scanner import (
 )
 from dashboard import (
     get_context_health, get_event_concordance_health,
-    get_evidence_integrity, get_feed_health,
+    get_ai_review_stats, get_evidence_integrity, get_feed_health,
     get_shadow_variants,
 )
 from main_orchestrator import (
@@ -31,6 +34,7 @@ from agent.gold_context_snapshot import (
     load_validated_context_snapshot,
 )
 from agent.evidence_integrity import (
+    CONTEXT_COLUMNS, _canonical_context_row_sha256,
     build_evidence_integrity_report, drift_report, load_integrity_contract,
 )
 from agent.event_feature_concordance import (
@@ -188,14 +192,25 @@ class ResearchPipelineTests(unittest.TestCase):
                 "feature_schema_sha256": (
                     "4100208e9e086f5399dedf3f23a7165ed1444bd8994228b5492adc1525c320c6"
                 ),
-                "direction": direction, "context_available": 1,
+                "provider": "dukascopy-public",
+                "context_snapshot_sha256": f"snapshot-{candidate_id}",
+                "context_snapshot_captured_at": timestamp,
+                "context_available": 1, "context_reason": "OK",
+                "direction": direction,
                 "baseline_context_capture_v1": 1,
                 "buy_context_hypothesis_v1": int(direction == "BUY"),
                 "paper_trading": True,
+                "assignment_note":
+                    "SHADOW_CONTEXT_ONLY_NO_SCORE_APPROVAL_CLAUDE_TELEGRAM_OR_BROKER_EFFECT",
             }
             context_row.update({name: feature_value for name in CONTEXT_FEATURES})
             for name in ("dollar_idx", "silver", "volatility_idx", "treasury_bond"):
                 context_row[f"ctx_{name}_missing"] = 0
+            for name in (
+                "dollar_idx", "silver", "volatility_idx", "treasury_bond", "xau",
+            ):
+                context_row[f"ctx_{name}_analysis_close"] = 2000.0 + index
+                context_row[f"ctx_{name}_available_at"] = timestamp
             contexts.append(context_row)
         paths = {
             "ledger_path": root / "ledger.csv", "features_path": root / "features.csv",
@@ -1026,7 +1041,11 @@ class ResearchPipelineTests(unittest.TestCase):
     def test_evidence_integrity_contract_is_hash_locked_and_performance_is_forbidden(self):
         contract, digest = load_integrity_contract()
         self.assertEqual(
-            digest, "7aa62452c2cfd8e0c454163d35b82eb0e45612daa04ad2b88cd27d2c93550934",
+            digest, "a11aaa5b16e13c0f2474b769be457d9a567ab1e3bb2f4bf28065304fe57bd834",
+        )
+        self.assertEqual(contract["schema_version"], 2)
+        self.assertTrue(
+            contract["registered_errata"]["exact_row_hash_match_required"]
         )
         self.assertFalse(contract["isolation"]["may_read_outcome_performance_columns"])
         self.assertFalse(contract["isolation"]["may_evaluate_interim_profitability"])
@@ -1081,6 +1100,77 @@ class ResearchPipelineTests(unittest.TestCase):
             self.assertEqual(technical["duplicates"], 1)
             self.assertEqual(technical["orphan"], 1)
             self.assertEqual(technical["identity_mismatches"], 1)
+
+    def test_registered_context_erratum_is_hash_locked_and_quarantined(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._integrity_fixture(Path(directory))
+            context = pd.read_csv(paths["context_path"], dtype=str).fillna("")
+            invalid_field = "ctx_silver_realized_volatility_24h_pct"
+            context.loc[0, invalid_field] = ""
+            context.to_csv(paths["context_path"], index=False)
+            frozen = pd.read_csv(paths["context_path"], dtype=str).fillna("")
+            row_hash = _canonical_context_row_sha256(
+                frozen.reindex(columns=CONTEXT_COLUMNS).iloc[0]
+            )
+            errata = {
+                "erratum_version": "synthetic-test-erratum",
+                "affected_rows": [{
+                    "candidate_id": frozen.loc[0, "candidate_id"],
+                    "timestamp": frozen.loc[0, "timestamp"],
+                    "direction": frozen.loc[0, "direction"],
+                    "canonical_row_sha256": row_hash,
+                    "invalid_fields": [invalid_field],
+                }],
+                "disposition": {
+                    "future_context_evaluation": "TREAT_AS_UNAVAILABLE",
+                },
+            }
+            with patch(
+                "agent.evidence_integrity.load_context_errata",
+                return_value=(errata, "synthetic-errata-sha256"),
+            ):
+                report = build_evidence_integrity_report(**paths)
+            context_report = next(
+                item for item in report["ledgers"]
+                if item["name"] == "Context observations"
+            )
+            self.assertEqual(report["status"], "WARNING · REGISTERED ERRATA")
+            self.assertEqual(context_report["invalid_rows"], 0)
+            self.assertEqual(context_report["registered_errata_rows"], 1)
+            self.assertEqual(report["context_errata"]["applied_rows"], 1)
+            self.assertFalse(report["context_errata"]["ledger_mutated"])
+            self.assertEqual(report["performance_columns_read"], [])
+
+    def test_context_erratum_hash_mismatch_remains_degraded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._integrity_fixture(Path(directory))
+            context = pd.read_csv(paths["context_path"], dtype=str).fillna("")
+            invalid_field = "ctx_silver_realized_volatility_24h_pct"
+            context.loc[0, invalid_field] = ""
+            context.to_csv(paths["context_path"], index=False)
+            errata = {
+                "erratum_version": "synthetic-test-erratum",
+                "affected_rows": [{
+                    "candidate_id": context.loc[0, "candidate_id"],
+                    "timestamp": context.loc[0, "timestamp"],
+                    "direction": context.loc[0, "direction"],
+                    "canonical_row_sha256": "0" * 64,
+                    "invalid_fields": [invalid_field],
+                }],
+                "disposition": {
+                    "future_context_evaluation": "TREAT_AS_UNAVAILABLE",
+                },
+            }
+            with patch(
+                "agent.evidence_integrity.load_context_errata",
+                return_value=(errata, "synthetic-errata-sha256"),
+            ):
+                report = build_evidence_integrity_report(**paths)
+            self.assertEqual(report["status"], "DEGRADED")
+            self.assertTrue(any(
+                "erratum row content changed" in issue
+                for issue in report["issues"]
+            ))
 
     def test_registered_psi_detects_large_prospective_feature_shift(self):
         contract, _ = load_integrity_contract()
@@ -1469,6 +1559,90 @@ class ResearchPipelineTests(unittest.TestCase):
             self.assertTrue(result["available"])
             self.assertEqual(result["score"], 100)
             self.assertTrue(result["is_confirmed"])
+
+    def test_claude_review_uses_strict_structured_output(self):
+        parsed = ClaudeReviewOutput(
+            should_trade=False,
+            confidence=42,
+            reasoning="Reward/risk evidence is incomplete.",
+            risks=["MISSING_CONTEXT"],
+        )
+        raw = json.dumps(parsed.model_dump(), separators=(",", ":"))
+
+        class FakeMessages:
+            def __init__(self):
+                self.arguments = None
+
+            def parse(self, **kwargs):
+                self.arguments = kwargs
+                block = SimpleNamespace(parsed_output=parsed, text=raw)
+                return SimpleNamespace(content=[block], stop_reason="end_turn")
+
+        analyst = ClaudeAnalyst(model="claude-test")
+        messages = FakeMessages()
+        analyst.client = SimpleNamespace(messages=messages)
+        result = analyst.analyze_signal(
+            {"direction": "BUY", "entry": 2000, "stop_loss": 1990,
+             "take_profits": [2020], "score": 70, "rr_ratio": 2},
+            {"snapshot_age_seconds": 10},
+            {"available": False},
+            {"available": False},
+        )
+        self.assertTrue(result["available"])
+        self.assertFalse(result["should_trade"])
+        self.assertEqual(result["confidence"], 42.0)
+        self.assertEqual(result["prompt_version"], "claude-review-v2-json-schema")
+        self.assertIs(messages.arguments["output_format"], ClaudeReviewOutput)
+        self.assertEqual(result["response_payload_json"], raw)
+        self.assertEqual(len(result["response_sha256"]), 64)
+
+    def test_claude_review_fails_closed_without_one_structured_block(self):
+        class FakeMessages:
+            @staticmethod
+            def parse(**_kwargs):
+                block = SimpleNamespace(parsed_output=None, text="not structured")
+                return SimpleNamespace(content=[block], stop_reason="end_turn")
+
+        analyst = ClaudeAnalyst(model="claude-test")
+        analyst.client = SimpleNamespace(messages=FakeMessages())
+        result = analyst.analyze_signal({}, {}, {}, {})
+        self.assertFalse(result["available"])
+        self.assertFalse(result["should_trade"])
+        self.assertIn("exactly one structured output", result["reasoning"])
+        self.assertEqual(result["risks"], ["AI_REVIEW_UNAVAILABLE"])
+
+    def test_dashboard_ai_health_is_fail_closed_then_recovers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "reviews.csv"
+            rows = [{
+                "available": False, "should_trade": False, "confidence": "",
+                "model": "", "prompt_version": "claude-review-v1",
+                "reasoning": "Claude analysis failed: Extra data",
+            } for _ in range(3)]
+            pd.DataFrame(rows).to_csv(path, index=False)
+            unavailable = get_ai_review_stats(path)
+            self.assertEqual(unavailable["status"], "UNAVAILABLE · FAIL CLOSED")
+            self.assertEqual(unavailable["status_class"], "bad")
+            self.assertEqual(unavailable["unavailable"], 3)
+            self.assertIn("Extra data", unavailable["issue_summary"])
+
+            rows.append({
+                "available": True, "should_trade": False, "confidence": 55,
+                "model": "claude-test", "prompt_version":
+                    "claude-review-v2-json-schema", "reasoning": "Veto",
+            })
+            pd.DataFrame(rows).to_csv(path, index=False)
+            recovering = get_ai_review_stats(path)
+            self.assertEqual(recovering["status"], "RECOVERING")
+            self.assertEqual(recovering["status_class"], "warn")
+            self.assertEqual(recovering["recent_availability"], "1/4")
+
+            healthy_rows = [rows[-1] for _ in range(5)]
+            pd.DataFrame(healthy_rows).to_csv(path, index=False)
+            observing = get_ai_review_stats(path)
+            self.assertEqual(observing["status"], "OBSERVING")
+            self.assertEqual(observing["status_class"], "good")
+            self.assertEqual(observing["recent_availability"], "5/5")
 
     def test_claude_rejection_is_a_veto(self):
         decider = AITradingDecider()

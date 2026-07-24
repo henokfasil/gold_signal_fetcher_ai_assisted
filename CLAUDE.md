@@ -1,6 +1,6 @@
 # Gold Signal Fetcher — Unified AI-Assisted Research System
 
-Last reviewed: 2026-07-23
+Last reviewed: 2026-07-24
 
 ## Claude restart handoff
 
@@ -132,15 +132,27 @@ Current research state at handoff:
   Telegram, broker or training effect. Assignment ends 2027-01-17 12:49:25
   UTC and evaluation is once on 2027-01-24 12:49:25 UTC. Do not inspect
   interim returns.
-- Evidence reconciliation is frozen as `evidence-integrity-20260719-v1` in
-  `config/evidence_integrity_v1.json` (SHA-256
-  `7aa62452c2cfd8e0c454163d35b82eb0e45612daa04ad2b88cd27d2c93550934`).
+- Evidence reconciliation is frozen as `evidence-integrity-20260724-v2` in
+  `config/evidence_integrity_v2.json` (SHA-256
+  `a11aaa5b16e13c0f2474b769be457d9a567ab1e3bb2f4bf28065304fe57bd834`).
+  It explicitly supersedes the immutable v1 contract rather than modifying it.
   After every scan it checks candidate coverage across technical features,
   shadow outcomes, variant assignments and context; it also detects duplicate
   IDs, orphans, timestamp/direction mismatches, invalid lifecycle states,
   missing context, and frozen schema/contract drift. The dashboard exposes
   these counts. Outcome returns, P&L, win rate and profit factor are excluded
   from the monitor's CSV reads, so it cannot reveal interim performance.
+- Two historical context observations contained non-finite volatility fields
+  despite being marked complete. Their exact candidate identities, complete
+  canonical row hashes and exact invalid-field sets are frozen in
+  `config/context_observation_errata_v1.json` (SHA-256
+  `790fd4b40feabc9b8d1b468412d27d3d92993417821bd22ab383b3dda2cf1bab`).
+  The append-only source ledger is not edited and no value is imputed. Exact
+  matches are quarantined as unavailable for future context evaluation and
+  excluded only from context drift windows. Registered errata alone produce a
+  visible warning, never a healthy status; any content/hash mismatch remains a
+  degradation. This registration read no outcomes or performance columns and
+  has no candidate, Claude, Telegram, model or broker effect.
 - Prospective input PSI begins only after 200 rows per ledger. The immutable
   first 100 rows define reference-only decile bins and the latest 100 form the
   non-overlapping current window. Registered PSI warning/alert thresholds are
@@ -183,6 +195,36 @@ Current research state at handoff:
   maturity buffer at 2027-01-23 23:04:38 UTC. There is no interim performance
   evaluation or confirmatory edge claim. Assignments cannot approve a paper
   trade, send Telegram or select/train a model.
+- Phase 2 event-feature concordance is deployed to GitHub and the canonical
+  VPS at commit `e9db2b1e2925e588115d5681884d713e11719524`. The server passed
+  all 67 tests and `validate_code.py`; `gold-signal-fetcher.service` is active,
+  the dashboard returns HTTP 200, and root cron retains the 15-minute scanner
+  plus the 00:30 UTC Tuesday-Saturday delayed-reference job.
+- At the outcome-blind 2026-07-24 06:24 UTC smoke checkpoint, all seven
+  in-scope hourly runtime snapshots self-replayed exactly and two event rows
+  had been observed. The delayed reference covered one decision containing
+  zero events, with zero membership, identity, missingness or numeric
+  mismatches. The remaining six decisions await their next daily reference.
+  Status is `COLLECTING`; no issues were reported, performance-column reads
+  were empty, and both shadow-registration eligibility and feature-use
+  authorization were false. These are checkpoint counts, not a continuously
+  updated result; use the dashboard and
+  `data/event_feature_concordance_status.json` for the latest scheduled audit.
+- The Claude reviewer uses Anthropic's schema-constrained structured parsing
+  with the strict Pydantic response contract
+  `claude-review-v2-json-schema`. It still makes at most one request per new
+  candidate, remains a veto/explanation only and fails closed if exactly one
+  validated structured block is not returned. The dashboard now reports a
+  latest unavailable review as red `UNAVAILABLE · FAIL CLOSED`, then
+  `RECOVERING` until its latest-five window is clean; historical parse failures
+  are retained, not rewritten.
+- The dashboard security boundary is versioned under
+  `ops/nginx/gold-signal-fetcher.conf` and
+  `ops/systemd/gold-signal-cert-renew.*`. The intended public address is
+  `https://187.55.229.4/` with HTTP Basic authentication. nginx terminates a
+  trusted short-lived IP certificate; Flask is loopback-only on
+  `127.0.0.1:8502`, and certificate renewal is checked twice daily. Credentials
+  and certificate private keys remain outside Git.
 
 Completion checkpoint:
 
@@ -212,7 +254,8 @@ Completion checkpoint:
 Resume in this order:
 
 1. Verify `git status`, run the verification commands below and confirm the
-   canonical VPS revision/services without touching secrets or historical data.
+   canonical VPS revision, nginx/TLS/authentication boundary, renewal timer and
+   application services without touching secrets or historical data.
 2. Monitor snapshot cadence, latest-complete-bar lag and append-only pilot
    assignments/outcomes plus evidence-integrity status; operational monitoring
    must not reveal interim profitability.
@@ -270,21 +313,28 @@ an approved paper trade.
 The previous documentation called the system “production ready.” That claim
 was removed after a code audit found disconnected and placeholder components.
 
-Canonical VPS facts as of 2026-07-19:
+Canonical VPS facts as of the 2026-07-24 security/AI/integrity release:
 
 - Canonical host: `187.55.229.4` (`srv1831821`).
-- Dashboard: `http://187.55.229.4:8502/` via
-  `gold-signal-fetcher.service`.
-- `0.0.0.0:8502` is the process's server-side bind address, not a replacement
-  dashboard URL. It means “accept port 8502 traffic arriving on any VPS network
-  interface”; users still browse only to `http://187.55.229.4:8502/`.
-  Binding to `127.0.0.1:8502` would make the dashboard reachable only from the
-  VPS itself. Do not change the working bind merely to make it resemble the
-  public URL.
+- The canonical deployed revision must equal GitHub `master`; verify it with
+  `git rev-parse HEAD` locally, on GitHub and on the VPS before operating.
+- Dashboard: `https://187.55.229.4/` via nginx with a trusted short-lived
+  Let's Encrypt IP certificate and HTTP Basic authentication.
+- `gold-signal-fetcher.service` is a loopback-only backend on
+  `127.0.0.1:8502`. Direct public access to port `8502` is not permitted.
+- `gold-signal-cert-renew.timer` checks certificate renewal twice daily.
+  Unauthenticated HTTPS must return `401`; valid operator credentials must
+  return `200`.
 - Repository: `/root/gold_signal_fetcher_ai_assisted`.
 - The paper scanner is designed to run every 15 minutes through the canonical
   wrapper. Dukascopy collection failure or any source/cadence/quote/freshness
   violation aborts that scan before candidate analysis.
+- Canonical root cron is exactly the scanner at minutes 5/20/35/50 and
+  `ops/run_event_concordance_daily.sh` at 00:30 UTC Tuesday through Saturday.
+  The latter stores one append-only 400-bar native reference per cutoff and
+  refreshes the outcome-blind concordance status.
+- The pre-Phase-2 VPS backup is
+  `/root/gold_signal_fetcher_backups/phase2-20260723T223911Z-pre-e9db2b1`.
 - The former host `72.60.133.179` is not the canonical deployment and must
   remain inactive for System C.
 - TradingView Desktop and `tradingview-mcp` remain installed for optional
@@ -650,9 +700,9 @@ registered there before evaluation.
    event types match with zero failures. Register any new information source
    before it can enter an outcome comparison.
 10. Continue model/prompt/dataset lineage, drift and calibration monitoring.
-11. Secure the public dashboard with a reverse proxy, HTTPS and authentication
-   before treating it as a customer-facing service. This is an operations gate,
-   not evidence of trading performance.
+11. Keep the deployed nginx reverse proxy, trusted IP-certificate renewal,
+   authentication, loopback-only backend and credential permissions healthy.
+   This is an operations gate, not evidence of trading performance.
 12. Do not design live-capital execution unless a later frozen forward test
    passes the registered gates; this experiment remains paper-only.
 
@@ -925,11 +975,25 @@ numeric mismatches at `1e-9` absolute/relative tolerance. A result older than
 outcomes. Even a pass permits only registration of a new prospective shadow
 experiment; it does not activate event features in the current system.
 
-The runtime now makes at most one structured Claude request per new SMC
-candidate. Claude is an evidence-conflict reviewer and veto, not a numeric
-alpha vote. Its self-reported confidence is excluded from approval arithmetic.
-Exact request/response payloads, hashes, model and prompt version are appended
-to `data/forward_ai_reviews_v2.csv`.
+Deployment checkpoint at 2026-07-24 06:24 UTC: the canonical VPS was on
+`e9db2b1e2925e588115d5681884d713e11719524`, the service was active and the
+dashboard returned HTTP 200. Seven in-scope decisions had exact archived
+self-replay; two event rows had been recorded. One zero-event decision was
+covered by the delayed native reference and matched with zero membership,
+identity, missingness or value mismatches. Replay lag was six hours, issues
+and performance-column reads were empty, and both
+`shadow_registration_eligible` and `feature_use_authorized` were false. This
+checkpoint proves the collection path started correctly; it does not establish
+event-feature parity, predictive skill or profitability.
+
+The runtime now makes at most one schema-constrained structured Claude request
+per new SMC candidate. `claude-review-v2-json-schema` is validated by the
+Anthropic SDK against a strict Pydantic response model; missing, multiple,
+invalid or truncated structured blocks fail closed. Claude is an
+evidence-conflict reviewer and veto, not a numeric alpha vote. Its self-reported
+confidence is excluded from approval arithmetic. Exact request/response
+payloads, hashes, model and prompt version are appended to
+`data/forward_ai_reviews_v2.csv`. Existing failed records remain immutable.
 
 ML remains unavailable and mandatory. A future artifact is loadable for paper
 approval only if its metadata explicitly records passed development gates,
@@ -945,6 +1009,10 @@ sentiment evidence.
 ## Security and operations
 
 - Never commit `.env`, API keys, Telegram tokens or account identifiers.
+- Never commit dashboard passwords, nginx htpasswd content, certificate private
+  keys or `/root/gold-signal-dashboard-credentials.txt`.
+- Keep nginx on public ports 80/443, Flask on loopback `127.0.0.1:8502`, HTTP
+  Basic authentication enabled and `gold-signal-cert-renew.timer` healthy.
 - Telegram sends only approved paper signals and unified paper metrics. It
   never places broker orders. Rejected candidates remain visible in the ledger
   and dashboard without creating notification spam.

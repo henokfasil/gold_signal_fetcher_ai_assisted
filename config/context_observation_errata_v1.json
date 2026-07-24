@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "erratum_version": "context-observation-errata-20260724-v1",
+  "registered_at_utc": "2026-07-24T07:55:00Z",
+  "paper_research_only": true,
+  "purpose": "Preserve and explicitly quarantine two outcome-blind context observations that were marked available before the runtime finite-value guard existed",
+  "discovery": {
+    "method": "Operational evidence-integrity monitoring only",
+    "discovered_at_utc": "2026-07-24T06:29:30Z",
+    "outcomes_read": false,
+    "performance_columns_read": [],
+    "profitability_evaluated": false
+  },
+  "parent_context_contract": {
+    "path": "config/forward_context_observation_v1.json",
+    "experiment_version": "forward-context-buy-20260719-v1",
+    "contract_sha256": "97e7d3b4bf2ad00809c00c9e2b6cb6dfd6961b40c70e26da7772b42ef8048b70",
+    "feature_schema_sha256": "4100208e9e086f5399dedf3f23a7165ed1444bd8994228b5492adc1525c320c6"
+  },
+  "source_ledger": {
+    "path": "data/forward_candidate_context_v1.csv",
+    "header_sha256": "e3467e53050a69f33a5ecee12947ceaeb71a5c4845af9ef1f44abba2c141a47a",
+    "append_only": true,
+    "mutation_permitted": false
+  },
+  "affected_rows": [
+    {
+      "candidate_id": "1879D525097E",
+      "timestamp": "2026-07-20T00:05:11.986731+00:00",
+      "direction": "SELL",
+      "canonical_row_sha256": "cf27e80f7e19876f6356bb0d77feddd0841e382fa95c3c97d92bb1119a61790f",
+      "invalid_fields": [
+        "ctx_silver_realized_volatility_24h_pct",
+        "ctx_volatility_idx_realized_volatility_24h_pct",
+        "ctx_treasury_bond_realized_volatility_24h_pct"
+      ],
+      "observed_fault": "context_available was true and all instrument missing flags were zero while registered realized-volatility values were non-finite"
+    },
+    {
+      "candidate_id": "143B9B2B9CBB",
+      "timestamp": "2026-07-20T02:05:14.551729+00:00",
+      "direction": "SELL",
+      "canonical_row_sha256": "acf430c92b2e2ba7aa48265cddfc6969e87c930332c3318fdaaa5bb4c18042dc",
+      "invalid_fields": [
+        "ctx_dollar_idx_realized_volatility_24h_pct"
+      ],
+      "observed_fault": "context_available was true and all instrument missing flags were zero while a registered realized-volatility value was non-finite"
+    }
+  ],
+  "disposition": {
+    "original_rows_retained": true,
+    "replacement_values_imputed": false,
+    "treat_as_valid_context": false,
+    "exclude_from_context_drift_windows": true,
+    "future_context_evaluation": "Treat the affected context observations as unavailable; do not impute from future data or use their registered context feature values",
+    "operational_status": "WARNING_REGISTERED_ERRATA",
+    "decision_effect": "NONE_OBSERVATION_ONLY"
+  },
+  "isolation": {
+    "may_read_outcomes": false,
+    "may_read_performance_columns": false,
+    "may_change_candidate_or_ai_decision": false,
+    "may_send_telegram": false,
+    "may_place_broker_order": false,
+    "may_train_select_or_promote_model": false
+  },
+  "change_rule": "Any affected row, row hash, invalid-field set, disposition or isolation change requires a new erratum version"
+}

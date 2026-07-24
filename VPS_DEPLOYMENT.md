@@ -5,7 +5,11 @@ The only active deployment is `187.55.229.4` in
 
 ## Runtime
 
-- Dashboard: `gold-signal-fetcher.service`, port `8502`.
+- Dashboard backend: `gold-signal-fetcher.service`, loopback
+  `127.0.0.1:8502`.
+- Public boundary: nginx on HTTPS `443`, trusted short-lived Let's Encrypt IP
+  certificate, HTTP Basic authentication and request limiting.
+- Certificate renewal: `gold-signal-cert-renew.timer`, twice daily.
 - TradingView desktop/MCP: installed but disabled/stopped; optional interactive
   legacy research only. Re-enable only for a deliberate maintenance session.
 - CDP and maintenance VNC, if enabled, remain localhost-only.
@@ -30,24 +34,68 @@ The two canonical root-crontab entries are:
 
 ## Dashboard address and bind
 
-The user-facing address is always `http://187.55.229.4:8502/`. The Flask
-process intentionally listens on `0.0.0.0:8502`; `0.0.0.0` is not a URL and
-does not replace the public IP. It tells Linux to accept port 8502 connections
-on all VPS interfaces, including the interface reached through
-`187.55.229.4`. A `127.0.0.1:8502` bind would pass the local curl check but
-would make the dashboard unavailable from the user's browser.
+The user-facing address is `https://187.55.229.4/`. Authentication is required.
+The credential is deliberately stored outside Git:
 
-The current direct-IP HTTP endpoint is suitable for controlled paper-research
-access, not a customer-facing production service. Add a domain, reverse proxy,
-TLS/HTTPS, authentication and a restrictive firewall policy before commercial
-exposure. Do not change the working application bind as a substitute for those
-controls.
+- VPS: `/root/gold-signal-dashboard-credentials.txt`, mode `0600`;
+- operator workstation: `~/gold_signal_dashboard_credentials.txt`, mode
+  `0600`.
+
+Flask listens only on `127.0.0.1:8502`; nginx is the sole public dashboard
+boundary. Port `80` serves ACME challenges and redirects all other traffic to
+HTTPS. The checked-in nginx configuration is
+`ops/nginx/gold-signal-fetcher.conf`.
+
+The IP certificate is a short-lived certificate. The renewal timer must remain
+enabled and its next run and certificate expiry must be monitored.
+
+## First-time TLS/authentication installation
+
+Install nginx, the password utility and a current Certbot in its own virtual
+environment. The Certbot release must support short-lived IP certificates.
+
+```bash
+apt-get update
+apt-get install -y nginx apache2-utils python3-venv
+python3 -m venv /opt/certbot
+/opt/certbot/bin/pip install 'certbot>=5.4,<6'
+install -d -m 0755 /var/www/letsencrypt/.well-known/acme-challenge
+```
+
+Create `/etc/nginx/gold-signal-fetcher.htpasswd` for user `goldresearch` and
+save the generated password only in the root-owned credential file. Start
+nginx with a temporary port-80 ACME webroot server, then request the certificate:
+
+```bash
+/opt/certbot/bin/certbot certonly \
+  --webroot --webroot-path /var/www/letsencrypt \
+  --preferred-profile shortlived \
+  --ip-address 187.55.229.4 \
+  --cert-name 187.55.229.4 \
+  --register-unsafely-without-email --agree-tos --non-interactive
+```
+
+After issuance, install and validate the versioned boundary and renewal units:
+
+```bash
+install -m 0644 ops/nginx/gold-signal-fetcher.conf \
+  /etc/nginx/conf.d/gold-signal-fetcher.conf
+rm /etc/nginx/conf.d/gold-signal-bootstrap.conf
+install -m 0644 ops/systemd/gold-signal-cert-renew.service \
+  /etc/systemd/system/gold-signal-cert-renew.service
+install -m 0644 ops/systemd/gold-signal-cert-renew.timer \
+  /etc/systemd/system/gold-signal-cert-renew.timer
+nginx -t
+systemctl daemon-reload
+systemctl enable --now nginx gold-signal-cert-renew.timer
+```
 
 ## Deploy
 
 ```bash
 cd /root/gold_signal_fetcher_ai_assisted
 git pull --ff-only
+venv/bin/pip install -r requirements.txt
 venv/bin/python -m unittest discover -s tests -v
 venv/bin/python validate_code.py
 install -m 0755 ops/collect_dukascopy_snapshot.py \
@@ -58,6 +106,8 @@ install -m 0755 ops/collect_dukascopy_snapshot.py \
 # PRICE_DATA_PROVIDER=dukascopy
 # DUKASCOPY_SNAPSHOT_PATH=/tmp/dukascopy_snapshot.json
 systemctl restart gold-signal-fetcher.service
+nginx -t
+systemctl reload nginx
 ```
 
 Do not overwrite `.env`, `data/`, `logs/`, the TradingView profile, or the
@@ -67,17 +117,24 @@ paper ledger during deployment.
 
 ```bash
 systemctl is-active gold-signal-fetcher.service
+systemctl is-active nginx
+systemctl is-enabled gold-signal-cert-renew.timer
+systemctl list-timers gold-signal-cert-renew.timer --no-pager
 ss -lntp | grep -E ':(8502)[[:space:]]'
 crontab -l
 curl -fsS http://127.0.0.1:8502/ >/dev/null
+curl -sS -o /dev/null -w '%{http_code}\n' https://187.55.229.4/
+/opt/certbot/bin/certbot certificates
 tail -50 logs/gold_scanner_ai.log
 ```
 
-Expected: dashboard HTTP 200, scanner cron present, and the dashboard feed
-panel HEALTHY with five cadence and bid/ask checks passing. During the weekend,
-the latest bar may be old while the panel correctly reports market CLOSED.
-The feature-concordance panel must begin as AWAITING/COLLECTING, never PASS
-before its 120-decision, 30-event, direction and event-type coverage gates.
+Expected: the backend is bound only to `127.0.0.1:8502`, unauthenticated HTTPS
+returns `401`, valid credentials return `200`, the certificate verifies without
+`-k`, and scanner cron remains present. The dashboard feed panel should be
+HEALTHY with five cadence and bid/ask checks passing. During the weekend, the
+latest bar may be old while the panel correctly reports market CLOSED. The
+feature-concordance panel must begin as AWAITING/COLLECTING, never PASS before
+its 120-decision, 30-event, direction and event-type coverage gates.
 
 ## Telegram
 
@@ -89,5 +146,6 @@ with BUY/SELL geometry and an explicit paper-only warning. Unified metrics use
 ## Rollback
 
 Revert only to a known tested git revision, rerun tests, reinstall the
-collector, and restart the dashboard. Keep the scanner paused if snapshot,
-ledger, model metadata, or paper-mode checks fail.
+collector, and restart the dashboard. Keep the TLS/authentication boundary in
+place during application rollback. Keep the scanner paused if snapshot, ledger,
+model metadata, or paper-mode checks fail.

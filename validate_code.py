@@ -169,6 +169,8 @@ config_files = [
     'CLAUDE.md',
     'VPS_DEPLOYMENT.md',
     'config/evidence_integrity_v1.json',
+    'config/evidence_integrity_v2.json',
+    'config/context_observation_errata_v1.json',
     'config/event_feature_concordance_v1.json',
     'config/forward_event_observation_v1.json',
     'data/research/event_feature_concordance_preflight_v1.json',

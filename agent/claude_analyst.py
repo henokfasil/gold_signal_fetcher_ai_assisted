@@ -9,11 +9,24 @@ import hashlib
 import logging
 import os
 
+from pydantic import BaseModel, ConfigDict, Field
+
 logger = logging.getLogger(__name__)
 
 
+class ClaudeReviewOutput(BaseModel):
+    """Strict response schema enforced by Anthropic before parsing."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    should_trade: bool
+    confidence: float = Field(ge=0, le=100)
+    reasoning: str
+    risks: list[str]
+
+
 class ClaudeAnalyst:
-    PROMPT_VERSION = "claude-review-v1"
+    PROMPT_VERSION = "claude-review-v2-json-schema"
 
     def __init__(self, model: str = None):
         self.model = model or os.getenv("ANTHROPIC_REASONING_MODEL", "claude-sonnet-4-5")
@@ -51,7 +64,7 @@ class ClaudeAnalyst:
         )
         request_sha256 = hashlib.sha256(request_json.encode()).hexdigest()
         try:
-            response = self.client.messages.create(
+            response = self.client.messages.parse(
                 model=self.model,
                 max_tokens=800,
                 temperature=0,
@@ -61,34 +74,39 @@ class ClaudeAnalyst:
                     "poor reward/risk, stale data, and explicit macro conflicts. Missing data "
                     "must reduce confidence. Your result is an auditable veto/explanation, not "
                     "a statistically calibrated forecast and never overrides hard risk gates. "
-                    "Return only JSON with keys should_trade (boolean), "
-                    "confidence (0-100), reasoning (string), and risks (array of strings)."
+                    "Complete the registered structured response with "
+                    "should_trade, confidence, reasoning and risks."
                 ),
                 messages=[{"role": "user", "content": request_json}],
+                output_format=ClaudeReviewOutput,
             )
             if getattr(response, "stop_reason", None) == "max_tokens":
                 raise ValueError("Claude response was truncated at max_tokens")
-            raw = "".join(
-                str(getattr(block, "text", ""))
-                for block in response.content
-                if getattr(block, "text", None) is not None
-            ).strip()
-            if raw.startswith("```"):
-                raw = raw.strip("`").removeprefix("json").strip()
-            parsed = json.loads(raw)
-            should_trade = parsed["should_trade"]
-            confidence = float(parsed["confidence"])
-            if not isinstance(should_trade, bool) or not 0 <= confidence <= 100:
-                raise ValueError("response fields outside schema")
-            risks = parsed.get("risks", [])
-            if not isinstance(risks, list):
-                raise ValueError("response risks must be an array")
+            parsed_blocks = [
+                block for block in response.content
+                if getattr(block, "parsed_output", None) is not None
+            ]
+            if len(parsed_blocks) != 1:
+                raise ValueError(
+                    "Claude response did not contain exactly one structured output"
+                )
+            parsed = parsed_blocks[0].parsed_output
+            if not isinstance(parsed, ClaudeReviewOutput):
+                parsed = ClaudeReviewOutput.model_validate(parsed)
+            raw = str(getattr(parsed_blocks[0], "text", "")).strip()
+            if not raw:
+                raw = json.dumps(
+                    parsed.model_dump(),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+            risks = [str(item)[:250] for item in parsed.risks[:8]]
             return {
                 "available": True,
-                "should_trade": should_trade,
-                "confidence": confidence,
-                "reasoning": str(parsed.get("reasoning", ""))[:1000],
-                "risks": [str(item)[:250] for item in risks[:8]],
+                "should_trade": parsed.should_trade,
+                "confidence": float(parsed.confidence),
+                "reasoning": parsed.reasoning[:1000],
+                "risks": risks,
                 "model": self.model,
                 "prompt_version": self.PROMPT_VERSION,
                 "request_sha256": request_sha256,
