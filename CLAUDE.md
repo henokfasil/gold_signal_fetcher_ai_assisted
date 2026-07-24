@@ -221,9 +221,10 @@ Current research state at handoff:
 - The dashboard security boundary is versioned under
   `ops/nginx/gold-signal-fetcher.conf` and
   `ops/systemd/gold-signal-cert-renew.*`. The intended public address is
-  `https://187.55.229.4/` with HTTP Basic authentication. nginx terminates a
+  `http://187.55.229.4:8502/` with HTTP Basic authentication. HTTPS is also
+  available at `https://187.55.229.4/`. nginx terminates the public boundary and
   trusted short-lived IP certificate; Flask is loopback-only on
-  `127.0.0.1:8502`, and certificate renewal is checked twice daily. Credentials
+  `127.0.0.1:8510`, and certificate renewal is checked twice daily. Credentials
   and certificate private keys remain outside Git.
 
 Completion checkpoint:
@@ -320,10 +321,11 @@ Canonical VPS facts as of the 2026-07-24 security/AI/integrity release:
   `74340932ea28972cc2ef0a314f68b8741bb71539`.
 - The canonical deployed revision must equal GitHub `master`; verify it with
   `git rev-parse HEAD` locally, on GitHub and on the VPS before operating.
-- Dashboard: `https://187.55.229.4/` via nginx with a trusted short-lived
+- Dashboard: `http://187.55.229.4:8502/` via nginx with HTTP Basic
+  authentication; HTTPS is also available at `https://187.55.229.4/` with a trusted short-lived
   Let's Encrypt IP certificate and HTTP Basic authentication.
 - `gold-signal-fetcher.service` is a loopback-only backend on
-  `127.0.0.1:8502`. Direct public access to port `8502` is not permitted.
+  `127.0.0.1:8510`. Public port `8502` is the stable nginx dashboard endpoint.
 - `gold-signal-cert-renew.timer` checks certificate renewal twice daily.
   Unauthenticated HTTPS must return `401`; valid operator credentials must
   return `200`.
@@ -1003,8 +1005,9 @@ Deployment checkpoint at 2026-07-24 09:30 UTC: local and VPS suites passed all
 72 tests plus `validate_code.py`. The trusted IP certificate was issued with
 expiry 2026-07-30 and its simulated renewal succeeded. Public HTTP redirected
 to HTTPS, unauthenticated HTTPS returned 401, the saved credential returned
-200, and direct public port 8502 was unreachable. The backend listened only on
-`127.0.0.1:8502`. Evidence v2 reconciled 26/26 rows in each required ledger
+200, and direct public port 8502 was unreachable before the compatibility
+listener was restored. The backend listened only on `127.0.0.1:8510`. Evidence
+v2 reconciled 26/26 rows in each required ledger
 with zero missing, orphan, duplicate, identity, schema or unregistered-invalid
 failures; the two exact errata hashes produced the registered warning without
 ledger mutation or performance reads. The first new production candidate after
@@ -1029,7 +1032,7 @@ sentiment evidence.
 - Never commit `.env`, API keys, Telegram tokens or account identifiers.
 - Never commit dashboard passwords, nginx htpasswd content, certificate private
   keys or `/root/gold-signal-dashboard-credentials.txt`.
-- Keep nginx on public ports 80/443, Flask on loopback `127.0.0.1:8502`, HTTP
+- Keep nginx on public ports 80/443/8502, Flask on loopback `127.0.0.1:8510`, HTTP
   Basic authentication enabled and `gold-signal-cert-renew.timer` healthy.
 - Telegram sends only approved paper signals and unified paper metrics. It
   never places broker orders. Rejected candidates remain visible in the ledger

@@ -6,7 +6,7 @@ The only active deployment is `187.55.229.4` in
 ## Runtime
 
 - Dashboard backend: `gold-signal-fetcher.service`, loopback
-  `127.0.0.1:8502`.
+  `127.0.0.1:8510`.
 - Public boundary: nginx on HTTPS `443`, trusted short-lived Let's Encrypt IP
   certificate, HTTP Basic authentication and request limiting.
 - Certificate renewal: `gold-signal-cert-renew.timer`, twice daily.
@@ -34,16 +34,18 @@ The two canonical root-crontab entries are:
 
 ## Dashboard address and bind
 
-The user-facing address is `https://187.55.229.4/`. Authentication is required.
+The stable user-facing address is `http://187.55.229.4:8502/`. Authentication
+is required. HTTPS remains available at `https://187.55.229.4/`.
 The credential is deliberately stored outside Git:
 
 - VPS: `/root/gold-signal-dashboard-credentials.txt`, mode `0600`;
 - operator workstation: `~/gold_signal_dashboard_credentials.txt`, mode
   `0600`.
 
-Flask listens only on `127.0.0.1:8502`; nginx is the sole public dashboard
-boundary. Port `80` serves ACME challenges and redirects all other traffic to
-HTTPS. The checked-in nginx configuration is
+Flask listens only on `127.0.0.1:8510`; nginx is the sole public dashboard
+boundary. Public port `8502` is the stable authenticated HTTP endpoint. Port
+`80` serves ACME challenges and redirects all other traffic to HTTPS. The
+checked-in nginx configuration is
 `ops/nginx/gold-signal-fetcher.conf`.
 
 The IP certificate is a short-lived certificate. The renewal timer must remain
@@ -132,15 +134,16 @@ systemctl is-enabled gold-signal-cert-renew.timer
 systemctl list-timers gold-signal-cert-renew.timer --no-pager
 ss -lntp | grep -E ':(8502)[[:space:]]'
 crontab -l
-curl -fsS http://127.0.0.1:8502/ >/dev/null
+curl -fsS http://127.0.0.1:8510/ >/dev/null
+curl -sS -o /dev/null -w '%{http_code}\n' http://187.55.229.4:8502/
 curl -sS -o /dev/null -w '%{http_code}\n' https://187.55.229.4/
 /opt/certbot/bin/certbot certificates
 tail -50 logs/gold_scanner_ai.log
 ```
 
-Expected: the backend is bound only to `127.0.0.1:8502`, unauthenticated HTTPS
-returns `401`, valid credentials return `200`, the certificate verifies without
-`-k`, and scanner cron remains present. The dashboard feed panel should be
+Expected: the backend is bound only to `127.0.0.1:8510`, unauthenticated public
+port `8502` returns `401`, valid credentials return `200`, the certificate
+verifies without `-k`, and scanner cron remains present. The dashboard feed panel should be
 HEALTHY with five cadence and bid/ask checks passing. During the weekend, the
 latest bar may be old while the panel correctly reports market CLOSED. The
 feature-concordance panel must begin as AWAITING/COLLECTING, never PASS before
