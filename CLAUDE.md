@@ -316,6 +316,8 @@ was removed after a code audit found disconnected and placeholder components.
 Canonical VPS facts as of the 2026-07-24 security/AI/integrity release:
 
 - Canonical host: `187.55.229.4` (`srv1831821`).
+- Core security/AI/integrity implementation commit:
+  `74340932ea28972cc2ef0a314f68b8741bb71539`.
 - The canonical deployed revision must equal GitHub `master`; verify it with
   `git rev-parse HEAD` locally, on GitHub and on the VPS before operating.
 - Dashboard: `https://187.55.229.4/` via nginx with a trusted short-lived
@@ -325,6 +327,8 @@ Canonical VPS facts as of the 2026-07-24 security/AI/integrity release:
 - `gold-signal-cert-renew.timer` checks certificate renewal twice daily.
   Unauthenticated HTTPS must return `401`; valid operator credentials must
   return `200`.
+- The pre-release backup is
+  `/root/gold_signal_fetcher_backups/security-ai-integrity-20260724T085200Z-pre-7434093`.
 - Repository: `/root/gold_signal_fetcher_ai_assisted`.
 - The paper scanner is designed to run every 15 minutes through the canonical
   wrapper. Dukascopy collection failure or any source/cadence/quote/freshness
@@ -994,6 +998,20 @@ evidence-conflict reviewer and veto, not a numeric alpha vote. Its self-reported
 confidence is excluded from approval arithmetic. Exact request/response
 payloads, hashes, model and prompt version are appended to
 `data/forward_ai_reviews_v2.csv`. Existing failed records remain immutable.
+
+Deployment checkpoint at 2026-07-24 09:30 UTC: local and VPS suites passed all
+72 tests plus `validate_code.py`. The trusted IP certificate was issued with
+expiry 2026-07-30 and its simulated renewal succeeded. Public HTTP redirected
+to HTTPS, unauthenticated HTTPS returned 401, the saved credential returned
+200, and direct public port 8502 was unreachable. The backend listened only on
+`127.0.0.1:8502`. Evidence v2 reconciled 26/26 rows in each required ledger
+with zero missing, orphan, duplicate, identity, schema or unregistered-invalid
+failures; the two exact errata hashes produced the registered warning without
+ledger mutation or performance reads. The first new production candidate after
+the structured-output upgrade produced one available, hash-journalled Claude
+review; it vetoed the candidate. The AI panel therefore correctly showed
+`RECOVERING` at 1/5 recent availability while retaining five historical failed
+reviews. This validates transport, parsing and provenance—not predictive skill.
 
 ML remains unavailable and mandatory. A future artifact is loadable for paper
 approval only if its metadata explicitly records passed development gates,

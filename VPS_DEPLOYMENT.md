@@ -63,8 +63,18 @@ install -d -m 0755 /var/www/letsencrypt/.well-known/acme-challenge
 ```
 
 Create `/etc/nginx/gold-signal-fetcher.htpasswd` for user `goldresearch` and
-save the generated password only in the root-owned credential file. Start
-nginx with a temporary port-80 ACME webroot server, then request the certificate:
+save the generated password only in the root-owned credential file. The nginx
+worker needs read access to the bcrypt hash file, but never to the plaintext
+credential:
+
+```bash
+chown root:www-data /etc/nginx/gold-signal-fetcher.htpasswd
+chmod 0640 /etc/nginx/gold-signal-fetcher.htpasswd
+chmod 0600 /root/gold-signal-dashboard-credentials.txt
+```
+
+Start nginx with a temporary port-80 ACME webroot server, then request the
+certificate:
 
 ```bash
 /opt/certbot/bin/certbot certonly \

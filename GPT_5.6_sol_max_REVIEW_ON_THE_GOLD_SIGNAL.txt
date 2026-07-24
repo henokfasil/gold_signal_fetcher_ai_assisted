@@ -666,3 +666,63 @@ Overall assessment:
   - Suitability for dependable live-capital signals today: no.
   - Potential to become a serious AI-assisted gold signal system: yes, provided
     the repository follows the staged evidence-first roadmap above.
+
+
+IMPLEMENTATION ADDENDUM — 2026-07-24
+====================================
+
+The four immediate operational recommendations were implemented and verified
+without changing strategy logic, model eligibility, frozen experiment
+membership, historical outcomes, or any append-only source row.
+
+1. Evidence integrity
+
+  - A v2 monitor contract supersedes, but does not edit, the v1 contract.
+  - Two old non-finite context observations are registered by complete canonical
+    row hash and exact invalid-field set.
+  - The original rows remain untouched and no values are imputed.
+  - Exact matches are quarantined from context drift and produce an amber
+    warning; any mismatch remains red/degraded.
+  - On the live VPS, 26/26 candidates reconciled across all four required
+    ledgers with zero missing, orphan, duplicate, identity, schema, or
+    unregistered-invalid failures. No performance columns were read.
+
+2. Claude structured review
+
+  - The single Claude call now uses the Anthropic SDK's schema-constrained parse
+    path and a strict Pydantic response model.
+  - Missing, invalid, multiple, or truncated structured responses fail closed.
+  - Claude remains a veto/explanation only and has no numeric approval weight.
+  - A non-journaled VPS smoke request parsed successfully.
+  - The first subsequent production candidate also parsed successfully and was
+    vetoed at 15% self-confidence. The five historical failed rows were retained.
+
+3. Truthful dashboard state
+
+  - A latest failed review is red UNAVAILABLE / FAIL CLOSED.
+  - A successful new review after historical failures is amber RECOVERING.
+  - Green OBSERVING requires a clean latest-five availability window.
+  - The production panel correctly showed 1 available review, 5 unavailable,
+    0 passes, 1 veto, and 1/5 recent availability after the first fixed review.
+
+4. Dashboard security and release reproducibility
+
+  - Core implementation commit:
+    74340932ea28972cc2ef0a314f68b8741bb71539.
+  - Local and VPS validation: all 72 tests passed, validate_code.py passed, and
+    all selected Python modules compiled.
+  - nginx now terminates trusted HTTPS for https://187.55.229.4/ and requires
+    HTTP Basic authentication.
+  - Flask listens only on 127.0.0.1:8502; direct public port 8502 is unreachable.
+  - HTTP redirects to HTTPS, unauthenticated HTTPS returns 401, and valid
+    operator credentials return 200.
+  - A short-lived Let's Encrypt IP certificate was issued through 2026-07-30;
+    twice-daily renewal is enabled and a simulated renewal passed.
+  - Pre-release backup:
+    /root/gold_signal_fetcher_backups/security-ai-integrity-20260724T085200Z-pre-7434093
+
+These repairs make the bot a materially stronger, auditable paper-candidate
+collector. They do not change the review's central research verdict: no tested
+ML model has passed promotion gates and no dependable after-cost XAUUSD edge
+has yet been demonstrated. Live-capital execution and profitability claims
+remain unjustified.
