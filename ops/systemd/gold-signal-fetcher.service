@@ -1,0 +1,18 @@
+[Unit]
+Description=Gold Signal Fetcher AI Dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/gold_signal_fetcher_ai_assisted
+ExecStart=/root/gold_signal_fetcher_ai_assisted/venv/bin/python dashboard.py
+User=root
+Group=root
+CPUQuota=20%
+MemoryMax=500M
+# Keep the dashboard available after an external/normal termination.
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
