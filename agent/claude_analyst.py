@@ -140,10 +140,8 @@ class AITradingDecider:
 
     def decide(self, signal_info: dict, market_data: dict, ml_result: dict,
                macro_result: dict, smc_score: float, liquidity_tier: str,
-               open_positions: list = None) -> dict:
-        claude = self.claude.analyze_signal(
-            signal_info, market_data, ml_result, macro_result, open_positions
-        )
+               open_positions: list = None,
+               hard_vetoes: list[str] | None = None) -> dict:
         # The LLM is deliberately excluded from the numeric approval score.
         # Its confidence is not statistically calibrated; Claude may veto and
         # explain only. A future validated ML artifact must carry its own frozen
@@ -157,17 +155,35 @@ class AITradingDecider:
             decision_score = float(smc_score)
             threshold = 101.0
 
-        vetoes = []
+        vetoes = list(dict.fromkeys(hard_vetoes or []))
         if macro_result.get("is_blocked"):
             vetoes.append("MACRO_CONFLICT")
-        if not claude.get("available"):
-            vetoes.append("AI_REVIEW_UNAVAILABLE")
-        elif not claude.get("should_trade"):
-            vetoes.append("AI_REJECTED")
         if not ml_ready:
             vetoes.append("VALIDATED_ML_UNAVAILABLE")
         if liquidity_tier == "closed":
             vetoes.append("MARKET_CLOSED")
+        vetoes = list(dict.fromkeys(vetoes))
+
+        approval_preconditions_met = decision_score >= threshold and not vetoes
+        if approval_preconditions_met:
+            claude = self.claude.analyze_signal(
+                signal_info, market_data, ml_result, macro_result, open_positions
+            )
+            claude_review_attempted = True
+            if not claude.get("available"):
+                vetoes.append("AI_REVIEW_UNAVAILABLE")
+            elif not claude.get("should_trade"):
+                vetoes.append("AI_REJECTED")
+        else:
+            failed_preconditions = vetoes or ["BELOW_REGISTERED_ML_THRESHOLD"]
+            claude = ClaudeAnalyst._unavailable(
+                "Claude review not attempted because approval preconditions failed: "
+                + ", ".join(failed_preconditions)
+            )
+            claude["risks"] = [
+                "AI_REVIEW_SKIPPED_PRECONDITION", *failed_preconditions,
+            ]
+            claude_review_attempted = False
 
         should_trade = decision_score >= threshold and not vetoes
         return {
@@ -191,6 +207,7 @@ class AITradingDecider:
             "claude_risks": claude.get("risks", []),
             "claude_request_payload_json": claude.get("request_payload_json"),
             "claude_response_payload_json": claude.get("response_payload_json"),
+            "claude_review_attempted": claude_review_attempted,
             "macro_available": bool(macro_result.get("available")),
             "macro_score": macro_result.get("score"),
             "vetoes": vetoes,

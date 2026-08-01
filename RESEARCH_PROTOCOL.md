@@ -442,11 +442,14 @@ even after technical concordance passes.
 ## Runtime AI and sentiment safety correction — 2026-07-23
 
 The duplicate Claude decision optimizer is removed from the canonical path.
-Each new SMC candidate receives at most one structured Claude review. The
-exact supplied payload, normalized response, hashes, model and prompt version
-are written to `data/forward_ai_reviews_v2.csv`. Claude is a contextual
-review/veto only: its self-reported confidence is excluded from the numeric
-approval score and cannot override ML, macro or hard risk gates.
+Each new SMC candidate receives at most one structured Claude review, and a
+request is attempted only after deterministic ML, threshold, macro, market and
+hard-risk gates pass. Each candidate still receives one provenance row;
+precondition skips are explicitly distinguished from unavailable attempted
+reviews. Exact attempted payloads, normalized responses, hashes, model and
+prompt version are written to `data/forward_ai_reviews_v2.csv`. Claude is a
+contextual review/veto only: its self-reported confidence is excluded from the
+numeric approval score and cannot override ML, macro or hard risk gates.
 
 A model is loadable for paper approval only when its metadata explicitly
 records `PASS_DEVELOPMENT_GATES`, authorizes paper signals, freezes a selection

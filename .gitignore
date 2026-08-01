@@ -3,7 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.env
+.env*
+!.env.example
+*.pem
+*.key
 .venv
 venv/
 ENV/
@@ -16,6 +19,7 @@ build/
 *.png
 .DS_Store
 .claude/
+.local_archive/
 data/evidence_integrity_status.json
 data/event_feature_concordance_status.json
 data/paper_trades_ai.csv

@@ -219,7 +219,7 @@ class Notifier:
                 f"Realized paper P&amp;L: {metrics['total_profit']}\n"
                 f"Max drawdown: {metrics['max_drawdown']}\n\n"
                 f"⚠️ <b>PAPER TRADING ONLY</b>\n"
-                f"📈 Dashboard: http://187.55.229.4:8502/"
+                f"📈 Dashboard: https://187.55.229.4/"
             )
             self.send(msg)
         except Exception as e:

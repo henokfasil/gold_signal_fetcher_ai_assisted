@@ -212,17 +212,20 @@ Current research state at handoff:
   `data/event_feature_concordance_status.json` for the latest scheduled audit.
 - The Claude reviewer uses Anthropic's schema-constrained structured parsing
   with the strict Pydantic response contract
-  `claude-review-v2-json-schema`. It still makes at most one request per new
-  candidate, remains a veto/explanation only and fails closed if exactly one
-  validated structured block is not returned. The dashboard now reports a
+  `claude-review-v2-json-schema`. It makes at most one request per candidate,
+  and only after deterministic ML, threshold, macro, market and risk gates can
+  still approve it. Skips are journalled separately from API failures. Claude
+  remains a veto/explanation only and fails closed if exactly one validated
+  structured block is not returned. The dashboard reports a
   latest unavailable review as red `UNAVAILABLE · FAIL CLOSED`, then
   `RECOVERING` until its latest-five window is clean; historical parse failures
   are retained, not rewritten.
 - The dashboard security boundary is versioned under
   `ops/nginx/gold-signal-fetcher.conf` and
   `ops/systemd/gold-signal-cert-renew.*`. The intended public address is
-  `http://187.55.229.4:8502/` with HTTP Basic authentication. HTTPS is also
-  available at `https://187.55.229.4/`. nginx terminates the public boundary and
+  `https://187.55.229.4/` with HTTP Basic authentication over TLS. The legacy
+  `http://187.55.229.4:8502/` address redirects without challenging for
+  credentials. nginx terminates the public boundary and
   trusted short-lived IP certificate; Flask is loopback-only on
   `127.0.0.1:8510`, and certificate renewal is checked twice daily. Credentials
   and certificate private keys remain outside Git.
@@ -321,11 +324,11 @@ Canonical VPS facts as of the 2026-07-24 security/AI/integrity release:
   `74340932ea28972cc2ef0a314f68b8741bb71539`.
 - The canonical deployed revision must equal GitHub `master`; verify it with
   `git rev-parse HEAD` locally, on GitHub and on the VPS before operating.
-- Dashboard: `http://187.55.229.4:8502/` via nginx with HTTP Basic
-  authentication; HTTPS is also available at `https://187.55.229.4/` with a trusted short-lived
-  Let's Encrypt IP certificate and HTTP Basic authentication.
+- Dashboard: `https://187.55.229.4/` via nginx with a trusted short-lived
+  Let's Encrypt IP certificate and HTTP Basic authentication. Plaintext port
+  `8502` is redirect-only and never challenges for credentials.
 - `gold-signal-fetcher.service` is a loopback-only backend on
-  `127.0.0.1:8510`. Public port `8502` is the stable nginx dashboard endpoint.
+  `127.0.0.1:8510`. HTTPS `443` is the stable nginx dashboard endpoint.
 - `gold-signal-cert-renew.timer` checks certificate renewal twice daily.
   Unauthenticated HTTPS must return `401`; valid operator credentials must
   return `200`.
@@ -993,7 +996,8 @@ checkpoint proves the collection path started correctly; it does not establish
 event-feature parity, predictive skill or profitability.
 
 The runtime now makes at most one schema-constrained structured Claude request
-per new SMC candidate. `claude-review-v2-json-schema` is validated by the
+per SMC candidate, and only when deterministic approval gates pass.
+`claude-review-v2-json-schema` is validated by the
 Anthropic SDK against a strict Pydantic response model; missing, multiple,
 invalid or truncated structured blocks fail closed. Claude is an
 evidence-conflict reviewer and veto, not a numeric alpha vote. Its self-reported

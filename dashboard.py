@@ -643,7 +643,9 @@ TEMPLATE = """
 <section class="panel">
   <h2>Structured AI Review <span class="pill {{ ai.status_class }}">{{ ai.status }}</span></h2>
   <div class="grid">
-    <div class="card"><div class="label">Journalled Reviews</div><div class="value">{{ ai.total }}</div></div>
+    <div class="card"><div class="label">Candidate Records</div><div class="value">{{ ai.total }}</div></div>
+    <div class="card"><div class="label">Attempted</div><div class="value">{{ ai.attempted }}</div></div>
+    <div class="card"><div class="label">Gated / Skipped</div><div class="value">{{ ai.skipped }}</div></div>
     <div class="card"><div class="label">Available</div><div class="value">{{ ai.available }}</div></div>
     <div class="card"><div class="label">Unavailable</div><div class="value">{{ ai.unavailable }}</div></div>
     <div class="card"><div class="label">Context Passes</div><div class="value">{{ ai.passes }}</div></div>
@@ -651,7 +653,7 @@ TEMPLATE = """
     <div class="card"><div class="label">Avg Self-confidence</div><div class="value">{{ ai.avg_confidence }}</div></div>
     <div class="card"><div class="label">Latest Model</div><div class="value">{{ ai.model }}</div></div>
   </div>
-  <div class="note">Exactly one structured Claude review per new candidate. Its confidence is recorded for research but has no numeric vote; Claude can veto and explain only. Request/response payloads, hashes, model and prompt version are journalled. Recent availability: {{ ai.recent_availability }}. Issue: {{ ai.issue_summary }}</div>
+  <div class="note">At most one structured Claude review is attempted per candidate, and only after deterministic approval gates pass. Skipped calls are journalled separately from API failures. Claude confidence has no numeric vote; Claude can veto and explain only. Attempted request/response payloads, hashes, model and prompt version are journalled. Recent attempted-review availability: {{ ai.recent_availability }}. Issue: {{ ai.issue_summary }}</div>
 </section>
 
 <section class="panel">
@@ -721,7 +723,8 @@ def get_ai_review_stats(path=None):
     frame = load_trades(path or settings.FORWARD_AI_REVIEWS_CSV)
     empty = {
         "status": "AWAITING REVIEWS", "status_class": "warn", "total": 0,
-        "available": 0, "unavailable": 0, "passes": 0, "vetoes": 0,
+        "attempted": 0, "skipped": 0, "available": 0, "unavailable": 0,
+        "passes": 0, "vetoes": 0,
         "avg_confidence": "—", "model": "—", "recent_availability": "—",
         "issue_summary": "None",
     }
@@ -744,12 +747,29 @@ def get_ai_review_stats(path=None):
     should_trade = frame["should_trade"].astype(str).str.lower().isin(
         {"1", "true", "yes"}
     )
+    role = (
+        frame["role"].astype(str)
+        if "role" in frame.columns else pd.Series("", index=frame.index)
+    )
+    risks = (
+        frame["risks_json"].astype(str)
+        if "risks_json" in frame.columns else pd.Series("", index=frame.index)
+    )
+    skipped = role.eq("NOT_ATTEMPTED_PRECONDITION") | risks.str.contains(
+        "AI_REVIEW_SKIPPED_PRECONDITION", regex=False, na=False,
+    )
+    attempted = ~skipped
     confidence = pd.to_numeric(frame["confidence"], errors="coerce")
-    recent = available.tail(5)
-    latest_available = bool(available.iloc[-1])
-    if not latest_available:
+    recent = available[attempted].tail(5)
+    if not attempted.any():
+        status, status_class = "GATED · NOT ATTEMPTED", "warn"
+        issue_summary = (
+            "All candidates failed deterministic approval gates; Claude was not called"
+        )
+    elif not bool(available[attempted].iloc[-1]):
         status, status_class = "UNAVAILABLE · FAIL CLOSED", "bad"
-        issue_summary = str(frame["reasoning"].iloc[-1]).strip() or (
+        latest_attempt_index = attempted[attempted].index[-1]
+        issue_summary = str(frame.loc[latest_attempt_index, "reasoning"]).strip() or (
             "Latest structured Claude review is unavailable"
         )
     elif recent.all():
@@ -762,21 +782,24 @@ def get_ai_review_stats(path=None):
             f"latest {len(recent)}"
         )
     models = frame.loc[
-        available & frame["model"].astype(str).str.strip().str.len().gt(0),
+        attempted & available & frame["model"].astype(str).str.strip().str.len().gt(0),
         "model",
     ]
     return {
         "status": status, "status_class": status_class, "total": len(frame),
-        "available": int(available.sum()),
-        "unavailable": int((~available).sum()),
-        "passes": int((available & should_trade).sum()),
-        "vetoes": int((available & ~should_trade).sum()),
+        "attempted": int(attempted.sum()), "skipped": int(skipped.sum()),
+        "available": int((attempted & available).sum()),
+        "unavailable": int((attempted & ~available).sum()),
+        "passes": int((attempted & available & should_trade).sum()),
+        "vetoes": int((attempted & available & ~should_trade).sum()),
         "avg_confidence": (
-            f"{confidence[available].mean():.0f}%"
-            if confidence[available].notna().any() else "—"
+            f"{confidence[attempted & available].mean():.0f}%"
+            if confidence[attempted & available].notna().any() else "—"
         ),
         "model": str(models.iloc[-1]) if len(models) else "—",
-        "recent_availability": f"{int(recent.sum())}/{len(recent)}",
+        "recent_availability": (
+            f"{int(recent.sum())}/{len(recent)}" if len(recent) else "—"
+        ),
         "issue_summary": issue_summary[:240],
     }
 

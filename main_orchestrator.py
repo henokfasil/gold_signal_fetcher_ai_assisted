@@ -608,7 +608,7 @@ class ForwardContextJournal:
 
 
 class ForwardAIReviewJournal:
-    """Append-only provenance for the single structured Claude review."""
+    """Append-only provenance for attempted and precondition-skipped reviews."""
 
     COLUMNS = [
         "candidate_id", "timestamp", "pair", "direction", "available",
@@ -628,6 +628,7 @@ class ForwardAIReviewJournal:
 
     def append(self, candidate_id: str, timestamp: str,
                signal: dict, decision: dict) -> None:
+        attempted = bool(decision.get("claude_review_attempted", True))
         row = {
             "candidate_id": candidate_id,
             "timestamp": timestamp,
@@ -646,8 +647,14 @@ class ForwardAIReviewJournal:
             "risks_json": json.dumps(
                 decision.get("claude_risks", []), separators=(",", ":"),
             ),
-            "role": "STRUCTURED_CONTEXT_REVIEW_AND_VETO",
-            "decision_effect": "VETO_ONLY_NO_NUMERIC_CONFIDENCE_WEIGHT",
+            "role": (
+                "STRUCTURED_CONTEXT_REVIEW_AND_VETO"
+                if attempted else "NOT_ATTEMPTED_PRECONDITION"
+            ),
+            "decision_effect": (
+                "VETO_ONLY_NO_NUMERIC_CONFIDENCE_WEIGHT"
+                if attempted else "NOT_CALLED_DETERMINISTIC_GATES_FAILED"
+            ),
             "paper_research_only": True,
         }
         exists = self.path.exists() and self.path.stat().st_size > 0
@@ -967,19 +974,16 @@ class AIAssistedOrchestrator:
 
         ml_result = self.ml_filter.score_signal(signal)
         macro_result = self.correlation.validate_signal(signal["direction"])
+        risk_vetoes = self._risk_vetoes(signal)
 
         decision = self.ai_decider.decide(
             signal_info=signal, market_data=self._market_context(signal, macro_result),
             ml_result=ml_result, macro_result=macro_result,
             smc_score=float(signal.get("score", 0)), liquidity_tier=session["liquidity_tier"],
             open_positions=self.ledger.open_positions(),
+            hard_vetoes=risk_vetoes,
         )
         decision["ml_model_version"] = ml_result.get("model_version")
-        risk_vetoes = self._risk_vetoes(signal)
-        if risk_vetoes:
-            decision["vetoes"].extend(risk_vetoes)
-            decision["should_trade"] = False
-            decision["final_reason"] = ", ".join(decision["vetoes"])
 
         status = "OPEN" if decision["should_trade"] else "REJECTED"
         candidate_id = self._record_candidate(signal, decision, status)

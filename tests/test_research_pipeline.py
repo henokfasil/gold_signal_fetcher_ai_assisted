@@ -89,8 +89,10 @@ class FakeClaude:
     def __init__(self, should_trade=True, confidence=70):
         self.should_trade = should_trade
         self.confidence = confidence
+        self.calls = 0
 
     def analyze_signal(self, *args, **kwargs):
+        self.calls += 1
         return {"available": True, "should_trade": self.should_trade,
                 "confidence": self.confidence, "reasoning": "test",
                 "risks": [], "model": "test"}
@@ -1644,12 +1646,30 @@ class ResearchPipelineTests(unittest.TestCase):
             self.assertEqual(observing["status_class"], "good")
             self.assertEqual(observing["recent_availability"], "5/5")
 
+            skipped_rows = [{
+                "available": False, "should_trade": False, "confidence": "",
+                "model": "", "prompt_version": "claude-review-v2-json-schema",
+                "reasoning": "Claude review not attempted because gates failed",
+                "role": "NOT_ATTEMPTED_PRECONDITION",
+                "risks_json": '["AI_REVIEW_SKIPPED_PRECONDITION"]',
+            } for _ in range(2)]
+            pd.DataFrame(skipped_rows).to_csv(path, index=False)
+            gated = get_ai_review_stats(path)
+            self.assertEqual(gated["status"], "GATED · NOT ATTEMPTED")
+            self.assertEqual(gated["status_class"], "warn")
+            self.assertEqual(gated["attempted"], 0)
+            self.assertEqual(gated["skipped"], 2)
+            self.assertEqual(gated["unavailable"], 0)
+
     def test_claude_rejection_is_a_veto(self):
         decider = AITradingDecider()
         decider.claude = FakeClaude(should_trade=False, confidence=90)
         result = decider.decide(
             signal_info={}, market_data={},
-            ml_result={"available": True, "confidence": 90, "reason": "test"},
+            ml_result={
+                "available": True, "confidence": 90, "reason": "test",
+                "selection_threshold_pct": 65,
+            },
             macro_result={"available": True, "is_blocked": False, "score": 75},
             smc_score=90, liquidity_tier="peak", open_positions=[],
         )
@@ -1685,7 +1705,8 @@ class ResearchPipelineTests(unittest.TestCase):
 
     def test_missing_validated_ml_is_a_veto(self):
         decider = AITradingDecider()
-        decider.claude = FakeClaude()
+        fake_claude = FakeClaude()
+        decider.claude = fake_claude
         result = decider.decide(
             signal_info={}, market_data={},
             ml_result={"available": False, "confidence": None, "reason": "missing"},
@@ -1694,6 +1715,47 @@ class ResearchPipelineTests(unittest.TestCase):
         )
         self.assertFalse(result["should_trade"])
         self.assertIn("VALIDATED_ML_UNAVAILABLE", result["vetoes"])
+        self.assertNotIn("AI_REVIEW_UNAVAILABLE", result["vetoes"])
+        self.assertFalse(result["claude_review_attempted"])
+        self.assertEqual(fake_claude.calls, 0)
+
+    def test_deterministic_risk_veto_skips_claude_review(self):
+        decider = AITradingDecider()
+        fake_claude = FakeClaude()
+        decider.claude = fake_claude
+        result = decider.decide(
+            signal_info={}, market_data={},
+            ml_result={
+                "available": True, "confidence": 90, "reason": "test",
+                "selection_threshold_pct": 65,
+            },
+            macro_result={"available": True, "is_blocked": False, "score": 75},
+            smc_score=90, liquidity_tier="peak", open_positions=[],
+            hard_vetoes=["MIN_RR_NOT_MET"],
+        )
+        self.assertFalse(result["should_trade"])
+        self.assertEqual(result["vetoes"], ["MIN_RR_NOT_MET"])
+        self.assertFalse(result["claude_review_attempted"])
+        self.assertEqual(fake_claude.calls, 0)
+        self.assertIn("AI_REVIEW_SKIPPED_PRECONDITION", result["claude_risks"])
+
+    def test_below_registered_ml_threshold_skips_claude_review(self):
+        decider = AITradingDecider()
+        fake_claude = FakeClaude()
+        decider.claude = fake_claude
+        result = decider.decide(
+            signal_info={}, market_data={},
+            ml_result={
+                "available": True, "confidence": 60, "reason": "test",
+                "selection_threshold_pct": 65,
+            },
+            macro_result={"available": True, "is_blocked": False, "score": 75},
+            smc_score=90, liquidity_tier="peak", open_positions=[],
+        )
+        self.assertFalse(result["should_trade"])
+        self.assertEqual(result["final_reason"], "below registered ML threshold")
+        self.assertFalse(result["claude_review_attempted"])
+        self.assertEqual(fake_claude.calls, 0)
 
 
 if __name__ == "__main__":
