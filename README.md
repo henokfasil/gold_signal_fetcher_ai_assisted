@@ -8,10 +8,10 @@ This repository does not execute broker orders and does not currently claim a
 profitable edge. Missing ML or Claude evidence causes a candidate to be logged
 as rejected rather than approved with fabricated fallback confidence.
 
-The canonical dashboard URL is `http://187.55.229.4:8502/` and requires the
-operator's HTTP Basic credential. nginx proxies the stable public port `8502`
-to the Flask backend on loopback-only `127.0.0.1:8510`. HTTPS remains available
-at `https://187.55.229.4/`.
+The canonical dashboard URL is `https://187.55.229.4/` and requires the
+operator's HTTP Basic credential. nginx terminates TLS and proxies to the Flask
+backend on loopback-only `127.0.0.1:8510`. The legacy plaintext address on port
+`8502` redirects to HTTPS and never requests or accepts Basic credentials.
 
 A separate hash-locked observation layer captures 26 cross-market context
 fields prospectively for every unique BUY and SELL paper candidate. It is
@@ -65,12 +65,12 @@ authorizes nothing. Further outcome research must use a separate frozen
 contract and genuinely new prospective evidence rather than mine the inspected
 2020-2026 events.
 
-Each new SMC candidate receives at most one structured Claude review. Claude
-can identify conflicts, explain and veto; its self-reported confidence is not a
-numeric approval vote. Exact request/response payloads and provenance are
-append-only. The former Yahoo price-momentum observer labelled as “sentiment”
-is disabled because it did not implement its registered news/sentiment
-contract.
+Each new SMC candidate receives at most one structured Claude review, attempted
+only if deterministic approval gates pass. Claude can identify conflicts,
+explain and veto; its self-reported confidence is not a numeric approval vote.
+Attempted request/response payloads and skipped-call provenance are append-only.
+The former Yahoo price-momentum observer labelled as “sentiment” is disabled
+because it did not implement its registered news/sentiment contract.
 
 See [CLAUDE.md](CLAUDE.md) for architecture, data contracts, operational status
 and the research roadmap. The skeptical-review response and implemented

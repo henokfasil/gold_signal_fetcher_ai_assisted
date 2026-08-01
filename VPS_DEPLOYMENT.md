@@ -34,8 +34,10 @@ The two canonical root-crontab entries are:
 
 ## Dashboard address and bind
 
-The stable user-facing address is `http://187.55.229.4:8502/`. Authentication
-is required. HTTPS remains available at `https://187.55.229.4/`.
+The stable user-facing address is `https://187.55.229.4/`. HTTP Basic
+authentication is required only after TLS is established. The legacy address
+`http://187.55.229.4:8502/` redirects to the canonical HTTPS address without
+requesting credentials.
 The credential is deliberately stored outside Git:
 
 - VPS: `/root/gold-signal-dashboard-credentials.txt`, mode `0600`;
@@ -43,9 +45,9 @@ The credential is deliberately stored outside Git:
   `0600`.
 
 Flask listens only on `127.0.0.1:8510`; nginx is the sole public dashboard
-boundary. Public port `8502` is the stable authenticated HTTP endpoint. Port
-`80` serves ACME challenges and redirects all other traffic to HTTPS. The
-checked-in nginx configuration is
+boundary. Public ports `8502` and `80` redirect plaintext requests to HTTPS;
+port `80` also serves ACME challenges. Only HTTPS `443` presents the Basic
+authentication challenge. The checked-in nginx configuration is
 `ops/nginx/gold-signal-fetcher.conf`.
 
 The IP certificate is a short-lived certificate. The renewal timer must remain
@@ -109,9 +111,12 @@ cd /root/gold_signal_fetcher_ai_assisted
 git pull --ff-only
 venv/bin/pip install -r requirements.txt
 venv/bin/python -m unittest discover -s tests -v
+venv/bin/python test_local_integration.py
 venv/bin/python validate_code.py
 install -m 0755 ops/collect_dukascopy_snapshot.py \
   /usr/local/lib/gold-signal-fetcher/collect_dukascopy_snapshot.py
+install -m 0644 ops/nginx/gold-signal-fetcher.conf \
+  /etc/nginx/conf.d/gold-signal-fetcher.conf
 # The daily concordance job writes delayed native-timeframe references to its
 # append-only, content-addressed data archive.
 # Preserve secrets and edit only these source selectors in .env:
@@ -135,15 +140,16 @@ systemctl list-timers gold-signal-cert-renew.timer --no-pager
 ss -lntp | grep -E ':(8502)[[:space:]]'
 crontab -l
 curl -fsS http://127.0.0.1:8510/ >/dev/null
-curl -sS -o /dev/null -w '%{http_code}\n' http://187.55.229.4:8502/
+curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' http://187.55.229.4:8502/
 curl -sS -o /dev/null -w '%{http_code}\n' https://187.55.229.4/
 /opt/certbot/bin/certbot certificates
 tail -50 logs/gold_scanner_ai.log
 ```
 
-Expected: the backend is bound only to `127.0.0.1:8510`, unauthenticated public
-port `8502` returns `401`, valid credentials return `200`, the certificate
-verifies without `-k`, and scanner cron remains present. The dashboard feed panel should be
+Expected: the backend is bound only to `127.0.0.1:8510`, plaintext public port
+`8502` returns `301` to `https://187.55.229.4/`, unauthenticated HTTPS returns
+`401`, valid credentials return `200`, the certificate verifies without `-k`,
+and scanner cron remains present. The dashboard feed panel should be
 HEALTHY with five cadence and bid/ask checks passing. During the weekend, the
 latest bar may be old while the panel correctly reports market CLOSED. The
 feature-concordance panel must begin as AWAITING/COLLECTING, never PASS before

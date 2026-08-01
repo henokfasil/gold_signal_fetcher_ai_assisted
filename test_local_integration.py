@@ -30,7 +30,8 @@ def main():
     assert ml["available"] is False, "an unvalidated local model must not score"
 
     bullish = {
-        "price": 2400, "stop_loss": 2390, "take_profit": 2420, "score": 75,
+        "direction": "BUY", "price": 2400, "stop_loss": 2390,
+        "take_profit": 2420, "score": 75,
         "symbol": "XAUUSD", "rr_ratio": 2.0,
         "mtf": {"smc": {"struct_4h": "bullish"}},
     }
