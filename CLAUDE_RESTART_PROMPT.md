@@ -119,9 +119,9 @@ Important evidence already established:
   2027-01-23 23:04:38 UTC. No interim performance analysis or confirmation
   claim is permitted. Continue independent feature/target research while it
   runs.
-- Dashboard users open `https://187.55.229.4/` and authenticate only over TLS.
-  The legacy `http://187.55.229.4:8502/` listener redirects to that canonical
-  address and must never present a Basic authentication challenge.
+- Dashboard users open `https://187.55.229.4/` without a login challenge. The
+  read-only dashboard is intentionally public by operator request. The legacy
+  `http://187.55.229.4:8502/` listener redirects to that canonical address.
 - The engineering baseline is operating, but the project is not finished: no
   validated profitable edge or deployable ML model exists. The event-first
   historical milestone is now complete and rejected. The next research task is
@@ -157,8 +157,8 @@ Continue with these objectives in order:
 9. Keep SELL shadow-only unless its separate pre-registered research track
    passes all gates.
 10. Keep the public dashboard at `https://187.55.229.4/`; keep Flask loopback
-   only and redirect plaintext ports `80` and `8502` without requesting Basic
-   credentials.
+   only, keep TLS/security headers/request limiting, and redirect plaintext
+   ports `80` and `8502`.
 11. Update `CLAUDE.md`, `RESEARCH_PROTOCOL.md`, tests, Git and the canonical VPS
    together only after local verification.
 

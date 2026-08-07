@@ -8,7 +8,8 @@ The only active deployment is `187.55.229.4` in
 - Dashboard backend: `gold-signal-fetcher.service`, loopback
   `127.0.0.1:8510`.
 - Public boundary: nginx on HTTPS `443`, trusted short-lived Let's Encrypt IP
-  certificate, HTTP Basic authentication and request limiting.
+  certificate, security headers and request limiting. The read-only dashboard
+  is intentionally public and has no login challenge.
 - Certificate renewal: `gold-signal-cert-renew.timer`, twice daily.
 - TradingView desktop/MCP: installed but disabled/stopped; optional interactive
   legacy research only. Re-enable only for a deliberate maintenance session.
@@ -34,47 +35,30 @@ The two canonical root-crontab entries are:
 
 ## Dashboard address and bind
 
-The stable user-facing address is `https://187.55.229.4/`. HTTP Basic
-authentication is required only after TLS is established. The legacy address
-`http://187.55.229.4:8502/` redirects to the canonical HTTPS address without
-requesting credentials.
-The credential is deliberately stored outside Git:
-
-- VPS: `/root/gold-signal-dashboard-credentials.txt`, mode `0600`;
-- operator workstation: `~/gold_signal_dashboard_credentials.txt`, mode
-  `0600`.
+The stable user-facing address is `https://187.55.229.4/`. It is publicly
+readable without authentication. The legacy address
+`http://187.55.229.4:8502/` redirects to the canonical HTTPS address.
 
 Flask listens only on `127.0.0.1:8510`; nginx is the sole public dashboard
 boundary. Public ports `8502` and `80` redirect plaintext requests to HTTPS;
-port `80` also serves ACME challenges. Only HTTPS `443` presents the Basic
-authentication challenge. The checked-in nginx configuration is
+port `80` also serves ACME challenges. HTTPS `443` proxies the dashboard
+without an authentication challenge. The checked-in nginx configuration is
 `ops/nginx/gold-signal-fetcher.conf`.
 
 The IP certificate is a short-lived certificate. The renewal timer must remain
 enabled and its next run and certificate expiry must be monitored.
 
-## First-time TLS/authentication installation
+## First-time TLS installation
 
-Install nginx, the password utility and a current Certbot in its own virtual
-environment. The Certbot release must support short-lived IP certificates.
+Install nginx and a current Certbot in its own virtual environment. The Certbot
+release must support short-lived IP certificates.
 
 ```bash
 apt-get update
-apt-get install -y nginx apache2-utils python3-venv
+apt-get install -y nginx python3-venv
 python3 -m venv /opt/certbot
 /opt/certbot/bin/pip install 'certbot>=5.4,<6'
 install -d -m 0755 /var/www/letsencrypt/.well-known/acme-challenge
-```
-
-Create `/etc/nginx/gold-signal-fetcher.htpasswd` for user `goldresearch` and
-save the generated password only in the root-owned credential file. The nginx
-worker needs read access to the bcrypt hash file, but never to the plaintext
-credential:
-
-```bash
-chown root:www-data /etc/nginx/gold-signal-fetcher.htpasswd
-chmod 0640 /etc/nginx/gold-signal-fetcher.htpasswd
-chmod 0600 /root/gold-signal-dashboard-credentials.txt
 ```
 
 Start nginx with a temporary port-80 ACME webroot server, then request the
@@ -147,9 +131,9 @@ tail -50 logs/gold_scanner_ai.log
 ```
 
 Expected: the backend is bound only to `127.0.0.1:8510`, plaintext public port
-`8502` returns `301` to `https://187.55.229.4/`, unauthenticated HTTPS returns
-`401`, valid credentials return `200`, the certificate verifies without `-k`,
-and scanner cron remains present. The dashboard feed panel should be
+`8502` returns `301` to `https://187.55.229.4/`, public HTTPS returns `200`
+without credentials, the certificate verifies without `-k`, and scanner cron
+remains present. The dashboard feed panel should be
 HEALTHY with five cadence and bid/ask checks passing. During the weekend, the
 latest bar may be old while the panel correctly reports market CLOSED. The
 feature-concordance panel must begin as AWAITING/COLLECTING, never PASS before
@@ -165,6 +149,6 @@ with BUY/SELL geometry and an explicit paper-only warning. Unified metrics use
 ## Rollback
 
 Revert only to a known tested git revision, rerun tests, reinstall the
-collector, and restart the dashboard. Keep the TLS/authentication boundary in
-place during application rollback. Keep the scanner paused if snapshot, ledger,
-model metadata, or paper-mode checks fail.
+collector, and restart the dashboard. Keep the TLS boundary in place during
+application rollback. Keep the scanner paused if snapshot, ledger, model
+metadata, or paper-mode checks fail.
