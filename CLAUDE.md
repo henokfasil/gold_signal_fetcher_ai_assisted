@@ -223,12 +223,13 @@ Current research state at handoff:
 - The dashboard security boundary is versioned under
   `ops/nginx/gold-signal-fetcher.conf` and
   `ops/systemd/gold-signal-cert-renew.*`. The intended public address is
-  `https://187.55.229.4/` with HTTP Basic authentication over TLS. The legacy
-  `http://187.55.229.4:8502/` address redirects without challenging for
-  credentials. nginx terminates the public boundary and
+  `https://187.55.229.4/`, intentionally public without a login challenge by
+  operator request as of 2026-08-07. The legacy
+  `http://187.55.229.4:8502/` address redirects to HTTPS. nginx terminates the
+  public boundary and
   trusted short-lived IP certificate; Flask is loopback-only on
-  `127.0.0.1:8510`, and certificate renewal is checked twice daily. Credentials
-  and certificate private keys remain outside Git.
+  `127.0.0.1:8510`, and certificate renewal is checked twice daily. Certificate
+  private keys remain outside Git.
 
 Completion checkpoint:
 
@@ -317,21 +318,20 @@ an approved paper trade.
 The previous documentation called the system “production ready.” That claim
 was removed after a code audit found disconnected and placeholder components.
 
-Canonical VPS facts as of the 2026-07-24 security/AI/integrity release:
+Canonical VPS facts, updated through 2026-08-07:
 
 - Canonical host: `187.55.229.4` (`srv1831821`).
-- Core security/AI/integrity implementation commit:
+- Core 2026-07-24 security/AI/integrity implementation commit:
   `74340932ea28972cc2ef0a314f68b8741bb71539`.
 - The canonical deployed revision must equal GitHub `master`; verify it with
   `git rev-parse HEAD` locally, on GitHub and on the VPS before operating.
 - Dashboard: `https://187.55.229.4/` via nginx with a trusted short-lived
-  Let's Encrypt IP certificate and HTTP Basic authentication. Plaintext port
-  `8502` is redirect-only and never challenges for credentials.
+  Let's Encrypt IP certificate. The read-only dashboard is intentionally
+  public without a login challenge. Plaintext port `8502` is redirect-only.
 - `gold-signal-fetcher.service` is a loopback-only backend on
   `127.0.0.1:8510`. HTTPS `443` is the stable nginx dashboard endpoint.
 - `gold-signal-cert-renew.timer` checks certificate renewal twice daily.
-  Unauthenticated HTTPS must return `401`; valid operator credentials must
-  return `200`.
+  Public HTTPS must return `200` without credentials.
 - The pre-release backup is
   `/root/gold_signal_fetcher_backups/security-ai-integrity-20260724T085200Z-pre-7434093`.
 - Repository: `/root/gold_signal_fetcher_ai_assisted`.
@@ -1034,10 +1034,12 @@ sentiment evidence.
 ## Security and operations
 
 - Never commit `.env`, API keys, Telegram tokens or account identifiers.
-- Never commit dashboard passwords, nginx htpasswd content, certificate private
-  keys or `/root/gold-signal-dashboard-credentials.txt`.
+- Never commit historical dashboard passwords, nginx htpasswd content,
+  certificate private keys or `/root/gold-signal-dashboard-credentials.txt`.
 - Keep nginx on public ports 80/443/8502, Flask on loopback `127.0.0.1:8510`, HTTP
-  Basic authentication enabled and `gold-signal-cert-renew.timer` healthy.
+  redirects and TLS/security headers/request limiting enabled, and
+  `gold-signal-cert-renew.timer` healthy. The dashboard has no authentication
+  challenge by explicit operator request.
 - Telegram sends only approved paper signals and unified paper metrics. It
   never places broker orders. Rejected candidates remain visible in the ledger
   and dashboard without creating notification spam.
