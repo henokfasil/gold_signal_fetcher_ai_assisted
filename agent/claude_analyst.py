@@ -241,6 +241,8 @@ class AITradingDecider:
             "final_reason": (
                 ("approved" + (f" [{', '.join(flags)}]" if flags else ""))
                 if should_trade
-                else ", ".join(vetoes) or "below SMC paper threshold"
+                else ", ".join(vetoes)
+                or ("below SMC paper threshold" if paper_track
+                    else "below registered ML threshold")
             ),
         }
