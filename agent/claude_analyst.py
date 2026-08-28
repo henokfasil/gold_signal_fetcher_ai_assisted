@@ -152,14 +152,24 @@ class AITradingDecider:
             decision_score = float(ml_result["confidence"])
             threshold = float(ml_threshold)
         else:
+            # PAPER RULES-ONLY TRACK (no validated ML artifact present).
+            # Previously this set an impossible 101.0 bar, so every candidate was
+            # rejected as VALIDATED_ML_UNAVAILABLE. Instead, gate on the SMC score
+            # (0-100 scale) via a configurable paper threshold. ML absence is
+            # recorded below as a NON-blocking provenance flag, not a hard veto.
+            # This changes only the paper ledger: PAPER_TRADING=true and the
+            # absence of any broker-order code keep the system strictly paper-only.
             decision_score = float(smc_score)
-            threshold = 101.0
+            threshold = float(os.getenv("SMC_PAPER_THRESHOLD", "70"))
 
         vetoes = list(dict.fromkeys(hard_vetoes or []))
+        flags = []
         if macro_result.get("is_blocked"):
             vetoes.append("MACRO_CONFLICT")
         if not ml_ready:
-            vetoes.append("VALIDATED_ML_UNAVAILABLE")
+            # Non-blocking provenance flag (was a hard veto). The dashboard/ledger
+            # still record ML unavailability via this flag and the ml_available field.
+            flags.append("VALIDATED_ML_UNAVAILABLE")
         if liquidity_tier == "closed":
             vetoes.append("MARKET_CLOSED")
         vetoes = list(dict.fromkeys(vetoes))
@@ -171,7 +181,10 @@ class AITradingDecider:
             )
             claude_review_attempted = True
             if not claude.get("available"):
-                vetoes.append("AI_REVIEW_UNAVAILABLE")
+                # Soft: Claude/transport being unavailable no longer blocks a paper
+                # trade. Recorded as a flag; a genuine Claude veto (AI_REJECTED) below
+                # still blocks on real evidence conflict.
+                flags.append("AI_REVIEW_UNAVAILABLE")
             elif not claude.get("should_trade"):
                 vetoes.append("AI_REJECTED")
         else:
@@ -211,10 +224,11 @@ class AITradingDecider:
             "macro_available": bool(macro_result.get("available")),
             "macro_score": macro_result.get("score"),
             "vetoes": vetoes,
+            "flags": flags,
             "liquidity_tier": liquidity_tier,
             "final_reason": (
-                "approved"
+                ("approved" + (f" [{', '.join(flags)}]" if flags else ""))
                 if should_trade
-                else ", ".join(vetoes) or "below registered ML threshold"
+                else ", ".join(vetoes) or "below SMC paper threshold"
             ),
         }
