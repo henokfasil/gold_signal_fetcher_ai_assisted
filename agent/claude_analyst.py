@@ -148,28 +148,37 @@ class AITradingDecider:
         # selection threshold in metadata.
         ml_threshold = ml_result.get("selection_threshold_pct")
         ml_ready = ml_result.get("available") and ml_threshold is not None
+        # Opt-in rules-only PAPER track. When SMC_PAPER_THRESHOLD is set AND no
+        # validated ML artifact exists, gate on the SMC score (0-100) instead of
+        # blocking every candidate with an impossible 101.0 bar. When the env var
+        # is UNSET, the original ML-mandatory scientific behavior is preserved
+        # exactly (impossible bar + hard veto), so the frozen research invariants
+        # and their guardrail tests are unchanged. Strictly paper-only either way:
+        # PAPER_TRADING=true and no broker-order code exists anywhere in the repo.
+        paper_threshold = os.getenv("SMC_PAPER_THRESHOLD")
+        paper_track = (paper_threshold is not None) and not ml_ready
+
         if ml_ready:
             decision_score = float(ml_result["confidence"])
             threshold = float(ml_threshold)
-        else:
-            # PAPER RULES-ONLY TRACK (no validated ML artifact present).
-            # Previously this set an impossible 101.0 bar, so every candidate was
-            # rejected as VALIDATED_ML_UNAVAILABLE. Instead, gate on the SMC score
-            # (0-100 scale) via a configurable paper threshold. ML absence is
-            # recorded below as a NON-blocking provenance flag, not a hard veto.
-            # This changes only the paper ledger: PAPER_TRADING=true and the
-            # absence of any broker-order code keep the system strictly paper-only.
+        elif paper_track:
             decision_score = float(smc_score)
-            threshold = float(os.getenv("SMC_PAPER_THRESHOLD", "70"))
+            threshold = float(paper_threshold)
+        else:
+            decision_score = float(smc_score)
+            threshold = 101.0
 
         vetoes = list(dict.fromkeys(hard_vetoes or []))
         flags = []
         if macro_result.get("is_blocked"):
             vetoes.append("MACRO_CONFLICT")
         if not ml_ready:
-            # Non-blocking provenance flag (was a hard veto). The dashboard/ledger
-            # still record ML unavailability via this flag and the ml_available field.
-            flags.append("VALIDATED_ML_UNAVAILABLE")
+            if paper_track:
+                # Non-blocking provenance flag. The dashboard/ledger still record
+                # ML unavailability via this flag and the ml_available field.
+                flags.append("VALIDATED_ML_UNAVAILABLE")
+            else:
+                vetoes.append("VALIDATED_ML_UNAVAILABLE")
         if liquidity_tier == "closed":
             vetoes.append("MARKET_CLOSED")
         vetoes = list(dict.fromkeys(vetoes))
@@ -181,10 +190,13 @@ class AITradingDecider:
             )
             claude_review_attempted = True
             if not claude.get("available"):
-                # Soft: Claude/transport being unavailable no longer blocks a paper
-                # trade. Recorded as a flag; a genuine Claude veto (AI_REJECTED) below
-                # still blocks on real evidence conflict.
-                flags.append("AI_REVIEW_UNAVAILABLE")
+                if paper_track:
+                    # Soft (opt-in): Claude/transport being unavailable no longer
+                    # blocks a paper trade. A genuine Claude veto (AI_REJECTED)
+                    # below still blocks on real evidence conflict.
+                    flags.append("AI_REVIEW_UNAVAILABLE")
+                else:
+                    vetoes.append("AI_REVIEW_UNAVAILABLE")
             elif not claude.get("should_trade"):
                 vetoes.append("AI_REJECTED")
         else:

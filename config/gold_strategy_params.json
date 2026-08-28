@@ -45,7 +45,7 @@
     "daily_loss_cap_pct": -3.0,
     "weekly_loss_cap_pct": -6.0,
     "max_open_trades": 15,
-    "min_risk_reward_ratio": 1.0,
+    "min_risk_reward_ratio": 2.0,
     "sl_cooldown_minutes": 40,
     "news_block_hours": 2,
     "block_hours": {

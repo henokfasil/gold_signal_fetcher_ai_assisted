@@ -18,6 +18,11 @@ set -a
 source "${PROJECT_DIR}/.env"
 set +a
 export PAPER_TRADING=true
+# Opt-in rules-only PAPER track: with no validated ML artifact, approve on the
+# SMC score (0-100) at/above this threshold instead of blocking every candidate.
+# Paper-only (PAPER_TRADING=true above; no broker-order code exists). Unset this
+# to restore the default ML-mandatory research behavior.
+export SMC_PAPER_THRESHOLD="${SMC_PAPER_THRESHOLD:-70}"
 export LOG_FILE
 
 # flock releases automatically on exit and cannot leave a stale PID lock.
