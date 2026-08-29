@@ -46,9 +46,26 @@ def load_trades(csv_path):
         return pd.DataFrame()
 
 
+# Public "Live Track Record" starts fresh from the market reopen after the
+# rules-only paper track went live. The pre-fix ledger rows (all rejected by the
+# old ML wall) are excluded from the public view only; the ledger file itself is
+# preserved intact because the evidence-integrity monitor and frozen forward
+# pilot reconcile against it. Override with the TRACK_RECORD_START env var.
+TRACK_RECORD_START = os.getenv("TRACK_RECORD_START", "2026-08-30T00:00:00+00:00")
+
+
+def _since_cutoff(frame):
+    """Keep only ledger rows at/after the public track-record start."""
+    if frame.empty or "timestamp" not in frame.columns or not TRACK_RECORD_START:
+        return frame
+    ts = pd.to_datetime(frame["timestamp"], errors="coerce", utc=True)
+    cutoff = pd.to_datetime(TRACK_RECORD_START, utc=True)
+    return frame[ts >= cutoff].copy()
+
+
 def calculate_metrics(csv_path):
     """Calculate unified paper-candidate and approved-trade metrics."""
-    frame = load_trades(csv_path)
+    frame = _since_cutoff(load_trades(csv_path))
     empty = {
         "status": "Collecting", "starting_capital": f"${STARTING_CAPITAL:,.2f}",
         "current_capital": f"${STARTING_CAPITAL:,.2f}", "total_profit": "$0.00",
@@ -97,7 +114,7 @@ def calculate_metrics(csv_path):
 
 def get_closed_trades(csv_path, limit=15):
     """Get only closed trades (WIN/LOSS/EXPIRED) for the dashboard."""
-    frame = load_trades(csv_path)
+    frame = _since_cutoff(load_trades(csv_path))
     if frame.empty:
         return []
 
@@ -117,6 +134,8 @@ def get_closed_trades(csv_path, limit=15):
             "time": str(row.get("timestamp", ""))[:16].replace("T", " "),
             "direction": str(row.get("direction", "—")).upper(),
             "entry": f"{row.get('entry', '—'):.2f}" if pd.notna(row.get("entry")) else "—",
+            "stop": f"{row.get('stop_loss', '—'):.2f}" if pd.notna(row.get("stop_loss")) else "—",
+            "target": f"{row.get('take_profit', '—'):.2f}" if pd.notna(row.get("take_profit")) else "—",
             "exit": f"{row.get('exit_price', '—'):.2f}" if pd.notna(row.get("exit_price")) else "—",
             "rr": f"{row.get('rr_ratio', '—'):.2f}" if pd.notna(row.get("rr_ratio")) else "—",
             "pnl": f"${pnl_usd:+.2f}",
@@ -639,6 +658,8 @@ TEMPLATE = """
           <th>Time UTC</th>
           <th>Side</th>
           <th>Entry</th>
+          <th>SL</th>
+          <th>TP</th>
           <th>Exit</th>
           <th>R/R</th>
           <th>P&L</th>
@@ -653,6 +674,8 @@ TEMPLATE = """
               <td>{{ r.time }}</td>
               <td class="{{ r.direction }}">{{ r.direction }}</td>
               <td>{{ r.entry }}</td>
+              <td style="color:#f87171">{{ r.stop }}</td>
+              <td style="color:#10b981">{{ r.target }}</td>
               <td>{{ r.exit }}</td>
               <td>{{ r.rr }}</td>
               <td class="{{ r.outcome_class }}">{{ r.pnl }}</td>
@@ -661,7 +684,7 @@ TEMPLATE = """
             </tr>
           {% endfor %}
         {% else %}
-          <tr><td colspan="8" class="muted">No closed trades yet.</td></tr>
+          <tr><td colspan="10" class="muted">No closed trades yet — the live track record starts at the Sunday reopen.</td></tr>
         {% endif %}
       </tbody>
     </table>
