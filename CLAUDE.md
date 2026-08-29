@@ -1,6 +1,6 @@
 # Gold Signal Fetcher — Unified AI-Assisted Research System
 
-Last reviewed: 2026-07-24
+Last reviewed: 2026-08-29
 
 ## Claude restart handoff
 
@@ -307,13 +307,62 @@ files. A replacement needs a new hash-locked contract with exact source
 identities, publication/availability timestamps, licensing, historical
 coverage and a leakage-safe comparison before any outcome is inspected.
 
+## Rules-only paper track — 2026-08-29
+
+The paper ledger had recorded 292 candidates and rejected all 292. With no
+validated ML artifact present, `agent/claude_analyst.py::decide()` set an
+impossible `threshold = 101.0` and added a `VALIDATED_ML_UNAVAILABLE` hard veto
+to every candidate, so nothing could ever open even as a paper trade.
+
+An opt-in rules-only paper track now exists, gated behind the environment
+variable `SMC_PAPER_THRESHOLD`. When it is set and no validated ML model is
+available, `decide()` gates on the SMC score (0-100 scale) at or above that
+threshold instead of the impossible bar, and records `VALIDATED_ML_UNAVAILABLE`
+and `AI_REVIEW_UNAVAILABLE` as non-blocking provenance flags rather than hard
+vetoes. When the variable is unset, the original ML-mandatory behavior is
+preserved exactly, so the scientific default and all guardrail tests are
+unchanged. The canonical wrapper `ops/run_gold_scanner_ai.sh` exports
+`SMC_PAPER_THRESHOLD=70`.
+
+A candidate still opens as a paper trade only when the SMC score meets the
+threshold, R:R meets the gate, the market is open, and Claude does not veto. A
+genuine Claude veto (`AI_REJECTED`), a macro conflict (`MACRO_CONFLICT`) and a
+closed market (`MARKET_CLOSED`) still block. This is strictly paper:
+`PAPER_TRADING=true` is unchanged and no broker-order code exists anywhere in
+the repository.
+
+This track is exploratory forward-evidence collection, not a validated model or
+a demonstrated edge. The SMC candidate rule it trades has no proven edge: the
+purged walk-forward, context, execution-state, candidate-generation and
+event-universe experiments were all rejected, and the realistic rules-only
+portfolio simulation is roughly break-even (profit factor about 0.99). Do not
+read these paper trades as evidence of profitability.
+
+Do NOT lower `risk_gates.min_risk_reward_ratio` in
+`config/gold_strategy_params.json`. The frozen forward-pilot contract guard in
+`main_orchestrator.py` requires the runtime minimum R:R to equal the locked
+value 2.0; changing it makes `ForwardVariantJournal` raise and corrupts the
+frozen experiment. If lower-R:R candidates are ever wanted for the paper track,
+add a separate `paper_min_risk_reward_ratio` key and leave the frozen 2.0
+untouched.
+
+The Anthropic reviewer requires a **Workspace** API key, not a Personal
+identity-linked key. Identity-linked keys fail with HTTP 400
+`anthropic-workspace-id is required` because the SDK sends no workspace header.
+The active reviewer model is `claude-haiku-4-5-20251001`.
+
+Commits: `6ac42ab` -> `432c3cc` -> `36d4497` on `master`.
+
 ## Status
 
 This repository is a **paper-trading research system**, not a live execution
 system and not evidence of a profitable strategy. `PAPER_TRADING=true` is a
-mandatory runtime invariant. The system records SMC candidates and requires
-validated ML plus an available Claude review before it can mark a candidate as
-an approved paper trade.
+mandatory runtime invariant. By default the system records SMC candidates and
+requires validated ML plus an available Claude review before it can mark a
+candidate as an approved paper trade. An opt-in rules-only paper track
+(`SMC_PAPER_THRESHOLD`, see “Rules-only paper track — 2026-08-29” below) can
+instead approve on the SMC score when no validated ML model exists; it remains
+strictly paper-only and is exploratory evidence collection, not an edge.
 
 The previous documentation called the system “production ready.” That claim
 was removed after a code audit found disconnected and placeholder components.
