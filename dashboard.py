@@ -607,57 +607,14 @@ TEMPLATE = """
   <div class="muted">{{ now }} UTC</div>
 </div>
 
-{% if feed.status != "HEALTHY" or integrity.status_class == "bad" or concordance.status_class == "bad" or ai.status_class == "bad" %}
+{% if feed.status != "HEALTHY" or ai.status_class == "bad" %}
 <div class="alert show">
-  <div class="alert-text">⚠️ Feed: {{ feed.status }} • Evidence: {{ integrity.status }} • Feature parity: {{ concordance.status }} • AI review: {{ ai.status }} • {{ integrity.issue_summary }} {{ concordance.issue_summary }} {{ ai.issue_summary }}</div>
+  <div class="alert-text">⚠️ Feed: {{ feed.status }} • AI review: {{ ai.status }} • {{ ai.issue_summary }}</div>
 </div>
 {% endif %}
 
-<section class="panel">
-  <h2>Operational Integrity <span class="pill {{ integrity.status_class }}">{{ integrity.status }}</span></h2>
-  <div class="grid">
-    <div class="card"><div class="label">Price Feed</div><div class="value">{{ feed.status }}</div></div>
-    <div class="card"><div class="label">Snapshot Age</div><div class="value">{{ feed.age }}</div></div>
-    <div class="card"><div class="label">Last Candidate Scan</div><div class="value">{{ feed.last_scan }}</div></div>
-    <div class="card"><div class="label">Evidence Candidates</div><div class="value">{{ integrity.pilot_candidates }}</div></div>
-    <div class="card"><div class="label">Event Observer</div><div class="value">{{ event.status }}</div></div>
-    <div class="card"><div class="label">Prospective Events</div><div class="value">{{ event.events }}</div></div>
-    <div class="card"><div class="label">Feature Parity</div><div class="value">{{ concordance.status }}</div></div>
-  </div>
-  <div class="note">File-only monitoring. Event observations are outcome-blind and isolated from signals. Current evidence issue: {{ integrity.issue_summary }}</div>
-</section>
-
-<section class="panel">
-  <h2>Event Feature Concordance <span class="pill {{ concordance.status_class }}">{{ concordance.status }}</span></h2>
-  <div class="grid">
-    <div class="card"><div class="label">Runtime Archives</div><div class="value">{{ concordance.self_replay }}/{{ concordance.runtime_scans }}</div></div>
-    <div class="card"><div class="label">Compared Decisions</div><div class="value">{{ concordance.compared_decisions }}/{{ concordance.minimum_decisions }}</div></div>
-    <div class="card"><div class="label">Compared Events</div><div class="value">{{ concordance.compared_events }}/{{ concordance.minimum_events }}</div></div>
-    <div class="card"><div class="label">Coverage</div><div class="value">{{ concordance.coverage }}</div></div>
-    <div class="card"><div class="label">Replay Lag</div><div class="value">{{ concordance.replay_lag }}</div></div>
-    <div class="card"><div class="label">Next Authority</div><div class="value">{{ concordance.authorized }}</div></div>
-  </div>
-  <div class="note">Native runtime snapshots are content-addressed and compared with a delayed, separately fetched five-timeframe reference. This reads no outcomes and can authorize only registration of a later shadow experiment. Audit: {{ concordance.age }}. Issue: {{ concordance.issue_summary }}</div>
-</section>
-
-<section class="panel">
-  <h2>Structured AI Review <span class="pill {{ ai.status_class }}">{{ ai.status }}</span></h2>
-  <div class="grid">
-    <div class="card"><div class="label">Candidate Records</div><div class="value">{{ ai.total }}</div></div>
-    <div class="card"><div class="label">Attempted</div><div class="value">{{ ai.attempted }}</div></div>
-    <div class="card"><div class="label">Gated / Skipped</div><div class="value">{{ ai.skipped }}</div></div>
-    <div class="card"><div class="label">Available</div><div class="value">{{ ai.available }}</div></div>
-    <div class="card"><div class="label">Unavailable</div><div class="value">{{ ai.unavailable }}</div></div>
-    <div class="card"><div class="label">Context Passes</div><div class="value">{{ ai.passes }}</div></div>
-    <div class="card"><div class="label">Vetoes</div><div class="value">{{ ai.vetoes }}</div></div>
-    <div class="card"><div class="label">Avg Self-confidence</div><div class="value">{{ ai.avg_confidence }}</div></div>
-    <div class="card"><div class="label">Latest Model</div><div class="value">{{ ai.model }}</div></div>
-  </div>
-  <div class="note">At most one structured Claude review is attempted per candidate, and only after deterministic approval gates pass. Skipped calls are journalled separately from API failures. Claude confidence has no numeric vote; Claude can veto and explain only. Attempted request/response payloads, hashes, model and prompt version are journalled. Recent attempted-review availability: {{ ai.recent_availability }}. Issue: {{ ai.issue_summary }}</div>
-</section>
-
-<section class="panel">
-  <h2>Performance Metrics</h2>
+<section class="panel" style="border-color:#10b981">
+  <h2 style="color:#fbbf24">📊 Live Track Record</h2>
   <div class="capital-row">
     <div class="capital-card"><div class="label">Starting Capital</div><div class="value">{{ m.starting_capital }}</div></div>
     <div class="capital-card"><div class="label">Current Equity</div><div class="value">{{ m.current_capital }}</div></div>
@@ -711,6 +668,59 @@ TEMPLATE = """
   </div>
   <div class="note">Closed paper-ledger trades only. These outcomes are not supplied to Claude and do not calibrate its confidence.</div>
 </section>
+
+<details class="panel" style="border-color:#374151">
+  <summary style="cursor:pointer;color:#60a5fa;text-transform:uppercase;letter-spacing:1px;font-size:14px;font-weight:700;list-style:none">
+    🔬 Research Console
+    <span class="pill {{ integrity.status_class }}">Evidence {{ integrity.status }}</span>
+    <span class="pill {{ concordance.status_class }}">Parity {{ concordance.status }}</span>
+    <span class="pill {{ ai.status_class }}">AI {{ ai.status }}</span>
+    <span class="muted" style="font-size:11px;text-transform:none;letter-spacing:0;font-weight:400">— click to expand</span>
+  </summary>
+
+  <div style="margin-top:20px">
+    <h2>Operational Integrity <span class="pill {{ integrity.status_class }}">{{ integrity.status }}</span></h2>
+    <div class="grid">
+      <div class="card"><div class="label">Price Feed</div><div class="value">{{ feed.status }}</div></div>
+      <div class="card"><div class="label">Snapshot Age</div><div class="value">{{ feed.age }}</div></div>
+      <div class="card"><div class="label">Last Candidate Scan</div><div class="value">{{ feed.last_scan }}</div></div>
+      <div class="card"><div class="label">Evidence Candidates</div><div class="value">{{ integrity.pilot_candidates }}</div></div>
+      <div class="card"><div class="label">Event Observer</div><div class="value">{{ event.status }}</div></div>
+      <div class="card"><div class="label">Prospective Events</div><div class="value">{{ event.events }}</div></div>
+      <div class="card"><div class="label">Feature Parity</div><div class="value">{{ concordance.status }}</div></div>
+    </div>
+    <div class="note">File-only monitoring. Event observations are outcome-blind and isolated from signals. Current evidence issue: {{ integrity.issue_summary }}</div>
+  </div>
+
+  <div style="margin-top:24px">
+    <h2>Event Feature Concordance <span class="pill {{ concordance.status_class }}">{{ concordance.status }}</span></h2>
+    <div class="grid">
+      <div class="card"><div class="label">Runtime Archives</div><div class="value">{{ concordance.self_replay }}/{{ concordance.runtime_scans }}</div></div>
+      <div class="card"><div class="label">Compared Decisions</div><div class="value">{{ concordance.compared_decisions }}/{{ concordance.minimum_decisions }}</div></div>
+      <div class="card"><div class="label">Compared Events</div><div class="value">{{ concordance.compared_events }}/{{ concordance.minimum_events }}</div></div>
+      <div class="card"><div class="label">Coverage</div><div class="value">{{ concordance.coverage }}</div></div>
+      <div class="card"><div class="label">Replay Lag</div><div class="value">{{ concordance.replay_lag }}</div></div>
+      <div class="card"><div class="label">Next Authority</div><div class="value">{{ concordance.authorized }}</div></div>
+    </div>
+    <div class="note">Native runtime snapshots are content-addressed and compared with a delayed, separately fetched five-timeframe reference. This reads no outcomes and can authorize only registration of a later shadow experiment. This gate belongs to the rejected event-first research program and does not affect paper approvals. Audit: {{ concordance.age }}. Issue: {{ concordance.issue_summary }}</div>
+  </div>
+
+  <div style="margin-top:24px">
+    <h2>Structured AI Review <span class="pill {{ ai.status_class }}">{{ ai.status }}</span></h2>
+    <div class="grid">
+      <div class="card"><div class="label">Candidate Records</div><div class="value">{{ ai.total }}</div></div>
+      <div class="card"><div class="label">Attempted</div><div class="value">{{ ai.attempted }}</div></div>
+      <div class="card"><div class="label">Gated / Skipped</div><div class="value">{{ ai.skipped }}</div></div>
+      <div class="card"><div class="label">Available</div><div class="value">{{ ai.available }}</div></div>
+      <div class="card"><div class="label">Unavailable</div><div class="value">{{ ai.unavailable }}</div></div>
+      <div class="card"><div class="label">Context Passes</div><div class="value">{{ ai.passes }}</div></div>
+      <div class="card"><div class="label">Vetoes</div><div class="value">{{ ai.vetoes }}</div></div>
+      <div class="card"><div class="label">Avg Self-confidence</div><div class="value">{{ ai.avg_confidence }}</div></div>
+      <div class="card"><div class="label">Latest Model</div><div class="value">{{ ai.model }}</div></div>
+    </div>
+    <div class="note">At most one structured Claude review is attempted per candidate, and only after deterministic approval gates pass. Skipped calls are journalled separately from API failures. Claude confidence has no numeric vote; Claude can veto and explain only. Recent attempted-review availability: {{ ai.recent_availability }}. Issue: {{ ai.issue_summary }}</div>
+  </div>
+</details>
 
 <div class="note" style="text-align:center;margin-top:30px">Research paper trading only. Results do not establish profitability or suitability for live capital.</div>
 
