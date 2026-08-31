@@ -146,6 +146,51 @@ def get_closed_trades(csv_path, limit=15):
     return records
 
 
+def _current_price():
+    """Latest completed 15M mid close from the atomic snapshot; None if unavailable."""
+    try:
+        contract = settings.price_snapshot_contract()
+        payload = json.loads(Path(contract["path"]).read_text())
+        return float(payload["timeframes"]["15M"]["bars"][-1]["close"])
+    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+        return None
+
+
+def get_open_trades(csv_path):
+    """Live OPEN paper positions with current price and unrealized P&L."""
+    frame = _since_cutoff(load_trades(csv_path))
+    if frame.empty:
+        return []
+    status = frame.get("status", pd.Series("", index=frame.index)).astype(str).str.upper()
+    openf = frame[status.eq("OPEN")].copy()
+    if openf.empty:
+        return []
+    price = _current_price()
+    records = []
+    for _, row in openf.iloc[::-1].iterrows():
+        try:
+            entry = float(row.get("entry")); sl = float(row.get("stop_loss"))
+            tp = float(row.get("take_profit")); direction = str(row.get("direction", "")).upper()
+            notional = float(row.get("notional_usd") or 0)
+        except (ValueError, TypeError):
+            continue
+        cur, upnl_txt, upnl_class = "—", "—", "OPEN"
+        if price is not None and entry:
+            cur = f"{price:.2f}"
+            move = (price - entry) if direction == "BUY" else (entry - price)
+            upnl = move / entry * notional
+            upnl_txt = f"${upnl:+.2f}"
+            upnl_class = "WIN" if upnl > 0 else ("LOSS" if upnl < 0 else "OPEN")
+        records.append({
+            "time": str(row.get("timestamp", ""))[:16].replace("T", " "),
+            "direction": direction,
+            "entry": f"{entry:.2f}", "stop": f"{sl:.2f}", "target": f"{tp:.2f}",
+            "rr": f"{float(row.get('rr_ratio', 0) or 0):.2f}",
+            "current": cur, "upnl": upnl_txt, "upnl_class": upnl_class,
+        })
+    return records
+
+
 def get_recent_trades(csv_path, limit=20):
     frame = load_trades(csv_path)
     if frame.empty:
@@ -649,6 +694,45 @@ TEMPLATE = """
   </div>
 </section>
 
+<section class="panel" style="border-color:#60a5fa">
+  <h2>🟢 Open Positions <span class="pill {{ 'good' if open_trades else 'warn' }}">{{ open_trades|length }} live</span></h2>
+  <div class="table-wrap">
+    <table class="trades-table">
+      <thead>
+        <tr>
+          <th>Opened UTC</th>
+          <th>Side</th>
+          <th>Entry</th>
+          <th>SL</th>
+          <th>TP</th>
+          <th>Current</th>
+          <th>Unrealized P&L</th>
+          <th>R/R</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if open_trades %}
+          {% for r in open_trades %}
+            <tr>
+              <td>{{ r.time }}</td>
+              <td class="{{ r.direction }}">{{ r.direction }}</td>
+              <td>{{ r.entry }}</td>
+              <td style="color:#f87171">{{ r.stop }}</td>
+              <td style="color:#10b981">{{ r.target }}</td>
+              <td style="color:#fbbf24">{{ r.current }}</td>
+              <td class="{{ r.upnl_class }}">{{ r.upnl }}</td>
+              <td>{{ r.rr }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="8" class="muted">No open positions right now.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  <div class="note">Live paper positions. Unrealized P&L uses the latest completed 15M mid price and is marked-to-market, not a closed result.</div>
+</section>
+
 <section class="panel">
   <h2>Recent Wins & Losses</h2>
   <div class="table-wrap">
@@ -886,6 +970,7 @@ def get_event_observation_health(event_path=None, scan_path=None):
 @app.route("/")
 def dashboard():
     return render_template_string(TEMPLATE, m=calculate_metrics(settings.PAPER_TRADES_CSV),
+                                  open_trades=get_open_trades(settings.PAPER_TRADES_CSV),
                                   closed_trades=get_closed_trades(settings.PAPER_TRADES_CSV),
                                   feed=get_feed_health(),
                                   integrity=get_evidence_integrity(),
