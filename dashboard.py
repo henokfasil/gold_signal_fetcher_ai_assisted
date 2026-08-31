@@ -191,6 +191,26 @@ def get_open_trades(csv_path):
     return records
 
 
+def get_analyzed_signals(csv_path, limit=30):
+    """Recent analyzed candidates (all outcomes) with their decision reasons."""
+    frame = _since_cutoff(load_trades(csv_path))
+    if frame.empty:
+        return []
+    records = []
+    for _, row in frame.tail(limit).iloc[::-1].iterrows():
+        st = str(row.get("status", "")).upper()
+        cls = {"WIN": "WIN", "LOSS": "LOSS", "OPEN": "OPEN"}.get(st, "muted")
+        records.append({
+            "time": str(row.get("timestamp", ""))[:16].replace("T", " "),
+            "direction": str(row.get("direction", "")).upper(),
+            "smc": str(row.get("smc_score", "")).split(".")[0],
+            "rr": f"{float(row.get('rr_ratio', 0) or 0):.2f}",
+            "status": st, "status_class": cls,
+            "reason": str(row.get("decision_reason", ""))[:80],
+        })
+    return records
+
+
 def get_recent_trades(csv_path, limit=20):
     frame = load_trades(csv_path)
     if frame.empty:
@@ -778,6 +798,37 @@ TEMPLATE = """
 
 <details class="panel" style="border-color:#374151">
   <summary style="cursor:pointer;color:#60a5fa;text-transform:uppercase;letter-spacing:1px;font-size:14px;font-weight:700;list-style:none">
+    📋 Signals Analyzed <span class="pill good">{{ m.candidates }}</span>
+    <span class="muted" style="font-size:11px;text-transform:none;letter-spacing:0;font-weight:400">— every candidate + why it was accepted or rejected · click to expand</span>
+  </summary>
+  <div style="margin-top:16px" class="table-wrap">
+    <table class="trades-table">
+      <thead>
+        <tr><th>Time UTC</th><th>Side</th><th>SMC</th><th>R/R</th><th>Status</th><th>Reason</th></tr>
+      </thead>
+      <tbody>
+        {% if analyzed %}
+          {% for r in analyzed %}
+            <tr>
+              <td>{{ r.time }}</td>
+              <td class="{{ r.direction }}">{{ r.direction }}</td>
+              <td>{{ r.smc }}</td>
+              <td>{{ r.rr }}</td>
+              <td class="{{ r.status_class }}">{{ r.status }}</td>
+              <td style="font-size:11px;color:#9ca3af">{{ r.reason }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="6" class="muted">No candidates analyzed since the Sunday reopen yet.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  <div class="note">Every candidate the scanner evaluated since the track-record start, newest first. REJECTED reasons: MIN_RR_NOT_MET (R/R below 2.0), below SMC paper threshold (score under 70), AI_REJECTED / macro / market gates.</div>
+</details>
+
+<details class="panel" style="border-color:#374151">
+  <summary style="cursor:pointer;color:#60a5fa;text-transform:uppercase;letter-spacing:1px;font-size:14px;font-weight:700;list-style:none">
     🔬 Research Console
     <span class="pill {{ integrity.status_class }}">Evidence {{ integrity.status }}</span>
     <span class="pill {{ concordance.status_class }}">Parity {{ concordance.status }}</span>
@@ -971,6 +1022,7 @@ def get_event_observation_health(event_path=None, scan_path=None):
 def dashboard():
     return render_template_string(TEMPLATE, m=calculate_metrics(settings.PAPER_TRADES_CSV),
                                   open_trades=get_open_trades(settings.PAPER_TRADES_CSV),
+                                  analyzed=get_analyzed_signals(settings.PAPER_TRADES_CSV),
                                   closed_trades=get_closed_trades(settings.PAPER_TRADES_CSV),
                                   feed=get_feed_health(),
                                   integrity=get_evidence_integrity(),
