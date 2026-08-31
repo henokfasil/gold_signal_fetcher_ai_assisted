@@ -198,7 +198,15 @@ class AITradingDecider:
                 else:
                     vetoes.append("AI_REVIEW_UNAVAILABLE")
             elif not claude.get("should_trade"):
-                vetoes.append("AI_REJECTED")
+                if paper_track:
+                    # Advisory only in the paper track: Claude's veto is logged as a
+                    # flag (its reasoning is journalled) but does not block the paper
+                    # trade. It becomes a shadow signal to evaluate later against a
+                    # no-LLM baseline. Deterministic gates (min R:R, macro
+                    # strong-conflict, market-closed) still block.
+                    flags.append("AI_REJECTED")
+                else:
+                    vetoes.append("AI_REJECTED")
         else:
             failed_preconditions = vetoes or ["BELOW_REGISTERED_ML_THRESHOLD"]
             claude = ClaudeAnalyst._unavailable(

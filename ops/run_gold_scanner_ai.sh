@@ -72,6 +72,13 @@ elif [[ "${PRICE_DATA_PROVIDER:-dukascopy}" == "dukascopy" ]]; then
     echo "Gold-context collection failed; candidate context will be recorded missing" >> "${LOG_FILE}"
   fi
 
+  # Derive the runtime macro snapshot from the context proxies so the Claude
+  # reviewer has point-in-time DXY / real-yield-proxy / VIX context. Non-blocking:
+  # if it is not written, macro is simply reported unavailable, never fabricated.
+  if ! "${PYTHON_BIN}" -m ops.collect_macro_snapshot >> "${LOG_FILE}" 2>&1; then
+    echo "Macro snapshot derivation failed; macro will be recorded unavailable" >> "${LOG_FILE}"
+  fi
+
   # The former Yahoo-price "sentiment" observer is deliberately not run here.
   # It did not implement its registered news/sentiment source contract and had
   # no valid historical comparison. A replacement requires a new hash-locked,
