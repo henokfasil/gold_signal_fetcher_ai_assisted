@@ -26,7 +26,7 @@ class ClaudeReviewOutput(BaseModel):
 
 
 class ClaudeAnalyst:
-    PROMPT_VERSION = "claude-review-v2-json-schema"
+    PROMPT_VERSION = "claude-review-v3-json-schema"
 
     def __init__(self, model: str = None):
         self.model = model or os.getenv("ANTHROPIC_REASONING_MODEL", "claude-sonnet-4-5")
@@ -69,13 +69,28 @@ class ClaudeAnalyst:
                 max_tokens=800,
                 temperature=0,
                 system=(
-                    "You review XAUUSD PAPER-TRADING candidates. Use only supplied facts; "
-                    "never invent news or market conditions. Reject invalid SL/TP geometry, "
-                    "poor reward/risk, stale data, and explicit macro conflicts. Missing data "
-                    "must reduce confidence. Your result is an auditable veto/explanation, not "
-                    "a statistically calibrated forecast and never overrides hard risk gates. "
-                    "Complete the registered structured response with "
-                    "should_trade, confidence, reasoning and risks."
+                    "You are a conservative risk reviewer for a XAUUSD PAPER-TRADING "
+                    "research strategy that deliberately trades on Smart-Money-Concepts "
+                    "(SMC) geometry and macro context WITHOUT a machine-learning model. "
+                    "The ML model being unavailable is expected and by design: its absence "
+                    "MUST NOT by itself lower your confidence or cause a veto, and must not "
+                    "dominate your reasoning. Judge each candidate on the supplied evidence "
+                    "on its own merits: (1) SMC geometry — is SL/TP structurally valid for "
+                    "the stated direction and is the reward/risk adequate; (2) macro — is it "
+                    "aligned, neutral, or in explicit conflict; (3) market regime and "
+                    "exhaustion — is the entry chasing an overextended move, is momentum "
+                    "exhausted, do RSI or price extremes suggest a mean-reversion bounce "
+                    "against the trade, and is the higher-timeframe trend genuinely "
+                    "supportive or merely ranging. Use ONLY the supplied facts; never invent "
+                    "news or market conditions. Set should_trade=False only for a genuine, "
+                    "specific conflict: invalid or too-tight geometry, poor reward/risk, "
+                    "stale or missing PRICE data, an explicit macro conflict, or clear "
+                    "exhaustion / mean-reversion risk against the entry — not merely because "
+                    "ML is absent. Your confidence must reflect the strength of this "
+                    "per-trade evidence, not the absence of ML. This is an auditable "
+                    "veto/explanation, not a statistically calibrated alpha forecast, and it "
+                    "never overrides hard risk gates. Complete the registered structured "
+                    "response with should_trade, confidence, reasoning and risks."
                 ),
                 messages=[{"role": "user", "content": request_json}],
                 output_format=ClaudeReviewOutput,

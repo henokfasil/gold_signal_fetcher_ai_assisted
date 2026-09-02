@@ -353,6 +353,24 @@ The active reviewer model is `claude-haiku-4-5-20251001`.
 
 Commits: `6ac42ab` -> `432c3cc` -> `36d4497` on `master`.
 
+## Claude reviewer prompt v3 — 2026-09-02
+
+A performance review of the first 7 live paper trades found the Claude reviewer
+was anti-informative: it vetoed 6 candidates (which netted +$112.81, all three
+winners among them) and approved the single loser, because its confidence was
+anchored on the *permanent* "ML unavailable" condition rather than per-trade
+evidence. Making Claude advisory (non-blocking) in the paper track had already
+prevented this from harming results; this change fixes the root cause.
+
+`PROMPT_VERSION` is bumped to `claude-review-v3-json-schema`. The system prompt
+now states that ML absence is by design and must not by itself lower confidence
+or cause a veto, and directs Claude to judge SMC geometry, macro alignment and
+market regime/exhaustion (overextension, RSI/price extremes, mean-reversion
+risk, ranging vs trending HTF) on their own merits. The strict Pydantic
+response schema is unchanged. Claude remains an advisory/shadow signal in the
+paper track (its veto is a logged flag, not a block); re-score its skill from
+v3 reviews once ~30 trades have accumulated.
+
 ## Status
 
 This repository is a **paper-trading research system**, not a live execution

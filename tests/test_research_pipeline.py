@@ -1593,7 +1593,7 @@ class ResearchPipelineTests(unittest.TestCase):
         self.assertTrue(result["available"])
         self.assertFalse(result["should_trade"])
         self.assertEqual(result["confidence"], 42.0)
-        self.assertEqual(result["prompt_version"], "claude-review-v2-json-schema")
+        self.assertEqual(result["prompt_version"], "claude-review-v3-json-schema")
         self.assertIs(messages.arguments["output_format"], ClaudeReviewOutput)
         self.assertEqual(result["response_payload_json"], raw)
         self.assertEqual(len(result["response_sha256"]), 64)
