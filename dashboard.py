@@ -831,7 +831,6 @@ TEMPLATE = """
   <summary style="cursor:pointer;color:#60a5fa;text-transform:uppercase;letter-spacing:1px;font-size:14px;font-weight:700;list-style:none">
     🔬 Research Console
     <span class="pill {{ integrity.status_class }}">Evidence {{ integrity.status }}</span>
-    <span class="pill {{ concordance.status_class }}">Parity {{ concordance.status }}</span>
     <span class="pill {{ ai.status_class }}">AI {{ ai.status }}</span>
     <span class="muted" style="font-size:11px;text-transform:none;letter-spacing:0;font-weight:400">— click to expand</span>
   </summary>
@@ -845,23 +844,11 @@ TEMPLATE = """
       <div class="card"><div class="label">Evidence Candidates</div><div class="value">{{ integrity.pilot_candidates }}</div></div>
       <div class="card"><div class="label">Event Observer</div><div class="value">{{ event.status }}</div></div>
       <div class="card"><div class="label">Prospective Events</div><div class="value">{{ event.events }}</div></div>
-      <div class="card"><div class="label">Feature Parity</div><div class="value">{{ concordance.status }}</div></div>
     </div>
     <div class="note">File-only monitoring. Event observations are outcome-blind and isolated from signals. Current evidence issue: {{ integrity.issue_summary }}</div>
   </div>
 
-  <div style="margin-top:24px">
-    <h2>Event Feature Concordance <span class="pill {{ concordance.status_class }}">{{ concordance.status }}</span></h2>
-    <div class="grid">
-      <div class="card"><div class="label">Runtime Archives</div><div class="value">{{ concordance.self_replay }}/{{ concordance.runtime_scans }}</div></div>
-      <div class="card"><div class="label">Compared Decisions</div><div class="value">{{ concordance.compared_decisions }}/{{ concordance.minimum_decisions }}</div></div>
-      <div class="card"><div class="label">Compared Events</div><div class="value">{{ concordance.compared_events }}/{{ concordance.minimum_events }}</div></div>
-      <div class="card"><div class="label">Coverage</div><div class="value">{{ concordance.coverage }}</div></div>
-      <div class="card"><div class="label">Replay Lag</div><div class="value">{{ concordance.replay_lag }}</div></div>
-      <div class="card"><div class="label">Next Authority</div><div class="value">{{ concordance.authorized }}</div></div>
-    </div>
-    <div class="note">Native runtime snapshots are content-addressed and compared with a delayed, separately fetched five-timeframe reference. This reads no outcomes and can authorize only registration of a later shadow experiment. This gate belongs to the rejected event-first research program and does not affect paper approvals. Audit: {{ concordance.age }}. Issue: {{ concordance.issue_summary }}</div>
-  </div>
+  <div class="note" style="margin-top:20px">The Event Feature Concordance gate (part of the rejected event-first research program, which never affected paper approvals) has been retired from this view and its daily job disabled. Its code and append-only ledgers are preserved on disk.</div>
 
   <div style="margin-top:24px">
     <h2>Structured AI Review <span class="pill {{ ai.status_class }}">{{ ai.status }}</span></h2>
