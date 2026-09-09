@@ -90,6 +90,13 @@ if ! "${PYTHON_BIN}" "${PROJECT_DIR}/main_orchestrator.py" >> "${LOG_FILE}" 2>&1
   exit 1
 fi
 
+# Isolated multi-strategy engine (validated mean-reversion strategies). Writes its
+# own tagged ledger (data/paper_trades_strategies.csv); never touches the SMC
+# ledger, evidence integrity or the frozen forward pilot. Non-blocking.
+if ! "${PYTHON_BIN}" -m agent.strategy_engine >> "${LOG_FILE}" 2>&1; then
+  echo "Strategy engine failed (isolated; SMC track unaffected)" >> "${LOG_FILE}"
+fi
+
 # Reconcile the append-only research evidence after each scan.  A degraded
 # audit is visible on the dashboard and in logs but cannot retroactively alter
 # the completed candidate decision.
