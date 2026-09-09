@@ -18,11 +18,12 @@ set -a
 source "${PROJECT_DIR}/.env"
 set +a
 export PAPER_TRADING=true
-# Opt-in rules-only PAPER track: with no validated ML artifact, approve on the
-# SMC score (0-100) at/above this threshold instead of blocking every candidate.
-# Paper-only (PAPER_TRADING=true above; no broker-order code exists). Unset this
-# to restore the default ML-mandatory research behavior.
-export SMC_PAPER_THRESHOLD="${SMC_PAPER_THRESHOLD:-70}"
+# SMC live paper-trading is MUTED (2026-09-09): the validated mean-reversion
+# strategies (agent/strategy_engine.py) are now the live track. Leaving
+# SMC_PAPER_THRESHOLD unset reverts SMC decide() to its default ML-mandatory
+# behavior, so SMC opens no new paper trades (its ledger/frozen pilot stay
+# intact for comparison). To re-enable SMC, set SMC_PAPER_THRESHOLD=70.
+# export SMC_PAPER_THRESHOLD="${SMC_PAPER_THRESHOLD:-70}"
 export LOG_FILE
 
 # flock releases automatically on exit and cannot leave a stale PID lock.

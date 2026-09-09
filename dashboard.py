@@ -184,6 +184,18 @@ def get_strategy_scoreboard(csv_path=STRATEGY_LEDGER):
     return sorted(board, key=lambda x: x["label"])
 
 
+def get_strategy_validation():
+    """Load the per-strategy backtest/validation records (why each was chosen)."""
+    path = settings.PROJECT_ROOT / "config" / "strategy_validation.json"
+    try:
+        doc = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {"method": "", "items": []}
+    items = [dict(key=k, **v) for k, v in doc.get("strategies", {}).items()]
+    return {"method": doc.get("method", ""), "generated": doc.get("generated", ""),
+            "items": sorted(items, key=lambda x: x["label"])}
+
+
 def get_strategy_trades(csv_path=STRATEGY_LEDGER, limit=12):
     """Recent tagged strategy trades (open + closed), newest first."""
     frame = load_trades(csv_path)
@@ -756,6 +768,10 @@ TEMPLATE = """
 </div>
 {% endif %}
 
+<details style="margin-bottom:20px">
+  <summary style="cursor:pointer;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;font-size:13px;font-weight:700;list-style:none;padding:10px 0">
+    ▸ SMC baseline — muted (kept for comparison, not trading)
+  </summary>
 <section class="panel" style="border-color:#10b981">
   <h2 style="color:#fbbf24">📊 Live Track Record</h2>
   <div class="capital-row">
@@ -854,6 +870,7 @@ TEMPLATE = """
   </div>
   <div class="note">Closed paper-ledger trades only. These outcomes are not supplied to Claude and do not calibrate its confidence.</div>
 </section>
+</details>
 
 <section class="panel" style="border-color:#a855f7">
   <h2 style="color:#c084fc">🧪 Validated Strategy Scoreboard</h2>
@@ -898,6 +915,34 @@ TEMPLATE = """
       </tbody>
     </table>
   </div>
+  {% endif %}
+</section>
+
+<section class="panel" style="border-color:#a855f7">
+  <h2 style="color:#c084fc">🔬 Strategy Validation — why these were chosen</h2>
+  {% if validation.items %}
+    {% for v in validation.items %}
+    <div style="background:#1f2937;border:1px solid #374151;border-left:3px solid #a855f7;border-radius:6px;padding:16px;margin-bottom:14px">
+      <div style="font-size:15px;font-weight:800;color:#fbbf24">{{ v.label }}
+        <span class="muted" style="font-size:11px;font-weight:400">· {{ v.key }} · {{ v.family }}</span></div>
+      <div class="muted" style="font-size:12px;margin:6px 0"><b>Rule:</b> {{ v.rule }}</div>
+      <div class="muted" style="font-size:12px;margin:6px 0"><b>Why it works:</b> {{ v.why }}</div>
+      <div class="grid" style="margin-top:12px">
+        <div class="card"><div class="label">Backtest Trades</div><div class="value">{{ v.trades_total }}</div></div>
+        <div class="card"><div class="label">Win Rate</div><div class="value">{{ v.win_rate }}</div></div>
+        <div class="card"><div class="label">Profit Factor</div><div class="value">{{ v.profit_factor }}</div></div>
+        <div class="card"><div class="label">Expectancy</div><div class="value">+{{ v.expectancy_R }}R</div></div>
+        <div class="card"><div class="label">In-Sample (CI low / p)</div><div class="value" style="font-size:14px">+{{ v.in_sample_exp_R }}R<br><span style="font-size:11px" class="muted">lo +{{ v.in_sample_ci95_low_R }} · p{{ v.in_sample_p }}</span></div></div>
+        <div class="card"><div class="label">Out-of-Sample</div><div class="value WIN" style="font-size:14px">+{{ v.oos_exp_R }}R · PF {{ v.oos_profit_factor }}<br><span style="font-size:11px" class="muted">n={{ v.oos_n }}</span></div></div>
+        <div class="card"><div class="label">Monte-Carlo DD</div><div class="value" style="font-size:14px">{{ v.mc_median_dd }}<br><span style="font-size:11px" class="muted">worst-5% {{ v.mc_worst5_dd }}</span></div></div>
+        <div class="card"><div class="label">P(profit)</div><div class="value WIN">{{ v.mc_prob_profit }}</div></div>
+      </div>
+      <div style="margin-top:10px">{% for g in v.gates %}<span class="pill good" style="margin:2px">✓ {{ g }}</span>{% endfor %}</div>
+    </div>
+    {% endfor %}
+    <div class="note">{{ validation.method }}</div>
+  {% else %}
+    <div class="muted">No validation records.</div>
   {% endif %}
 </section>
 
@@ -1118,6 +1163,7 @@ def dashboard():
                                   closed_trades=get_closed_trades(settings.PAPER_TRADES_CSV),
                                   scoreboard=get_strategy_scoreboard(),
                                   strat_trades=get_strategy_trades(),
+                                  validation=get_strategy_validation(),
                                   feed=get_feed_health(),
                                   integrity=get_evidence_integrity(),
                                   event=get_event_observation_health(),

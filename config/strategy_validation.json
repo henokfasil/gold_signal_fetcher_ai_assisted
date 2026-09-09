@@ -1,0 +1,28 @@
+{
+  "generated": "2026-09-09",
+  "method": "84-config search on 2020-2026 15M Dukascopy bid/ask. Executable sides, 0.10pt slippage, adverse-first same-bar, 48h expiry, one-open-per-strategy. In-sample (2020->2025) selection vs out-of-sample (2025->2026) validation; bootstrap 2000x CI + one-sided p-value; Benjamini-Hochberg FDR q=0.10 for multiple testing; Monte-Carlo 5000x fixed-fractional drawdown. Source: research/strategy_search.py.",
+  "strategies": {
+    "bollinger_fade_long_v1": {
+      "label": "Bollinger Fade (Long, 1:1)",
+      "family": "mean-reversion",
+      "rule": "BUY when 1H close < lower Bollinger band(20,2); SL & TP = 1.5*ATR (1:1); long-only.",
+      "why": "Gold's structural upward drift makes buying oversold dips ride WITH the drift; a tight 1:1 target captures the quick reversion bounce before it fades.",
+      "trades_total": 1160, "win_rate": "58.3%", "profit_factor": 1.36, "expectancy_R": 0.153,
+      "in_sample_exp_R": 0.151, "in_sample_ci95_low_R": 0.087, "in_sample_p": "<0.001",
+      "oos_n": 268, "oos_exp_R": 0.159, "oos_profit_factor": 1.38,
+      "mc_median_dd": "-12.8%", "mc_worst5_dd": "-19.4%", "mc_prob_profit": "100%",
+      "gates": ["FDR-significant in-sample", "positive out-of-sample", "Monte-Carlo profitable"]
+    },
+    "rsi_meanrev_long_v1": {
+      "label": "RSI Mean-Reversion (Long, 1:1)",
+      "family": "mean-reversion",
+      "rule": "BUY when 1H RSI(14) < 30 AND close is > 1 ATR below EMA20; SL & TP = 1.5*ATR (1:1); long-only.",
+      "why": "Independent oversold trigger confirming the same edge as Bollinger fade: buy stretched dips in an up-drifting market, target the fast bounce.",
+      "trades_total": 632, "win_rate": "58.1%", "profit_factor": 1.36, "expectancy_R": 0.151,
+      "in_sample_exp_R": 0.153, "in_sample_ci95_low_R": 0.068, "in_sample_p": "<0.001",
+      "oos_n": 138, "oos_exp_R": 0.141, "oos_profit_factor": 1.33,
+      "mc_median_dd": "-11.1%", "mc_worst5_dd": "-18.1%", "mc_prob_profit": "100%",
+      "gates": ["FDR-significant in-sample", "positive out-of-sample", "Monte-Carlo profitable"]
+    }
+  }
+}
