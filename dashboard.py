@@ -146,6 +146,65 @@ def get_closed_trades(csv_path, limit=15):
     return records
 
 
+STRATEGY_LEDGER = os.getenv("STRATEGY_LEDGER_PATH",
+                            str(settings.PROJECT_ROOT / "data" / "paper_trades_strategies.csv"))
+
+
+def get_strategy_scoreboard(csv_path=STRATEGY_LEDGER):
+    """Per-strategy forward results from the isolated multi-strategy engine.
+
+    Each row is fully attributable via strategy key + human-readable label, so
+    Bollinger vs RSI (and their versions) are always distinguishable.
+    """
+    frame = load_trades(csv_path)
+    if frame.empty or "strategy" not in frame.columns:
+        return []
+    status = frame["status"].astype(str).str.upper()
+    pnl = pd.to_numeric(frame.get("pnl_usd", 0), errors="coerce").fillna(0)
+    r = pd.to_numeric(frame.get("pnl_r", 0), errors="coerce").fillna(0)
+    board = []
+    for key, g in frame.groupby("strategy"):
+        st = status[g.index]
+        closed = st.isin(["WIN", "LOSS", "EXPIRED"])
+        wins = int((st == "WIN").sum()); losses = int((st == "LOSS").sum())
+        resolved = int((st.isin(["WIN", "LOSS"])).sum())
+        gp = float(pnl[g.index][pnl[g.index] > 0].sum())
+        gl = abs(float(pnl[g.index][pnl[g.index] < 0].sum()))
+        board.append({
+            "key": key,
+            "label": str(g["strategy_label"].iloc[-1]) if "strategy_label" in g else key,
+            "open": int((st == "OPEN").sum()),
+            "closed": int(closed.sum()), "wins": wins, "losses": losses,
+            "win_rate": f"{(100*wins/resolved) if resolved else 0:.0f}%",
+            "pf": ("∞" if gl == 0 and gp > 0 else f"{(gp/gl) if gl else 0:.2f}"),
+            "net_r": f"{float(r[g.index][closed].sum()):+.1f}R",
+            "net_usd": f"${float(pnl[g.index][closed].sum()):+,.2f}",
+            "net_class": "WIN" if float(pnl[g.index][closed].sum()) >= 0 else "LOSS",
+        })
+    return sorted(board, key=lambda x: x["label"])
+
+
+def get_strategy_trades(csv_path=STRATEGY_LEDGER, limit=12):
+    """Recent tagged strategy trades (open + closed), newest first."""
+    frame = load_trades(csv_path)
+    if frame.empty or "strategy" not in frame.columns:
+        return []
+    out = []
+    for _, row in frame.tail(limit).iloc[::-1].iterrows():
+        st = str(row.get("status", "")).upper()
+        out.append({
+            "time": str(row.get("timestamp", ""))[:16].replace("T", " "),
+            "label": str(row.get("strategy_label", row.get("strategy", "—"))),
+            "direction": str(row.get("direction", "—")).upper(),
+            "entry": row.get("entry", "—"), "stop": row.get("stop_loss", "—"),
+            "target": row.get("take_profit", "—"), "exit": row.get("exit_price", "—") or "—",
+            "status": st, "outcome_class": "WIN" if st == "WIN" else ("LOSS" if st in ("LOSS", "EXPIRED") else "OPEN"),
+            "pnl": (f"${float(row['pnl_usd']):+.2f}" if str(row.get("pnl_usd", "")).strip() not in ("", "nan") else "—"),
+            "note": str(row.get("signal_note", ""))[:48],
+        })
+    return out
+
+
 def _current_price():
     """Latest completed 15M mid close from the atomic snapshot; None if unavailable."""
     try:
@@ -796,6 +855,52 @@ TEMPLATE = """
   <div class="note">Closed paper-ledger trades only. These outcomes are not supplied to Claude and do not calibrate its confidence.</div>
 </section>
 
+<section class="panel" style="border-color:#a855f7">
+  <h2 style="color:#c084fc">🧪 Validated Strategy Scoreboard</h2>
+  <div class="table-wrap">
+    <table class="trades-table">
+      <thead><tr><th>Strategy</th><th>Open</th><th>Closed</th><th>Wins</th><th>Losses</th><th>Win Rate</th><th>Profit Factor</th><th>Net R</th><th>Net P&L</th></tr></thead>
+      <tbody>
+        {% if scoreboard %}
+          {% for s in scoreboard %}
+            <tr>
+              <td><b>{{ s.label }}</b><br><span class="muted" style="font-size:10px">{{ s.key }}</span></td>
+              <td class="OPEN">{{ s.open }}</td><td>{{ s.closed }}</td>
+              <td class="WIN">{{ s.wins }}</td><td class="LOSS">{{ s.losses }}</td>
+              <td>{{ s.win_rate }}</td><td>{{ s.pf }}</td>
+              <td class="{{ s.net_class }}">{{ s.net_r }}</td>
+              <td class="{{ s.net_class }}">{{ s.net_usd }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="9" class="muted">No strategy trades yet — mean-reversion strategies open on the next oversold dip.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  <div class="note">Isolated multi-strategy engine, tagged per strategy. These are the out-of-sample + FDR-validated survivors (mean-reversion long, tight 1:1). Separate from the SMC track above; does not touch the frozen research pilot.</div>
+  {% if strat_trades %}
+  <div class="table-wrap" style="margin-top:14px">
+    <table class="trades-table">
+      <thead><tr><th>Time UTC</th><th>Strategy</th><th>Side</th><th>Entry</th><th>SL</th><th>TP</th><th>Exit</th><th>Status</th><th>P&L</th><th>Signal</th></tr></thead>
+      <tbody>
+        {% for t in strat_trades %}
+          <tr>
+            <td>{{ t.time }}</td><td>{{ t.label }}</td>
+            <td class="{{ t.direction }}">{{ t.direction }}</td>
+            <td>{{ t.entry }}</td><td style="color:#f87171">{{ t.stop }}</td>
+            <td style="color:#10b981">{{ t.target }}</td><td>{{ t.exit }}</td>
+            <td class="{{ t.status }}">{{ t.status }}</td>
+            <td class="{{ t.outcome_class }}">{{ t.pnl }}</td>
+            <td style="font-size:11px;color:#9ca3af">{{ t.note }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+
 <details class="panel" style="border-color:#374151">
   <summary style="cursor:pointer;color:#60a5fa;text-transform:uppercase;letter-spacing:1px;font-size:14px;font-weight:700;list-style:none">
     📋 Signals Analyzed <span class="pill good">{{ m.candidates }}</span>
@@ -1011,6 +1116,8 @@ def dashboard():
                                   open_trades=get_open_trades(settings.PAPER_TRADES_CSV),
                                   analyzed=get_analyzed_signals(settings.PAPER_TRADES_CSV),
                                   closed_trades=get_closed_trades(settings.PAPER_TRADES_CSV),
+                                  scoreboard=get_strategy_scoreboard(),
+                                  strat_trades=get_strategy_trades(),
                                   feed=get_feed_health(),
                                   integrity=get_evidence_integrity(),
                                   event=get_event_observation_health(),
