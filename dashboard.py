@@ -193,7 +193,7 @@ def get_strategy_validation():
         return {"method": "", "items": []}
     items = [dict(key=k, **v) for k, v in doc.get("strategies", {}).items()]
     return {"method": doc.get("method", ""), "generated": doc.get("generated", ""),
-            "items": sorted(items, key=lambda x: x["label"])}
+            "records": sorted(items, key=lambda x: x["label"])}
 
 
 def get_strategy_trades(csv_path=STRATEGY_LEDGER, limit=12):
@@ -920,8 +920,8 @@ TEMPLATE = """
 
 <section class="panel" style="border-color:#a855f7">
   <h2 style="color:#c084fc">🔬 Strategy Validation — why these were chosen</h2>
-  {% if validation.items %}
-    {% for v in validation.items %}
+  {% if validation.records %}
+    {% for v in validation.records %}
     <div style="background:#1f2937;border:1px solid #374151;border-left:3px solid #a855f7;border-radius:6px;padding:16px;margin-bottom:14px">
       <div style="font-size:15px;font-weight:800;color:#fbbf24">{{ v.label }}
         <span class="muted" style="font-size:11px;font-weight:400">· {{ v.key }} · {{ v.family }}</span></div>
